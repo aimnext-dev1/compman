@@ -1,0 +1,30 @@
+#!/bin/bash
+# 전역으로 사용하는 환경변수 모음
+
+# 현재 폴더 위치
+FOLDER_NAME=dtx-docker-manager
+
+# 현재 날짜,시간
+CURRENT_DATE=$(date +"%Y%m%d_%H%M")
+
+# OS 사용자 및 그룹
+USER=ec2-user
+GROUP=ec2-user
+
+# 도커 프로젝트 경로(로컬 디렉토리)
+#   => /home/{유저ID}/{도커관리경로}/{폴더(프로젝트)명}/**
+BACKUP_HOME=/home/ec2-user/docker/dtx-docker-manager/_backup
+PROJECT_HOME=/home/ec2-user/docker/dtx-docker-manager/_project
+CONFIG_HOME=/home/ec2-user/docker/dtx-docker-manager/_project/config
+DEPLOY_HOME=/home/ec2-user/docker/dtx-docker-manager/_project/deploy
+VOLUME_HOME=/home/ec2-user/docker/dtx-docker-manager/_project/volume
+
+# 도커 프로젝트 경로(S3 버킷)
+#   => {버킷이름}/{도커관리경로}/{폴더(프로젝트)명}/**
+S3_DOCKER_HOME=dtxstackdev-devwas-s3bucket/dtx-docker
+S3_CONFIG_HOME=dtxstackdev-devwas-s3bucket/dtx-docker/dtx-docker-manager/_project/config
+S3_DEPLOY_HOME=dtxstackdev-devwas-s3bucket/dtx-docker/dtx-docker-manager/_project/deploy
+S3_VOLUME_HOME=dtxstackdev-devwas-s3bucket/dtx-docker/dtx-docker-manager/_project/volume
+
+# 도커 스택 정보
+STACK_NAME=project-dtx-docker-manager
