@@ -6,18 +6,9 @@
 # 명령어 실패 시 스크립트 즉시 종료
 set -e
 
-# env 파일 로드
-ENV_PATH=./env
-
-# env 파일 로드
-if [ -f $ENV_PATH ]; then
-    # 설정된 환경변수를 가져옵니다. 
-    # shellcheck source=/dev/null
-    source $ENV_PATH
-else
-    echo "env 파일이 존재하지 않습니다."
-    exit 1
-fi
+FOLDER_NAME="<루트폴더명>"
+PROJECT_HOME="<프로젝트폴더위치(/_project)>"
+STACK_NAME="<스택명>"
 
 # 함수: 잘 보이는 로그 출력
 # 입력: 출력할 문자열

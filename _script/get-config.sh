@@ -3,6 +3,10 @@
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
 
+CONFIG_HOME="<설정폴더경로(/_project/_config)>"
+CONFIG_HOME_SRC="<설정원본위치>"
+CONFIG_HOME_DST="<설정이동위치>"
+
 # 공통 스크립트를 가져옵니다. 
 source ./_script/common.sh
 
@@ -14,7 +18,7 @@ check_project_dir_not_exist
 
 # TODO: 경우에 따라 다른 수단으로 배포를 진행할 수 있습니다.
 console_out "설정 내용물을 가져옵니다."
-aws s3 cp s3://"$S3_CONFIG_HOME"/ "$CONFIG_HOME"/ --recursive
+# aws s3 cp s3://"$CONFIG_HOME_SRC"/ "$CONFIG_HOME_DST"/ --recursive
 
 # TODO: 경우에 따라 로직을 추가해주세요
 # ...

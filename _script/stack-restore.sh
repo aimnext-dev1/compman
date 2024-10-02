@@ -3,7 +3,7 @@
 # 단 이 작업은 완전 자동화가 아니므로 완료 후 수동 설정이 필요합니다.
 #   1. docker-compose.yml에 image명을 복원한 이미지명으로 변경합니다.
 #      이미지명 예시: <이미지명>:latest
-#   2. deploy 폴더 내에서 다음 명령어를 수행합니다. 
+#   2. compose 폴더 내에서 다음 명령어를 수행합니다. 
 #      docker-compose -p project-<프로젝트명> -y docker-compose.yml up -d 
 # 
 # 사용방법: ./stack-restore.sh <백업한날짜>
@@ -11,6 +11,16 @@
 
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
+
+USER="<유저명>"
+GROUP="<그룹명>"
+
+BACKUP_HOME="<백업폴더경로(/_backup)>"
+CONFIG_HOME="<설정폴더경로(/_project/_config)>"
+COMPOSE_HOME="<컴포즈폴더경로(/_project/_compose)>"
+VOLUME_HOME="<볼륨폴더경로(/_project/_volume)>"
+
+STACK_NAME="<스택명>"
 
 # 공통 스크립트를 가져옵니다. 
 source ./_script/common.sh
@@ -54,10 +64,10 @@ if [ -d "$BACKUP_HOME"/config ] ; then
     mv "$BACKUP_HOME"/config "$CONFIG_HOME"
 fi
 
-console_out "배포 폴더에 복원내용을 적용합니다."
-if [ -d "$BACKUP_HOME"/deploy ] ; then
-    rm -rf "$DEPLOY_HOME"
-    mv "$BACKUP_HOME"/deploy "$DEPLOY_HOME"
+console_out "컴포즈 폴더에 복원내용을 적용합니다."
+if [ -d "$BACKUP_HOME"/compose ] ; then
+    rm -rf "$COMPOSE_HOME"
+    mv "$BACKUP_HOME"/compose "$COMPOSE_HOME"
 fi
 
 console_out "볼륨 폴더에 복원내용을 적용합니다."

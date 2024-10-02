@@ -7,6 +7,9 @@
 # 쉘 스크립트가 명령어 실패 시 즉시 종료되도록 설정
 set -e
 
+STACK_NAME="<스택명>"
+SERVICE_NAME_LIST=("$@")
+
 # 공통 스크립트를 가져옵니다. 
 source ./_script/common.sh
 
@@ -16,7 +19,6 @@ check_project_dir_not_exist
 # docker-compose 스택 없으면 진행 불가능
 check_project_not_exist
 
-SERVICE_NAME_LIST=("$@")
 for f in "${SERVICE_NAME_LIST[@]}"
 do
     console_out "$f 서비스를 중지합니다."

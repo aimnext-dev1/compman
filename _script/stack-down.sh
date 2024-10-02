@@ -5,6 +5,8 @@
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
 
+STACK_NAME="<스택명>"
+
 # 공통 스크립트를 가져옵니다. 
 source ./_script/common.sh
 

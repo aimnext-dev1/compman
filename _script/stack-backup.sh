@@ -6,14 +6,20 @@
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
 
+USER="<유저명>"
+GROUP="<그룹명>"
+
+BACKUP_HOME="<백업폴더경로(/_backup)>"
+CONFIG_HOME="<설정폴더경로(/_project/_config)>"
+COMPOSE_HOME="<컴포즈폴더경로(/_project/_compose)>"
+VOLUME_HOME="<볼륨폴더경로(/_project/_volume)>"
+
+STACK_NAME="<스택명>"
+BACKUP_NAME="<스택명>.$(date +"%Y%m%d_%H%M")"
+BACKUP_TARGET="<백업폴더경로(/_backup)>/<스택명>.$(date +"%Y%m%d_%H%M")"
+
 # 공통 스크립트를 가져옵니다. 
 source ./_script/common.sh
-
-# 백업 결과 파일명
-BACKUP_NAME=$STACK_NAME.$CURRENT_DATE
-# 백업 작업용 임시폴더위치 --> 압축후 삭제
-BACKUP_TARGET="$BACKUP_HOME/$BACKUP_NAME"
-
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
@@ -32,8 +38,8 @@ mkdir "$BACKUP_TARGET"
 
 console_out "설정 폴더를 백업 폴더에 복사합니다."
 cp -R "$CONFIG_HOME" "$BACKUP_TARGET"
-console_out "배포 폴더를 백업 폴더에 복사합니다."
-cp -R "$DEPLOY_HOME" "$BACKUP_TARGET" 
+console_out "컴포즈 폴더를 백업 폴더에 복사합니다."
+cp -R "$COMPOSE_HOME" "$BACKUP_TARGET" 
 console_out "폴륨 폴더를 백업 폴더에 복사합니다."
 cp -R "$VOLUME_HOME" "$BACKUP_TARGET"
 

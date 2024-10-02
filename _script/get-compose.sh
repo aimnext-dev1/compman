@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# 명령어 실패 시 스크립트 즉시 종료되도록 설정
+set -e
+
+COMPOSE_HOME="<컴포즈폴더경로(/_project/_compose)>"
+COMPOSE_HOME_SRC="<컴포즈원본위치>"
+COMPOSE_HOME_DST="<컴포즈이동위치>"
+
+# 공통 스크립트를 가져옵니다. 
+source ./_script/common.sh
+
+# 프로젝트 폴더가 존재하는지 검사
+check_project_dir_not_exist
+
+# TODO: 배포 이전에 컴포즈폴더 전체 삭제가 필요할 경우 활성화해주세요.
+#rm -rf $COMPOSE_HOME/*
+
+# TODO: 경우에 따라 다른 수단으로 배포를 진행할 수 있습니다.
+console_out "컴포즈 내용물을 가져옵니다."
+# aws s3 cp s3://"$COMPOSE_HOME_SRC"/ "$COMPOSE_HOME_DST"/ --recursive
+
+# TODO: 경우에 따라 로직을 추가해주세요
+# ...
+
+console_out "컴포즈 가져오기 완료!!!"
