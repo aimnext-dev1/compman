@@ -2,6 +2,10 @@
 
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
+# 현재 스크립트가 있는 경로를 기준으로 합니다.
+cd "$(dirname "$0")"
+# 공통 스크립트를 가져옵니다. 
+source ./common.sh
 
 # 적용할 설정파일 경로
 CONFIG_FILE_ON_HOST="<설정파일경로(호스트)>"
@@ -9,9 +13,6 @@ CONFIG_FILE_ON_CONTAINER="<설정파일경로(컨테이너)>"
 
 CONTAINER_NAME="<컨테이너명>"
 CONTAINER_KEY=$(docker ps -a | grep $CONTAINER_NAME | xargs | awk '{print $1}')
-
-# 공통 스크립트를 가져옵니다. 
-source ./_script/common.sh
 
 # 값 변경(프로젝트에 따라 알맞게 수정)
 # # 예시) AWS Secret Manager를 통해 가져온 값으로 변경

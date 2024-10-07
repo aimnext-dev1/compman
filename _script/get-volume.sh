@@ -3,13 +3,14 @@
 
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
+# 현재 스크립트가 있는 경로를 기준으로 합니다.
+cd "$(dirname "$0")"
+# 공통 스크립트를 가져옵니다. 
+source ./common.sh
 
-VOLUME_HOME="<볼륨폴더경로(/_project/_volume)>"
+VOLUME_HOME="../_project/_volume"
 VOLUME_HOME_SRC="<볼륨원본위치>"
 VOLUME_HOME_DST="<볼륨이동위치>"
-
-# 공통 스크립트를 가져옵니다. 
-source ./_script/common.sh
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist

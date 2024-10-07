@@ -2,13 +2,14 @@
 
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
+# 현재 스크립트가 있는 경로를 기준으로 합니다.
+cd "$(dirname "$0")"
+# 공통 스크립트를 가져옵니다. 
+source ./common.sh
 
-CONFIG_HOME="<설정폴더경로(/_project/_config)>"
+CONFIG_HOME="../_project/_config"
 CONFIG_HOME_SRC="<설정원본위치>"
 CONFIG_HOME_DST="<설정이동위치>"
-
-# 공통 스크립트를 가져옵니다. 
-source ./_script/common.sh
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist

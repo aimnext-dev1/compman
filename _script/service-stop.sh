@@ -4,14 +4,15 @@
 #     -> <도커 서비스명>은 선택값으로 누락시 전체 서비스가 중지됩니다. 
 #     -> <도커 서비스명>은 ./service-status.sh 를 통해 확인 가능합니다.
 
-# 쉘 스크립트가 명령어 실패 시 즉시 종료되도록 설정
+# 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
+# 현재 스크립트가 있는 경로를 기준으로 합니다.
+cd "$(dirname "$0")"
+# 공통 스크립트를 가져옵니다. 
+source ./common.sh
 
 STACK_NAME="<스택명>"
 SERVICE_NAME_LIST=("$@")
-
-# 공통 스크립트를 가져옵니다. 
-source ./_script/common.sh
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist

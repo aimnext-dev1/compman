@@ -3,12 +3,12 @@
 # 해당 파일은 각 프로젝트의 자동화 스크립트가 공통으로 사용합니다.
 # 작성자: 김승범
 
-# 명령어 실패 시 스크립트 즉시 종료
+# 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
 
-FOLDER_NAME="<루트폴더명>"
-PROJECT_HOME="<프로젝트폴더위치(/_project)>"
-STACK_NAME="<스택명>"
+FOLDER_NAME="docker-mysql"
+PROJECT_HOME="../_project"
+STACK_NAME="stack-mysql"
 
 # 함수: 잘 보이는 로그 출력
 # 입력: 출력할 문자열
@@ -57,8 +57,7 @@ check_project_dir_not_exist() {
 check_project_not_exist() {
     console_out "$STACK_NAME 스택이 존재하는지 확인합니다."
 
-    local is_exist
-    is_exist=$(docker-compose ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
+    local is_exist=$(docker-compose ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
 
     if [[ -z $is_exist ]]; then
         echo "프로젝트가 없습니다. stack-compose.sh 후 다시 시도해주세요."
@@ -72,8 +71,7 @@ check_project_not_exist() {
 check_project_exist() {
     console_out "$STACK_NAME 스택이 없는지 확인합니다."
 
-    local is_exist
-    is_exist=$(docker-compose ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
+    local is_exist=$(docker-compose ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
 
     if [[ -n $is_exist ]]; then
         echo "$is_exist 프로젝트가 이미 존재합니다. docker-compose down 후 다시 시도해주세요."
