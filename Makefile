@@ -2,8 +2,9 @@
 
 SCRIPT_HOME := ./_script
 
-.PHONY: help get-config get-volume get-compose up down status start stop restart backup restore clear
+.PHONY: help get-config get-volume get-compose up down status start stop restart backup restore clear apply connect log
 
+# make 입력시 명령어 설명 출력
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
@@ -28,10 +29,15 @@ start: ## Docker 컨테이너 시작
 	bash $(SCRIPT_HOME)/service-start.sh
 stop: ## Docker 컨테이너 중지
 	bash $(SCRIPT_HOME)/service-stop.sh
-apply: ## Docker 컨테이너 변경사항 적용
-	bash $(SCRIPT_HOME)/service-apply.sh
 restart: ## Docker 컨테이너 재시작
 	bash $(SCRIPT_HOME)/service-restart.sh
+connect: ## Docker 컨테이너 접속
+	bash $(SCRIPT_HOME)/service-connect.sh
+log: ## Docker 컨테이너 로그 조회
+	bash $(SCRIPT_HOME)/service-log.sh
+apply: ## Docker 컨테이너 변경사항 적용
+	bash $(SCRIPT_HOME)/apply-to-container.sh
+
 
 # backup
 backup: ## Docker 스택 백업

@@ -1,0 +1,6 @@
+_backup/*
+_project/volume/*
+
+!.gitkeep
+
+.DS_Store
