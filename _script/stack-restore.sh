@@ -20,9 +20,9 @@ USER="<유저명>"
 GROUP="<그룹명>"
 
 BACKUP_HOME="../_backup"
-CONFIG_HOME="../_project/_config"
-COMPOSE_HOME="../_project/_compose"
-VOLUME_HOME="../_project/_volume"
+CONFIG_HOME="../_project/config"
+COMPOSE_HOME="../_project/compose"
+VOLUME_HOME="../_project/volume"
 
 STACK_NAME="<스택명>"
 

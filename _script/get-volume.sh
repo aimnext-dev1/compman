@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 # 공통 스크립트를 가져옵니다. 
 source ./common.sh
 
-VOLUME_HOME="../_project/_volume"
+VOLUME_HOME="../_project/volume"
 VOLUME_HOME_SRC="<볼륨원본위치>"
 VOLUME_HOME_DST="<볼륨이동위치>"
 

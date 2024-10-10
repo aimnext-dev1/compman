@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 # 공통 스크립트를 가져옵니다. 
 source ./common.sh
 
-CONFIG_HOME="../_project/_config"
+CONFIG_HOME="../_project/config"
 CONFIG_HOME_SRC="<설정원본위치>"
 CONFIG_HOME_DST="<설정이동위치>"
 

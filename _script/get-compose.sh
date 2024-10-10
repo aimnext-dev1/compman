@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 # 공통 스크립트를 가져옵니다. 
 source ./common.sh
 
-COMPOSE_HOME="../_project/_compose"
+COMPOSE_HOME="../_project/compose"
 COMPOSE_HOME_SRC="<컴포즈원본위치>"
 COMPOSE_HOME_DST="<컴포즈이동위치>"
 
