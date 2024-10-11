@@ -1,6 +1,10 @@
+# MacOS fs metadata
+.DS_Store
+
+# backup files
 _backup/*
+# docker volume files
 _project/volume/*
 
+# For empty directories
 !.gitkeep
-
-.DS_Store
