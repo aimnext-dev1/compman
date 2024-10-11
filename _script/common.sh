@@ -6,9 +6,9 @@
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
 
-FOLDER_NAME="docker-mysql"
+FOLDER_NAME="<루트폴더명>"
 PROJECT_HOME="../_project"
-STACK_NAME="stack-mysql"
+STACK_NAME="<스택이름>"
 
 # 함수: 잘 보이는 로그 출력
 # 입력: 출력할 문자열
