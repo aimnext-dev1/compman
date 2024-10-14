@@ -60,7 +60,7 @@ check_project_not_exist() {
     local is_exist=$(docker-compose ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
 
     if [[ -z $is_exist ]]; then
-        echo "프로젝트가 없습니다. stack-compose.sh 후 다시 시도해주세요."
+        echo "스택이 없습니다. make up 후 다시 시도해주세요."
         exit 1
     fi
 }
@@ -74,7 +74,7 @@ check_project_exist() {
     local is_exist=$(docker-compose ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
 
     if [[ -n $is_exist ]]; then
-        echo "$is_exist 프로젝트가 이미 존재합니다. docker-compose down 후 다시 시도해주세요."
+        echo "$is_exist 스택이 이미 존재합니다. make down 후 다시 시도해주세요."
         exit 1
     fi
 }
