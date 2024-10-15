@@ -1,6 +1,8 @@
 #!/bin/bash
 # 백업한 도커 스택을 복원합니다.
-# 단 이 작업은 완전 자동화가 아니므로 완료 후 수동 설정이 필요합니다.
+#
+# 이미지 복원이 필요한 경우 밑의 주석을 해제하고 사용해주세요.
+# 단 이미지 복원을 함께 사용하는 경우, 완전 자동화가 아니므로 복원완료 후 수동 설정이 필요합니다.
 #   1. docker-compose.yml에 image명을 복원한 이미지명으로 변경합니다.
 #      이미지명 예시: <이미지명>:latest
 #   2. compose 폴더 내에서 다음 명령어를 수행합니다. 
@@ -77,20 +79,24 @@ if [ -d "$BACKUP_HOME"/volume ] ; then
     mv "$BACKUP_HOME"/volume "$VOLUME_HOME"
 fi
 
-console_out "백업 이미지를 불러옵니다."
-for file in "$BACKUP_HOME"/*.tar; do
-    echo "Loading $file..."
-    docker load -i "$file"
-    rm "$file"
-done
-
-console_out "복원 이미지 태그를 latest로 변경합니다."
-IMAGE_NAME_LIST=$(docker images --filter "reference=*:backup" --format "{{.Repository}}:{{.Tag}}")
-for image_name in $IMAGE_NAME_LIST; do
-    new_image_name=$(echo "$image_name" | sed 's/:.*/:latest/')
-    echo "change name $image_name to $new_image_name"
-    docker tag "$image_name" "$new_image_name"
-    docker rmi "$image_name"
-done
+# ** --------------------- 이미지 복원 기능을 사용하려는 경우, 다음 주석을 활성화 ------------------------ **
+#
+# console_out "백업 이미지를 불러옵니다."
+# for file in "$BACKUP_HOME"/*.tar; do
+#     echo "Loading $file..."
+#     docker load -i "$file"
+#     rm "$file"
+# done
+#
+# console_out "복원 이미지 태그를 latest로 변경합니다."
+# IMAGE_NAME_LIST=$(docker images --filter "reference=*:backup" --format "{{.Repository}}:{{.Tag}}")
+# for image_name in $IMAGE_NAME_LIST; do
+#     new_image_name=$(echo "$image_name" | sed 's/:.*/:latest/')
+#     echo "change name $image_name to $new_image_name"
+#     docker tag "$image_name" "$new_image_name"
+#     docker rmi "$image_name"
+# done
+#
+# ** ---------------------------------------------------------------------------------------- **
 
 console_out "스택 복원 완료!!!"

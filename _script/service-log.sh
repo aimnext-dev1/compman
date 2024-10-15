@@ -1,4 +1,8 @@
 #!/bin/bash
+# 도커 컨테이너 로그를 확인합니다.
+#
+# 사용방법: ./service-log.sh <도커 서비스명>
+#     -> <도커 서비스명> 미입력시 컨테이너 목록을 출력합니다.
 
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
@@ -7,7 +11,19 @@ cd "$(dirname "$0")"
 # 공통 스크립트를 가져옵니다. 
 source ./common.sh
 
-CONTAINER_NAME="<컨테이너명>"
+STACK_NAME="<스택명>"
+CONTAINER_NAME=$1
+
+# docker-compose 스택 없으면 진행 불가능
+check_project_not_exist
+
+# 만약 CONTAINER_NAME이 비어있다면
+if [ -z "$CONTAINER_NAME" ]; then
+    echo "로그를 확인할 컨테이너명을 입력해주세요:"
+    docker-compose -p $STACK_NAME ps -a --format "{{.Names}}" | awk '{print $1}'
+    exit 1
+fi
+
 CONTAINER_KEY=$(docker ps -a | grep $CONTAINER_NAME | xargs | awk '{print $1}')
 
 console_out "$CONTAINER_NAME 컨테이너 로그를 출력합니다."
