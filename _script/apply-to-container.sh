@@ -16,7 +16,7 @@ CONFIG_FILE_ON_HOST="<설정파일경로(호스트)>"
 CONFIG_FILE_ON_CONTAINER="<설정파일경로(컨테이너)>"
 
 CONTAINER_NAME="<컨테이너명>"
-CONTAINER_KEY=$(docker ps -a | grep $CONTAINER_NAME | xargs | awk '{print $1}')
+CONTAINER_KEY=$(docker ps -a --filter "name=^$CONTAINER_NAME$" --format "{{.ID}}")
 
 # 값 변경
 # TODO: 프로젝트에 따라 알맞게 수정

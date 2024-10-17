@@ -24,7 +24,7 @@ if [ -z "$CONTAINER_NAME" ]; then
     exit 1
 fi
 
-CONTAINER_KEY=$(docker ps -a | grep $CONTAINER_NAME | xargs | awk '{print $1}')
+CONTAINER_KEY=$(docker ps -a --filter "name=^$CONTAINER_NAME$" --format "{{.ID}}")
 
 console_out "$CONTAINER_NAME 컨테이너로 접속합니다."
 docker exec -it "$CONTAINER_KEY" /bin/bash
