@@ -22,8 +22,9 @@ COMPOSE_HOME="../_project/compose"
 VOLUME_HOME="../_project/volume"
 
 STACK_NAME="<스택명>"
-BACKUP_NAME="<스택명>.$(date +"%Y%m%d_%H%M")"
-BACKUP_TARGET="../_backup/<스택명>.$(date +"%Y%m%d_%H%M")"
+TIMESTAMP=$(date +"%Y%m%d_%H%M")
+BACKUP_NAME="<스택명>.$TIMESTAMP"
+BACKUP_TARGET="../_backup/<스택명>.$TIMESTAMP"
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist

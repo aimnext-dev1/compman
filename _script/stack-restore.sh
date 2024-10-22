@@ -35,12 +35,29 @@ console_out "입력 날짜 포맷이 올바른지 검사합니다."
 DATETIME_REGEX="^[0-9]{8}_[0-9]{4}$"  # %Y%m%d_%H%M 형식의 정규표현식
 if [[ ! "$ROLLBACK_DATETIME" =~ $DATETIME_REGEX ]]; then
     echo "올바른 날짜 및 시간 형식이 아닙니다. 형식(년월일_시분) ex)20240131_1341"
-    console_out "BACKUP FILE LIST"
+    
+    console_out "백업 파일 목록"
     for file in "$BACKUP_HOME"/*; do
-        if [[ "$file" =~ [0-9]{8}_[0-9]{4} ]]; then
-            echo -e "\033[32m$(basename "$file")\033[0m"
+        # Get the base filename
+        base_filename="$(basename "$file")"
+        
+        # Use regex to match and capture the desired part
+        if [[ "$base_filename" =~ ^(.*)([0-9]{8}_[0-9]{4})(.*)$ ]]; then
+            # Assign captured groups to variables
+            prefix="${BASH_REMATCH[1]}"
+            colored_part="${BASH_REMATCH[2]}"
+            suffix="${BASH_REMATCH[3]}"
+
+            # Print with colored part
+            echo -e "${prefix}\033[31m${colored_part}\033[0m${suffix}"
         fi
     done
+    exit 1
+fi
+
+# 날짜 유효성 검사 (추가)
+if ! date -d "${ROLLBACK_DATETIME:0:8}" >/dev/null 2>&1; then
+    echo "유효하지 않은 날짜입니다: ${ROLLBACK_DATETIME:0:8}"
     exit 1
 fi
 
