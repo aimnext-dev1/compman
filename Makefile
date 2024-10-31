@@ -25,9 +25,9 @@ stop: ## Docker 컨테이너 중지
 restart: ## Docker 컨테이너 재시작
 	bash $(SCRIPT_HOME)/service-restart.sh $(PARAM)
 connect: ## Docker 컨테이너 접속
-	bash $(SCRIPT_HOME)/service-connect.sh
+	bash $(SCRIPT_HOME)/service-connect.sh $(PARAM)
 log: ## Docker 컨테이너 로그 조회
-	bash $(SCRIPT_HOME)/service-log.sh
+	bash $(SCRIPT_HOME)/service-log.sh $(PARAM)
 
 # backup
 backup: ## Docker 스택 백업
