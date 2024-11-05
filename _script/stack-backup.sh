@@ -24,7 +24,7 @@ VOLUME_HOME="../_project/volume"
 STACK_NAME="<스택명>"
 TIMESTAMP=$(date +"%Y%m%d_%H%M")
 BACKUP_NAME="<스택명>.$TIMESTAMP"
-BACKUP_TARGET="../_backup/<스택명>.$TIMESTAMP"
+BACKUP_TARGET="$BACKUP_HOME/$BACKUP_NAME"
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
