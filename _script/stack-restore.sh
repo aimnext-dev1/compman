@@ -104,16 +104,7 @@ fi
 #     docker load -i "$file"
 #     rm "$file"
 # done
-#
-# console_out "복원 이미지 태그를 latest로 변경합니다."
-# IMAGE_NAME_LIST=$(docker images --filter "reference=*:backup" --format "{{.Repository}}:{{.Tag}}")
-# for image_name in $IMAGE_NAME_LIST; do
-#     new_image_name=$(echo "$image_name" | sed 's/:.*/:latest/')
-#     echo "change name $image_name to $new_image_name"
-#     docker tag "$image_name" "$new_image_name"
-#     docker rmi "$image_name"
-# done
-#
+# 
 # ** ---------------------------------------------------------------------------------------- **
 
 console_out "스택 복원 완료!!!"
