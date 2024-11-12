@@ -55,7 +55,7 @@ if [[ ! "$ROLLBACK_DATETIME" =~ $DATETIME_REGEX ]]; then
     exit 1
 fi
 
-# 날짜 유효성 검사 (추가)
+# 날짜 유효성 검사 (추가, MacOS에서는 작동 안함)
 if ! date -d "${ROLLBACK_DATETIME:0:8}" >/dev/null 2>&1; then
     echo "유효하지 않은 날짜입니다: ${ROLLBACK_DATETIME:0:8}"
     exit 1
@@ -104,7 +104,8 @@ fi
 #     docker load -i "$file"
 #     rm "$file"
 # done
-# 
+#  
+# console_out "docker-compose.yml에 image를 설정한 후 스택을 시작해주세요."
 # ** ---------------------------------------------------------------------------------------- **
 
 console_out "스택 복원 완료!!!"
