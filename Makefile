@@ -10,8 +10,8 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 # stack
-up: ## Docker 스택을 생성
-	bash $(SCRIPT_HOME)/stack-up.sh
+up: ## Docker 스택을 생성 / 실행환경: local(DEFAULT), dev, prod
+	bash $(SCRIPT_HOME)/stack-up.sh $(PARAM)
 down: ## Docker 스택을 제거
 	bash $(SCRIPT_HOME)/stack-down.sh
 
@@ -38,3 +38,4 @@ restore: ## 백업 파일로부터 Docker 스택정보를 복원
 # others
 clear: ## 사용하지 않는 도커 데이터 삭제
 	docker system prune -f
+	docker image prune -af
