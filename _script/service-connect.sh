@@ -20,7 +20,7 @@ check_project_not_exist
 # 만약 CONTAINER_NAME이 비어있다면
 if [ -z "$CONTAINER_NAME" ]; then
     echo "접속할 컨테이너명을 입력해주세요:"
-    docker-compose -p $STACK_NAME ps -a --format "{{.Names}}" | awk '{print $1}'
+    docker-compose -p $STACK_NAME ps -a --format "{{.Names}}" | awk '{print "\033[92m" $1 "\033[0m"}'
     exit 1
 fi
 

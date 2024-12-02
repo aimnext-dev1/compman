@@ -49,7 +49,7 @@ if [[ ! "$ROLLBACK_DATETIME" =~ $DATETIME_REGEX ]]; then
             suffix="${BASH_REMATCH[3]}"
 
             # Print with colored part
-            echo -e "${prefix}\033[31m${colored_part}\033[0m${suffix}"
+            echo -e "${prefix}\033[92m${colored_part}\033[0m${suffix}"
         fi
     done
     exit 1

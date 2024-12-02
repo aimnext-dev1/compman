@@ -12,8 +12,14 @@ source ./common.sh
 
 COMPOSE_HOME="../_project/compose"
 
+RUN_ENV=$1
 STACK_NAME="<스택명>"
-COMPOSE_FILE_NAME="<도커컴포즈명세파일명>"
+
+if [ "$RUN_ENV" == "dev" ]; then
+  COMPOSE_FILE_NAME="<개발환경 도커 컴포즈 명세파일명>"
+elif [ "$RUN_ENV" == "prod" ]; then
+  COMPOSE_FILE_NAME="<운영환경 도커 컴포즈 명세파일명>"
+fi
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
