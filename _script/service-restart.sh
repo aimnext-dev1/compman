@@ -32,3 +32,4 @@ else
 fi
 
 console_out "서비스 재시작 완료!!!"
+exit 0

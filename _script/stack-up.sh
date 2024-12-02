@@ -56,3 +56,4 @@ else
 fi
 
 console_out "스택 생성 성공!!!"
+exit 0

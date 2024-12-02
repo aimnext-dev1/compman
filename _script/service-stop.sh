@@ -32,3 +32,4 @@ else
 fi
 
 console_out "서비스 중지 완료!!!"
+exit 0

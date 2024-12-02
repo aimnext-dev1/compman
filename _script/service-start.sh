@@ -30,4 +30,6 @@ else
     done
     docker-compose -p "$STACK_NAME" start "${SERVICE_NAME_LIST[@]}"
 fi
+
 console_out "서비스 시작 완료!!!"
+exit 0

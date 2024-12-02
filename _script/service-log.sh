@@ -28,3 +28,4 @@ CONTAINER_KEY=$(docker ps -a --filter "name=^$CONTAINER_NAME$" --format "{{.ID}}
 
 console_out "$CONTAINER_NAME 컨테이너 로그를 출력합니다."
 docker logs -f -n 10000 "$CONTAINER_KEY"
+exit 0

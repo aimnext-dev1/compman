@@ -32,5 +32,6 @@ else
     console_out "스택 삭제 취소!"
 fi
 
+exit 0
 
 

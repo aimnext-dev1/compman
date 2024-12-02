@@ -28,3 +28,4 @@ CONTAINER_KEY=$(docker ps -a --filter "name=^$CONTAINER_NAME$" --format "{{.ID}}
 
 console_out "$CONTAINER_NAME 컨테이너로 접속합니다."
 docker exec -it "$CONTAINER_KEY" /bin/bash
+exit 0

@@ -71,3 +71,4 @@ console_out "백업 폴더를 삭제합니다."
 rm -rf "$BACKUP_TARGET"
 
 console_out "스택 백업 성공!!!"
+exit 0
