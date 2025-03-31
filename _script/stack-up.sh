@@ -10,7 +10,7 @@ cd "$(dirname "$0")"
 # 공통 스크립트를 가져옵니다. 
 source ./common.sh
 
-COMPOSE_HOME="../_project/compose"
+COMPOSE_HOME="../_project"
 
 RUN_ENV_PARAM=$1
 # 실행환경 파라미터가 없으면 기본값은 local
