@@ -14,6 +14,8 @@ up: ## Docker 스택을 생성 / 실행환경: local(DEFAULT), dev, prod
 	bash $(SCRIPT_HOME)/stack-up.sh $(PARAM)
 down: ## Docker 스택을 제거
 	bash $(SCRIPT_HOME)/stack-down.sh
+update: ## Docker 스택을 업데이트
+	bash $(SCRIPT_HOME)/stack-update.sh
 
 # service
 status: ## Docker 컨테이너의 상태 조회
