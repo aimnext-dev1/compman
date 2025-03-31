@@ -34,6 +34,11 @@
 ---
 ## 🙌 사용에 앞서
 
+###사용 요건
+* Docker CLI / Docker Compose(docker-compose) 필요
+* Bash 쉘 필요
+* jq(JSON 파싱용) 필요
+
 ### 대상 파일명 및 채워야 할 값
 _script 폴더 내 각 쉘스크립트 파일에 compose시 필요한 정보를 기재해야 합니다.
 ```text
@@ -125,8 +130,3 @@ make status
 make volume-backup
 make volume-restore 20250331_1325
 ```
-
-## 🐳 사용 요건
-* Docker CLI / Docker Compose(docker-compose) 필요
-* Bash 쉘 필요
-* jq(JSON 파싱용) 필요
