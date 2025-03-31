@@ -13,19 +13,19 @@
 ├── _backup/               # 볼륨 및 이미지 백업 파일 저장
 ├── _project/              # 실제 프로젝트 리소스 (코드, 설정 등)
 ├── _script/               # 모든 관리용 스크립트 파일
-│   ├── common.sh
-│   ├── image-backup.sh
-│   ├── image-restore.sh
-│   ├── service-connect.sh
-│   ├── service-log.sh
-│   ├── service-restart.sh
-│   ├── service-start.sh
-│   ├── service-status.sh
-│   ├── service-stop.sh
-│   ├── stack-down.sh
-│   ├── stack-up.sh
-│   ├── volume-backup.sh
-│   └── volume-restore.sh
+│   ├── common.sh               # 공통 기능 
+│   ├── image-backup.sh         # 이미지 백업 
+│   ├── image-restore.sh        # 이미지 복원 
+│   ├── service-connect.sh      # 컨테이너 접속 
+│   ├── service-log.sh          # 컨테이너 로그 출력
+│   ├── service-restart.sh      # 컨테이너 재시작
+│   ├── service-start.sh        # 컨테이너 시작
+│   ├── service-status.sh       # 컨테이너 상태 확인
+│   ├── service-stop.sh         # 컨테이너 중지
+│   ├── stack-down.sh           # 스택 제거
+│   ├── stack-up.sh             # 스택 생성
+│   ├── volume-backup.sh        # 볼륨 백업
+│   └── volume-restore.sh       # 볼륨 복원
 ├── deploy.sh              # 배포 자동화용 스크립트 (선택)
 ├── Makefile               # 주요 명령어 집약
 └── README.md
