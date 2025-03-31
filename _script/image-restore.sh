@@ -19,19 +19,18 @@ cd "$(dirname "$0")"
 source ./common.sh
 
 BACKUP_HOME="../_backup"
-STACK_NAME="<스택명>"
 
 # 백업한날짜를 파라미터로 받음
 RESTORE_DATETIME=$1
-RESTORE_NAME="<스택명>.stack.$RESTORE_DATETIME"
+RESTORE_NAME="<스택명>.image.$RESTORE_DATETIME"
 
 console_out "입력 날짜 포맷이 올바른지 검사합니다."
 DATETIME_REGEX="^[0-9]{8}_[0-9]{4}$"  # %Y%m%d_%H%M 형식의 정규표현식
 if [[ ! "$RESTORE_DATETIME" =~ $DATETIME_REGEX ]]; then
     echo "올바른 날짜 및 시간 형식이 아닙니다. 형식(년월일_시분) ex)20240131_1341"
     
-    console_out "백업 파일 목록"
-    for file in "$BACKUP_HOME"/*.stack.*; do
+    echo "===== 백업 파일 목록 ====="
+    for file in "$BACKUP_HOME"/*.image.*; do
         # Get the base filename
         base_filename="$(basename "$file")"
         
@@ -67,10 +66,10 @@ else
 fi
 
 console_out "파일이 존재하는지 검사합니다."
-RESTORE_FILE_PATH=$BACKUP_HOME/$STACK_NAME.$RESTORE_DATETIME.tar.gz
+RESTORE_FILE_PATH=$BACKUP_HOME/$RESTORE_NAME.tar.gz
 if [[ ! -e "$RESTORE_FILE_PATH" ]]; then
     echo "파일이 존재하지 않습니다: $RESTORE_FILE_PATH"
-    console_out "BACKUP FILE LIST"
+    echo "===== BACKUP FILE LIST ====="
     for file in "$BACKUP_HOME"/*; do
         if [[ "$file" =~ [0-9]{8}_[0-9]{4} ]]; then
             echo -e "\033[32m$(basename "$file")\033[0m"
@@ -82,14 +81,17 @@ fi
 console_out "백업파일의 압축을 해제합니다."
 RESTORE_DIR="$BACKUP_HOME/$RESTORE_NAME"
 mkdir -p "$RESTORE_DIR"
-tar -xvzf "$BACKUP_HOME"/"$STACK_NAME"."$RESTORE_DATETIME".tar.gz -C "$RESTORE_DIR"
+tar -xvzf "$BACKUP_HOME"/"$RESTORE_NAME".tar.gz -C "$RESTORE_DIR"
 
 console_out "백업 이미지를 불러옵니다."
-for file in "$BACKUP_HOME"/*.tar; do
+for file in "$BACKUP_HOME"/"$RESTORE_NAME"/*.tar; do
     echo "Loading $file..."
     docker load -i "$file"
     rm "$file"
 done
+
+console_out "복원이 끝났으므로 백업 폴더는 삭제합니다."
+rm -rf "$RESTORE_DIR"
 
 console_out "docker-compose.yml에서 이미지를 설정한 후 스택을 시작해주세요."
 console_out "이미지 복원 완료!!!"

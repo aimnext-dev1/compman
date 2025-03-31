@@ -4,7 +4,7 @@
 #
 # 사용방법: ./stack-backup.sh
 #
-# 결과물: <스택이름>.<백업날짜(yyyyMMdd)>.stack.tar.gz
+# 결과물: <스택이름>.<백업날짜(yyyyMMdd)>.image.tar.gz
 
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
@@ -17,7 +17,7 @@ BACKUP_HOME="../_backup"
 
 STACK_NAME="<스택명>"
 TIMESTAMP=$(date +"%Y%m%d_%H%M")
-BACKUP_NAME="<스택명>.stack.$TIMESTAMP"
+BACKUP_NAME="<스택명>.image.$TIMESTAMP"
 BACKUP_TARGET="$BACKUP_HOME/$BACKUP_NAME"
 
 # 프로젝트 폴더가 존재하는지 검사

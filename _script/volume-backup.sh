@@ -39,6 +39,11 @@ console_out "도커 백업을 수행합니다."
 VOLUMES=$(docker volume ls --filter name=$STACK_NAME --format '{{.Name}}')
 CONTAINERS=$(docker-compose -p $STACK_NAME ps -a --format '{{.Name}}')
 
+if [ -z "$VOLUMES" ]; then
+    echo "백업할 볼륨이 없습니다."
+    exit 1
+fi
+
 # 매핑 기록용 임시 json 파일 생성
 TEMP_JSON="./temp_volume_info.json"
 > "$TEMP_JSON"  # 초기화

@@ -30,10 +30,14 @@ log: ## Docker 컨테이너 로그 조회
 	bash $(SCRIPT_HOME)/service-log.sh $(PARAM)
 
 # backup
-backup: ## Docker 스택 백업
-	bash $(SCRIPT_HOME)/stack-backup.sh
-restore: ## 백업 파일로부터 Docker 스택정보를 복원
-	bash $(SCRIPT_HOME)/stack-restore.sh $(PARAM)
+volume-backup: ## Docker 볼륨 백업
+	bash $(SCRIPT_HOME)/volume-backup.sh
+volume-restore: ## 백업 파일로부터 Docker 볼륨을 복원
+	bash $(SCRIPT_HOME)/volume-restore.sh $(PARAM)
+image-backup: ## Docker 이미지 백업
+	bash $(SCRIPT_HOME)/image-backup.sh
+image-restore: ## 백업 파일로부터 Docker 볼륨을 복원
+	bash $(SCRIPT_HOME)/image-restore.sh $(PARAM)
 
 # others
 clear: ## 사용하지 않는 도커 데이터 삭제

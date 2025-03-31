@@ -30,7 +30,7 @@ DATETIME_REGEX="^[0-9]{8}_[0-9]{4}$"  # %Y%m%d_%H%M 형식의 정규표현식
 if [[ ! "$RESTORE_DATETIME" =~ $DATETIME_REGEX ]]; then
     echo "올바른 날짜 및 시간 형식이 아닙니다. 형식(년월일_시분) ex)20240131_1341"
     
-    console_out "백업 파일 목록"
+    echo "===== 백업 파일 목록 ====="
     for file in "$BACKUP_HOME"/*.volume.*; do
         # Get the base filename
         base_filename="$(basename "$file")"
@@ -70,7 +70,7 @@ console_out "파일이 존재하는지 검사합니다."
 RESTORE_FILE_PATH=$BACKUP_HOME/$RESTORE_NAME.tar.gz
 if [[ ! -e "$RESTORE_FILE_PATH" ]]; then
     echo "파일이 존재하지 않습니다: $RESTORE_FILE_PATH"
-    console_out "BACKUP FILE LIST"
+    echo "===== BACKUP FILE LIST ====="
     for file in "$BACKUP_HOME"/*; do
         if [[ "$file" =~ [0-9]{8}_[0-9]{4} ]]; then
             echo -e "\033[32m$(basename "$file")\033[0m"
@@ -90,7 +90,7 @@ VOLUME_MAP_FILE="$RESTORE_DIR/volume-map.json"
 if [ -f "$VOLUME_MAP_FILE" ]; then
     # JSON을 한 줄씩 key-value 쌍으로 파싱
     jq -r 'to_entries[] | "\(.key) \(.value.volume) \(.value.destination)"' "$VOLUME_MAP_FILE" | while read -r CONTAINER VOLUME DESTINATION; do        
-        console_out "컨테이너 $CONTAINER 의 복원할 볼륨: $VOLUME → $DESTINATION"
+        echo "컨테이너 $CONTAINER 의 복원할 볼륨: $VOLUME → $DESTINATION"
 
         # 복사할 데이터가 있는지 확인
         if [ ! -d "$RESTORE_DIR/$VOLUME" ]; then
