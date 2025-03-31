@@ -18,26 +18,20 @@ cd "$(dirname "$0")"
 # 공통 스크립트를 가져옵니다. 
 source ./common.sh
 
-USER="<유저명>"
-GROUP="<그룹명>"
-
 BACKUP_HOME="../_backup"
-CONFIG_HOME="../_project/config"
-COMPOSE_HOME="../_project/compose"
-VOLUME_HOME="../_project/volume"
-
 STACK_NAME="<스택명>"
 
 # 백업한날짜를 파라미터로 받음
-ROLLBACK_DATETIME=$1
+RESTORE_DATETIME=$1
+RESTORE_NAME="<스택명>.stack.$RESTORE_DATETIME"
 
 console_out "입력 날짜 포맷이 올바른지 검사합니다."
 DATETIME_REGEX="^[0-9]{8}_[0-9]{4}$"  # %Y%m%d_%H%M 형식의 정규표현식
-if [[ ! "$ROLLBACK_DATETIME" =~ $DATETIME_REGEX ]]; then
+if [[ ! "$RESTORE_DATETIME" =~ $DATETIME_REGEX ]]; then
     echo "올바른 날짜 및 시간 형식이 아닙니다. 형식(년월일_시분) ex)20240131_1341"
     
     console_out "백업 파일 목록"
-    for file in "$BACKUP_HOME"/*; do
+    for file in "$BACKUP_HOME"/*.stack.*; do
         # Get the base filename
         base_filename="$(basename "$file")"
         
@@ -55,16 +49,27 @@ if [[ ! "$ROLLBACK_DATETIME" =~ $DATETIME_REGEX ]]; then
     exit 1
 fi
 
-# 날짜 유효성 검사 (추가, MacOS에서는 작동 안함)
-if ! date -d "${ROLLBACK_DATETIME:0:8}" >/dev/null 2>&1; then
-    echo "유효하지 않은 날짜입니다: ${ROLLBACK_DATETIME:0:8}"
-    exit 1
+# 날짜 유효성 검사
+OS_TYPE=$(uname)
+
+if [[ "$OS_TYPE" == "Darwin" ]]; then
+    # macOS (BSD date)
+    if ! date -j -f "%Y%m%d" "${RESTORE_DATETIME:0:8}" "+%Y-%m-%d" >/dev/null 2>&1; then
+        echo "유효하지 않은 날짜입니다: ${RESTORE_DATETIME:0:8}"
+        exit 1
+    fi
+else
+    # 리눅스 (GNU date)
+    if ! date -d "${RESTORE_DATETIME:0:8}" >/dev/null 2>&1; then
+        echo "유효하지 않은 날짜입니다: ${RESTORE_DATETIME:0:8}"
+        exit 1
+    fi
 fi
 
 console_out "파일이 존재하는지 검사합니다."
-ROLLBACK_FILE_PATH=$BACKUP_HOME/$STACK_NAME.$ROLLBACK_DATETIME.tar.gz
-if [[ ! -e "$ROLLBACK_FILE_PATH" ]]; then
-    echo "파일이 존재하지 않습니다: $ROLLBACK_FILE_PATH"
+RESTORE_FILE_PATH=$BACKUP_HOME/$STACK_NAME.$RESTORE_DATETIME.tar.gz
+if [[ ! -e "$RESTORE_FILE_PATH" ]]; then
+    echo "파일이 존재하지 않습니다: $RESTORE_FILE_PATH"
     console_out "BACKUP FILE LIST"
     for file in "$BACKUP_HOME"/*; do
         if [[ "$file" =~ [0-9]{8}_[0-9]{4} ]]; then
@@ -75,38 +80,17 @@ if [[ ! -e "$ROLLBACK_FILE_PATH" ]]; then
 fi
 
 console_out "백업파일의 압축을 해제합니다."
-tar -xvzf "$BACKUP_HOME"/"$STACK_NAME"."$ROLLBACK_DATETIME".tar.gz -C "$BACKUP_HOME"
-chown -R "$USER":"$GROUP" "$BACKUP_HOME"
+RESTORE_DIR="$BACKUP_HOME/$RESTORE_NAME"
+mkdir -p "$RESTORE_DIR"
+tar -xvzf "$BACKUP_HOME"/"$STACK_NAME"."$RESTORE_DATETIME".tar.gz -C "$RESTORE_DIR"
 
-console_out "설정 폴더에 복원내용을 적용합니다."
-if [ -d "$BACKUP_HOME"/config ] ; then
-    rm -rf "$CONFIG_HOME"
-    mv "$BACKUP_HOME"/config "$CONFIG_HOME"
-fi
+console_out "백업 이미지를 불러옵니다."
+for file in "$BACKUP_HOME"/*.tar; do
+    echo "Loading $file..."
+    docker load -i "$file"
+    rm "$file"
+done
 
-console_out "컴포즈 폴더에 복원내용을 적용합니다."
-if [ -d "$BACKUP_HOME"/compose ] ; then
-    rm -rf "$COMPOSE_HOME"
-    mv "$BACKUP_HOME"/compose "$COMPOSE_HOME"
-fi
-
-console_out "볼륨 폴더에 복원내용을 적용합니다."
-if [ -d "$BACKUP_HOME"/volume ] ; then
-    rm -rf "$VOLUME_HOME"
-    mv "$BACKUP_HOME"/volume "$VOLUME_HOME"
-fi
-
-# ** --------------------- 이미지 복원 기능을 사용하려는 경우, 다음 주석을 활성화 ------------------------ **
-#
-# console_out "백업 이미지를 불러옵니다."
-# for file in "$BACKUP_HOME"/*.tar; do
-#     echo "Loading $file..."
-#     docker load -i "$file"
-#     rm "$file"
-# done
-#  
-# console_out "docker-compose.yml에 image를 설정한 후 스택을 시작해주세요."
-# ** ---------------------------------------------------------------------------------------- **
-
-console_out "스택 복원 완료!!!"
+console_out "docker-compose.yml에서 이미지를 설정한 후 스택을 시작해주세요."
+console_out "이미지 복원 완료!!!"
 exit 0
