@@ -25,6 +25,8 @@
 │   ├── stack-down.sh           # 스택 제거
 │   ├── stack-up.sh             # 스택 생성
 │   ├── volume-backup.sh        # 볼륨 백업
+│   ├── volume-pull.sh          # 볼륨 다운로드
+│   ├── volume-push.sh          # 볼륨 업로드
 │   └── volume-restore.sh       # 볼륨 복원
 ├── deploy.sh              # 배포 자동화용 스크립트 (선택)
 ├── Makefile               # 주요 명령어 집약
@@ -70,6 +72,10 @@ _script 폴더 내 각 쉘스크립트 파일에 compose시 필요한 정보를 
     -> <로컬환경 도커 컴포즈 명세파일명>
 * volume-backup.sh
     -> <스택명>
+* volume-pull.sh
+    -> <스택명>
+* volume-push.sh
+    -> <스택명>
 * volume-restore.sh
     -> <스택명>
 
@@ -103,6 +109,14 @@ make volume-restore <백업시간>   # 예: make volume-restore 20250331_1325
 
 make image-backup
 make image-restore <백업시간>    # 예: make image-restore 20250331_1325
+```
+
+### 🔹 볼륨 변경사항 적용
+```bash
+make volume-pull
+# 다운로드 받은 폴더 위치에 변경사항을 적용 
+# ...
+make volume-push
 ```
 
 ### 🔹 기타
