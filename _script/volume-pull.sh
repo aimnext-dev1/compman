@@ -17,12 +17,6 @@ check_project_dir_not_exist
 # docker-compose 스택 없으면 진행 불가능
 check_project_not_exist
 
-console_out "볼륨 폴더 경로가 올바른지 확인합니다."
-if [ -z "$VOLUME_HOME" ]; then
-    echo "잘못된 볼륨 경로입니다. VOLUME_HOME: $VOLUME_HOME"
-    exit 1
-fi
-
 # 볼륨 백업
 console_out "볼륨 Pull을 수행합니다."
 
@@ -34,6 +28,12 @@ if [ -z "$VOLUMES" ]; then
     echo "Pull할 볼륨이 없습니다."
     exit 1
 fi
+
+if [ -d "$VOLUME_HOME" ]; then
+    echo "이미 pull받은 볼륨 폴더가 존재합니다. 삭제합니다."
+    rm -rf "$VOLUME_HOME"
+fi
+mkdir -p "$VOLUME_HOME"
 
 # 매핑 기록용 임시 json 파일 생성
 TEMP_JSON="./temp_volume_info.json"
