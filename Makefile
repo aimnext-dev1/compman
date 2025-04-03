@@ -31,6 +31,12 @@ connect: ## Docker 컨테이너 접속
 log: ## Docker 컨테이너 로그 조회
 	bash $(SCRIPT_HOME)/service-log.sh $(PARAM)
 
+# volume
+volume-pull: ## Docker 볼륨 다운로드
+	bash $(SCRIPT_HOME)/volume-pull.sh
+volume-push: ## Docker 볼륨 업로드
+	bash $(SCRIPT_HOME)/volume-push.sh
+
 # backup
 volume-backup: ## Docker 볼륨 백업
 	bash $(SCRIPT_HOME)/volume-backup.sh
@@ -43,5 +49,5 @@ image-restore: ## 백업 파일로부터 Docker 볼륨을 복원
 
 # others
 clear: ## 사용하지 않는 도커 데이터 삭제
-	docker system prune -f
+
 	docker image prune -af

@@ -1,12 +1,6 @@
 #!/bin/bash
-# 백업한 도커 스택을 복원합니다.
-#
-# 이미지 복원이 필요한 경우 밑의 주석을 해제하고 사용해주세요.
-# 단 이미지 복원을 함께 사용하는 경우, 완전 자동화가 아니므로 복원완료 후 수동 설정이 필요합니다.
-#   1. docker-compose.yml에 image명을 복원한 이미지명으로 변경합니다.
-#      이미지명 예시: <이미지명>:latest
-#   2. compose 폴더 내에서 다음 명령어를 수행합니다. 
-#      docker-compose -p project-<프로젝트명> -y docker-compose.yml up -d 
+# 백업한 도커 볼륨을 복원합니다.
+# 스택이 없으면 복원할 수 없습니다.
 # 
 # 사용방법: ./stack-restore.sh <백업한날짜>
 #     -> 백업파일이 없으면 수행이 불가능합니다.
@@ -24,6 +18,12 @@ STACK_NAME="<스택명>"
 # 백업한날짜를 파라미터로 받음
 RESTORE_DATETIME=$1
 RESTORE_NAME="<스택명>.volume.$RESTORE_DATETIME"
+
+# 프로젝트 폴더가 존재하는지 검사
+check_project_dir_not_exist
+
+# docker-compose 스택 없으면 진행 불가능
+check_project_not_exist
 
 console_out "입력 날짜 포맷이 올바른지 검사합니다."
 DATETIME_REGEX="^[0-9]{8}_[0-9]{4}$"  # %Y%m%d_%H%M 형식의 정규표현식
@@ -98,7 +98,7 @@ if [ -f "$VOLUME_MAP_FILE" ]; then
             continue
         fi
 
-        docker cp "$RESTORE_DIR/$VOLUME" "$CONTAINER:$DESTINATION"
+        docker cp "$RESTORE_DIR/$VOLUME/." "$CONTAINER:$DESTINATION"
     done
 fi
 
