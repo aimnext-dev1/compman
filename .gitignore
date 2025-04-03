@@ -6,5 +6,7 @@ _backup/*
 # docker volume files
 _project/volume/*
 
+_volume/
+
 # For empty directories
 !.gitkeep
