@@ -99,6 +99,14 @@ if [ -f "$VOLUME_MAP_FILE" ]; then
         fi
 
         docker cp "$RESTORE_DIR/$VOLUME/." "$CONTAINER:$DESTINATION"
+
+        # 권한 정보 감지 및 재설정
+        echo "사용자 권한 자동 감지 중..."
+        APP_USER=$(docker exec "$CONTAINER" stat -c '%U' "$DESTINATION" 2>/dev/null || echo "root")
+        APP_GROUP=$(docker exec "$CONTAINER" stat -c '%G' "$DESTINATION" 2>/dev/null || echo "root")
+
+        echo "권한 재설정: chown -R $APP_USER:$APP_GROUP $DESTINATION"
+        docker exec -u root "$CONTAINER" chown -R "$APP_USER:$APP_GROUP" "$DESTINATION"
     done
 fi
 
