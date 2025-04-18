@@ -34,7 +34,7 @@ fi
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
 
-# docker-compose 스택 있으면 진행 불가능
+# docker compose 스택 있으면 진행 불가능
 check_project_exist
 
 console_out "스택 명세 파일이 존재하는지 검사합니다."
@@ -50,9 +50,9 @@ fi
 console_out "스택을 생성합니다."
 # 환경변수 파일이 존재하는지 확인 후 적절한 명령어 실행
 if [ -z "$ENV_FILE_PATH" ]; then
-  docker-compose -p "$STACK_NAME" -f "$COMPOSE_FILE" up -d
+  "$COMPOSE_CMD" -p "$STACK_NAME" -f "$COMPOSE_FILE" up -d
 else
-  docker-compose -p "$STACK_NAME" --env-file "$ENV_FILE_PATH" -f "$COMPOSE_FILE" up -d
+  "$COMPOSE_CMD" -p "$STACK_NAME" --env-file "$ENV_FILE_PATH" -f "$COMPOSE_FILE" up -d
 fi
 
 console_out "스택 생성 성공!!!"

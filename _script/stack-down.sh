@@ -15,7 +15,7 @@ STACK_NAME="<스택명>"
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
 
-# docker-compose 스택 없으면 진행 불가능
+# docker compose 스택 없으면 진행 불가능
 check_project_not_exist
 
 # 사용자에게 확인을 요청
@@ -26,7 +26,7 @@ read -r -p "계속하시겠습니까? (y/n): " answer
 if [ "$answer" == "y" ] || [ "$answer" == "Y" ]; then
     # 스택 종료 로직
     console_out "스택 삭제 작업중"
-    docker-compose -p "$STACK_NAME" down
+    "$COMPOSE_CMD" -p "$STACK_NAME" down
     console_out "스택 삭제 완료!"
 else
     console_out "스택 삭제 취소!"

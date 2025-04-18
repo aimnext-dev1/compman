@@ -22,7 +22,7 @@ BACKUP_TARGET="$BACKUP_HOME/$BACKUP_NAME"
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
 
-# docker-compose 스택 없으면 진행 불가능
+# docker compose 스택 없으면 진행 불가능
 check_project_not_exist
 
 console_out "백업 폴더 경로가 올바른지 확인합니다."
@@ -36,7 +36,7 @@ mkdir "$BACKUP_TARGET"
 
 console_out "이미지를 백업 합니다."
 # 컨테이너 ID 목록 획득
-CONTAINER_IDS=$(docker-compose -p "$STACK_NAME" ps -q)
+CONTAINER_IDS=$("$COMPOSE_CMD" -p "$STACK_NAME" ps -q)
 # 각 컨테이너 이미지 tar 파일로 저장
 for CONTAINER_ID in $CONTAINER_IDS; do
     CONTAINER_NAME=$(docker inspect --format '{{.Name}}' "$CONTAINER_ID" | sed 's/^\///')

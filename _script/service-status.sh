@@ -12,9 +12,9 @@ source ./common.sh
 
 STACK_NAME="<스택명>"
 
-# docker-compose 스택 없으면 진행 불가능
+# docker compose 스택 없으면 진행 불가능
 check_project_not_exist
 
 console_out "$STACK_NAME 스택 서비스 목록"
-docker-compose -p "$STACK_NAME" ps -a
+"$COMPOSE_CMD" -p "$STACK_NAME" ps -a
 exit 0

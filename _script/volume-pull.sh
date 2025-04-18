@@ -14,7 +14,7 @@ STACK_NAME="<스택명>"
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
 
-# docker-compose 스택 없으면 진행 불가능
+# docker compose 스택 없으면 진행 불가능
 check_project_not_exist
 
 # 볼륨 백업
@@ -22,7 +22,7 @@ console_out "볼륨 Pull을 수행합니다."
 
 # 스택 이름이 포함된 도커 볼륨 리스트 추출
 VOLUMES=$(docker volume ls --filter name=$STACK_NAME --format '{{.Name}}')
-CONTAINERS=$(docker-compose -p $STACK_NAME ps -a --format '{{.Name}}')
+CONTAINERS=$("$COMPOSE_CMD" -p $STACK_NAME ps -a --format '{{.Name}}')
 
 if [ -z "$VOLUMES" ]; then
     echo "Pull할 볼륨이 없습니다."

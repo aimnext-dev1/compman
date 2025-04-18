@@ -9,6 +9,13 @@ FOLDER_NAME="<루트폴더명>"
 PROJECT_HOME="../_project"
 STACK_NAME="<스택이름>"
 
+# docker-compose가 설치되어 있는지 확인
+if command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+else
+    COMPOSE_CMD="docker compose"
+fi
+
 # 함수: 잘 보이는 로그 출력
 # 입력: 출력할 문자열
 # 출력: 빨간 로그 출력
@@ -50,13 +57,13 @@ check_project_dir_not_exist() {
     fi
 }
 
-# 함수: docker-compose 스택 존재여부 확인
+# 함수: compose 스택 존재여부 확인
 # 입력: X
 # 출력: 스택이 없는 경우 스크립트 종료
 check_project_not_exist() {
     console_out "$STACK_NAME 스택이 존재하는지 확인합니다."
 
-    local is_exist=$(docker-compose ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
+    local is_exist=$("$COMPOSE_CMD" ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
 
     if [[ -z $is_exist ]]; then
         echo "스택이 없습니다. make up 후 다시 시도해주세요."
@@ -64,13 +71,13 @@ check_project_not_exist() {
     fi
 }
 
-# 함수: docker-compose 스택 미존재여부 확인
+# 함수: compose 스택 미존재여부 확인
 # 입력: X
 # 출력: 스택이 있는 경우 스크립트 종료
 check_project_exist() {
     console_out "$STACK_NAME 스택이 없는지 확인합니다."
 
-    local is_exist=$(docker-compose ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
+    local is_exist=$("$COMPOSE_CMD" ls -a | awk '{print $1}' | grep "^$STACK_NAME\$")
 
     if [[ -n $is_exist ]]; then
         echo "$is_exist 스택이 이미 존재합니다. make down 후 다시 시도해주세요."

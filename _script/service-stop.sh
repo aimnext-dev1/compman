@@ -18,17 +18,17 @@ SERVICE_NAME_LIST=("$@")
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
 
-# docker-compose 스택 없으면 진행 불가능
+# docker compose 스택 없으면 진행 불가능
 check_project_not_exist
 
 if [ "${#SERVICE_NAME_LIST[@]}" -eq 0 ]; then
     console_out "모든 서비스를 중지합니다."
-    docker-compose -p "$STACK_NAME" stop
+    "$COMPOSE_CMD" -p "$STACK_NAME" stop
 else
     for f in "${SERVICE_NAME_LIST[@]}"; do
         console_out "$f 서비스를 중지합니다."
     done
-    docker-compose -p "$STACK_NAME" stop "${SERVICE_NAME_LIST[@]}"
+    "$COMPOSE_CMD" -p "$STACK_NAME" stop "${SERVICE_NAME_LIST[@]}"
 fi
 
 console_out "서비스 중지 완료!!!"

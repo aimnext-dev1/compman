@@ -14,13 +14,13 @@ source ./common.sh
 STACK_NAME="<스택명>"
 CONTAINER_NAME=$1
 
-# docker-compose 스택 없으면 진행 불가능
+# docker compose 스택 없으면 진행 불가능
 check_project_not_exist
 
 # 만약 CONTAINER_NAME이 비어있다면
 if [ -z "$CONTAINER_NAME" ]; then
     echo "로그를 확인할 컨테이너명을 입력해주세요:"
-    docker-compose -p $STACK_NAME ps -a --format "{{.Names}}" | awk '{print "\033[92m" $1 "\033[0m"}'
+    "$COMPOSE_CMD" -p $STACK_NAME ps -a --format "{{.Names}}" | awk '{print "\033[92m" $1 "\033[0m"}'
     exit 1
 fi
 

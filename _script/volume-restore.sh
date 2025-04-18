@@ -22,7 +22,7 @@ RESTORE_NAME="<스택명>.volume.$RESTORE_DATETIME"
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist
 
-# docker-compose 스택 없으면 진행 불가능
+# docker compose 스택 없으면 진행 불가능
 check_project_not_exist
 
 console_out "입력 날짜 포맷이 올바른지 검사합니다."
