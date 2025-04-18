@@ -20,17 +20,15 @@ check_project_not_exist
 
 # 사용자에게 확인을 요청
 console_out "스택 내의 모든 컨테이너가 삭제됩니다."
-read -r -p "계속하시겠습니까? (y/n): " answer
-
-# 사용자가 'y'를 입력했는지 확인
-if [ "$answer" == "y" ] || [ "$answer" == "Y" ]; then
-    # 스택 종료 로직
-    console_out "스택 삭제 작업중"
-    "$COMPOSE_CMD" -p "$STACK_NAME" down
-    console_out "스택 삭제 완료!"
-else
-    console_out "스택 삭제 취소!"
+read -p "스택을 정말 삭제하시겠습니까? (y/n): " confirm
+if [[ "$confirm" != "y" ]]; then
+    echo "취소됨"
+    exit 0
 fi
+
+console_out "스택 삭제 작업중"
+"$COMPOSE_CMD" -p "$STACK_NAME" down
+console_out "스택 삭제 완료!"
 
 exit 0
 
