@@ -55,9 +55,9 @@ volume-push: ## Docker 볼륨 업로드
 	bash $(SCRIPT_HOME)/volume-push.sh
 
 # backup
-volume-backup: ## Docker 볼륨 백업
-	bash $(SCRIPT_HOME)/volume-backup.sh
-volume-restore: ## 백업 파일로부터 Docker 볼륨을 복원
+volume-backup: ## Docker 볼륨 백업 (정합성을 위해 스택을 잠시 중지함, --no-stop으로 건너뛰기 가능)
+	bash $(SCRIPT_HOME)/volume-backup.sh $(PARAMS)
+volume-restore: ## 백업 파일로부터 Docker 볼륨을 복원 (--no-stop 지원)
 	bash $(SCRIPT_HOME)/volume-restore.sh $(PARAMS)
 image-backup: ## Docker 이미지 백업
 	bash $(SCRIPT_HOME)/image-backup.sh

@@ -19,9 +19,9 @@ check_project_not_exist
 # 볼륨 백업
 console_out "볼륨 Pull을 수행합니다."
 
-# 스택 이름이 포함된 도커 볼륨 리스트 추출
-VOLUMES=$(docker volume ls --filter name=$STACK_NAME --format '{{.Name}}')
-CONTAINERS=$("${COMPOSE_CMD[@]}" -p $STACK_NAME ps -a --format '{{.Name}}')
+# 이 스택이 관리하는(컴포즈 라벨 기준) 볼륨/컨테이너만 추출 (이름 부분일치로 인한 다른 스택 침범 방지)
+VOLUMES=$(docker volume ls --filter "label=com.docker.compose.project=$STACK_NAME" --format '{{.Name}}')
+CONTAINERS=$("${COMPOSE_CMD[@]}" -p "$STACK_NAME" ps -a --format '{{.Name}}')
 
 if [ -z "$VOLUMES" ]; then
     echo "Pull할 볼륨이 없습니다."
@@ -34,39 +34,35 @@ if [ -d "$VOLUME_HOME" ]; then
 fi
 mkdir -p "$VOLUME_HOME"
 
-# 매핑 기록용 임시 json 파일 생성
-TEMP_JSON="./temp_volume_info.json"
+# 매핑 기록용 임시 jsonl 파일 생성 (한 줄에 객체 하나씩, 마지막에 jq로 병합)
+TEMP_JSON="./temp_volume_info.jsonl"
 > "$TEMP_JSON"  # 초기화
 
-# 각 볼륨에 대해 
+# 각 볼륨에 대해
 for VOLUME in $VOLUMES; do
     # 각 컨테이너에서
     for CONTAINER in $CONTAINERS; do
         # 매핑 정보를 찾는다.
-        SOURCE=$(docker inspect $CONTAINER | \
+        SOURCE=$(docker inspect "$CONTAINER" | \
             jq -r --arg name "$VOLUME" '.[] | .Mounts[]? | select(.Name == $name) | .Source')
-        DESTINATION=$(docker inspect $CONTAINER | \
+        DESTINATION=$(docker inspect "$CONTAINER" | \
             jq -r --arg name "$VOLUME" '.[] | .Mounts[]? | select(.Name == $name) | .Destination')
-        
+
         # 매핑 정보를 찾은 경우에는
         if [ -n "$SOURCE" ] && [ -n "$DESTINATION" ]; then
-            # 매핑 정보를 기록하고
-            echo "\"$CONTAINER\":{\"volume\":\"$VOLUME\",\"destination\":\"$DESTINATION\"}," >> "$TEMP_JSON"
+            # 매핑 정보를 기록하고 (jq -n으로 특수문자 이스케이프 안전하게 생성)
+            jq -n --arg container "$CONTAINER" --arg volume "$VOLUME" --arg destination "$DESTINATION" \
+                '{container: $container, volume: $volume, destination: $destination}' >> "$TEMP_JSON"
             # 해당 데이터를 복사해온다.
             docker cp "$CONTAINER:$DESTINATION" "$VOLUME_HOME/$VOLUME"
         fi
     done
 done
 
-# JSON 포맷에 알맞게 저장
-# 마지막 줄 쉼표 제거
-sed '$ s/,$//' "$TEMP_JSON" > "$TEMP_JSON.cleaned"
-# 중괄호로 감싸고 최종 JSON 만들기
-echo "{" > "$VOLUME_HOME/volume-map.json"
-cat "$TEMP_JSON.cleaned" >> "$VOLUME_HOME/volume-map.json"
-echo "}" >> "$VOLUME_HOME/volume-map.json"
-# 임시파일 삭제
-rm "$TEMP_JSON" "$TEMP_JSON.cleaned"
+# jsonl을 "컨테이너명": {volume, destination} 형태의 단일 JSON 객체로 병합
+jq -s 'map({(.container): {volume: .volume, destination: .destination}}) | add // {}' \
+    "$TEMP_JSON" > "$VOLUME_HOME/volume-map.json"
+rm "$TEMP_JSON"
 
 console_out "볼륨 Pull 성공!!!"
 exit 0

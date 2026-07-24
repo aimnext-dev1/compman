@@ -96,6 +96,9 @@ make image-backup
 make image-restore <백업시간>    # 예: make image-restore 20250331_1325
 ```
 
+> `volume-backup`/`volume-restore`는 데이터 정합성을 위해 진행 전 스택을 중지하고, 완료 후 다시 시작합니다.
+> 중지 없이 진행하려면 `--no-stop` 옵션을 붙이세요. (예: `make volume-backup --no-stop`)
+
 ### 🔹 볼륨 변경사항 적용
 ```bash
 make volume-pull
