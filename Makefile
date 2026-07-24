@@ -31,8 +31,8 @@ up: ## Docker 스택을 생성 / 실행환경: local(DEFAULT), dev, prod
 	bash $(SCRIPT_HOME)/stack-up.sh $(PARAMS)
 down: ## Docker 스택을 제거
 	bash $(SCRIPT_HOME)/stack-down.sh
-update: ## Docker 스택을 업데이트
-	bash $(SCRIPT_HOME)/stack-update.sh
+update: ## Docker 스택을 업데이트 (빌드 후 재생성) / 실행환경: local(DEFAULT), dev, prod
+	bash $(SCRIPT_HOME)/stack-update.sh $(PARAMS)
 
 # service
 status: ## Docker 컨테이너의 상태 조회
@@ -55,12 +55,12 @@ volume-push: ## Docker 볼륨 업로드
 	bash $(SCRIPT_HOME)/volume-push.sh
 
 # backup
-volume-backup: ## Docker 볼륨 백업 (정합성을 위해 스택을 잠시 중지함, --no-stop으로 건너뛰기 가능)
+volume-backup: ## Docker 볼륨 백업 (정합성을 위해 스택을 잠시 중지함, no-stop으로 건너뛰기 가능)
 	bash $(SCRIPT_HOME)/volume-backup.sh $(PARAMS)
-volume-restore: ## 백업 파일로부터 Docker 볼륨을 복원 (--no-stop 지원)
+volume-restore: ## 백업 파일로부터 Docker 볼륨을 복원 (no-stop 지원)
 	bash $(SCRIPT_HOME)/volume-restore.sh $(PARAMS)
-image-backup: ## Docker 이미지 백업
-	bash $(SCRIPT_HOME)/image-backup.sh
+image-backup: ## Docker 이미지 백업 (source: 런타임변경분 제외, 원본 이미지 그대로 백업)
+	bash $(SCRIPT_HOME)/image-backup.sh $(PARAMS)
 image-restore: ## 백업 파일로부터 Docker 이미지를 복원
 	bash $(SCRIPT_HOME)/image-restore.sh $(PARAMS)
 

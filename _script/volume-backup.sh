@@ -3,8 +3,8 @@
 # 스택이 없으면 백업할 수 없습니다.
 # 데이터 정합성을 위해 백업 전 스택을 중지하고, 완료 후 다시 시작합니다.
 #
-# 사용방법: ./volume-backup.sh [--no-stop]
-#     -> --no-stop: 스택을 중지하지 않고 백업합니다. (실행 중 쓰기로 정합성이 깨질 수 있음)
+# 사용방법: ./volume-backup.sh [no-stop]
+#     -> no-stop: 스택을 중지하지 않고 백업합니다. (실행 중 쓰기로 정합성이 깨질 수 있음)
 #
 # 결과물: <스택이름>.volume.<백업날짜_시간>.tar.gz
 
@@ -22,7 +22,7 @@ BACKUP_NAME="$STACK_NAME.volume.$TIMESTAMP"
 BACKUP_TARGET="$BACKUP_HOME/$BACKUP_NAME"
 
 NO_STOP=false
-if [ "$1" == "--no-stop" ]; then
+if [ "$1" == "no-stop" ]; then
     NO_STOP=true
 fi
 

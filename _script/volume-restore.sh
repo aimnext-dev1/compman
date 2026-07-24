@@ -3,9 +3,9 @@
 # 스택이 없으면 복원할 수 없습니다.
 # 데이터 정합성을 위해 복원 전 스택을 중지하고, 데이터 복사 후 다시 시작합니다.
 #
-# 사용방법: ./volume-restore.sh <백업한날짜> [--no-stop]
+# 사용방법: ./volume-restore.sh <백업한날짜> [no-stop]
 #     -> 백업파일이 없으면 수행이 불가능합니다.
-#     -> --no-stop: 스택을 중지하지 않고 복원합니다.
+#     -> no-stop: 스택을 중지하지 않고 복원합니다.
 
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
@@ -16,11 +16,11 @@ source ./common.sh
 
 BACKUP_HOME="../_backup"
 
-# 인자에서 --no-stop 플래그와 날짜를 분리
+# 인자에서 no-stop 플래그와 날짜를 분리
 NO_STOP=false
 POSITIONAL=()
 for ARG in "$@"; do
-    if [ "$ARG" == "--no-stop" ]; then
+    if [ "$ARG" == "no-stop" ]; then
         NO_STOP=true
     else
         POSITIONAL+=("$ARG")
