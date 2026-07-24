@@ -12,7 +12,6 @@ cd "$(dirname "$0")"
 # 공통 스크립트를 가져옵니다. 
 source ./common.sh
 
-STACK_NAME="<스택명>"
 SERVICE_NAME_LIST=("$@")
 
 # 프로젝트 폴더가 존재하는지 검사

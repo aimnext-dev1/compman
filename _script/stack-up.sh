@@ -16,19 +16,23 @@ RUN_ENV_PARAM=$1
 # 실행환경 파라미터가 없으면 기본값은 local
 RUN_ENV=${RUN_ENV_PARAM:-"local"}
 
-STACK_NAME="<스택명>"
 if [ "$RUN_ENV" == "dev" ]; then
-  COMPOSE_FILE_NAME="<개발환경 도커 컴포즈 명세파일명>"
-  # 필요한 경우 활성화 하여 사용
-  #ENV_FILE_PATH="<개발환경 환경변수 파일 경로>"
+  COMPOSE_FILE_NAME="$COMPOSE_FILE_DEV"
+  ENV_FILE_PATH="$ENV_FILE_DEV"
 elif [ "$RUN_ENV" == "prod" ]; then
-  COMPOSE_FILE_NAME="<운영환경 도커 컴포즈 명세파일명>"
-  # 필요한 경우 활성화 하여 사용
-  #ENV_FILE_PATH="<운영환경 환경변수 파일 경로>"
+  COMPOSE_FILE_NAME="$COMPOSE_FILE_PROD"
+  ENV_FILE_PATH="$ENV_FILE_PROD"
 elif [ "$RUN_ENV" == "local" ]; then
-  COMPOSE_FILE_NAME="<로컬환경 도커 컴포즈 명세파일명>"
-  # 필요한 경우 활성화 하여 사용
-  #ENV_FILE_PATH="<로컬환경 환경변수 파일 경로>"
+  COMPOSE_FILE_NAME="$COMPOSE_FILE_LOCAL"
+  ENV_FILE_PATH="$ENV_FILE_LOCAL"
+else
+  echo "지원하지 않는 실행환경입니다: $RUN_ENV (local, dev, prod 중 하나를 입력해주세요)"
+  exit 1
+fi
+
+if [ -z "$COMPOSE_FILE_NAME" ]; then
+  echo "$RUN_ENV 환경의 COMPOSE_FILE_* 값이 stack.env에 설정되지 않았습니다."
+  exit 1
 fi
 
 # 프로젝트 폴더가 존재하는지 검사

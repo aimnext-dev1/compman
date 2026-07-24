@@ -30,6 +30,7 @@
 │   └── volume-restore.sh       # 볼륨 복원
 ├── deploy.sh              # 배포 자동화용 스크립트 (선택)
 ├── Makefile               # 주요 명령어 집약
+├── stack.env.example      # 스택 설정 예시 (복사해서 stack.env로 사용)
 └── README.md
 ```
 
@@ -41,45 +42,29 @@
 * Bash 쉘 필요
 * jq(JSON 파싱용) 필요
 
-### 대상 파일명 및 채워야 할 값
-_script 폴더 내 각 쉘스크립트 파일에 compose시 필요한 정보를 기재해야 합니다.
-```text
-* common.sh
-    -> <루트폴더명>
-    -> <스택명>
-* image-backup.sh
-    -> <스택명>
-* image-restore.sh
-    -> <스택명>
-* service-connect.sh
-    -> <스택명>
-* service-log.sh
-    -> <스택명>
-* service-restart.sh
-    -> <스택명>
-* service-start.sh
-    -> <스택명>
-* service-status.sh
-    -> <스택명>
-* service-stop.sh
-    -> <스택명>
-* stack-down.sh
-    -> <스택명>
-* stack-up.sh
-    -> <스택명>
-    -> <개발환경 도커 컴포즈 명세파일명>
-    -> <운영환경 도커 컴포즈 명세파일명>
-    -> <로컬환경 도커 컴포즈 명세파일명>
-* volume-backup.sh
-    -> <스택명>
-* volume-pull.sh
-    -> <스택명>
-* volume-push.sh
-    -> <스택명>
-* volume-restore.sh
-    -> <스택명>
+### 초기 설정 (stack.env)
+_script 내부 파일을 직접 수정할 필요 없이, 프로젝트 루트의 `stack.env` 파일 하나만 채우면 됩니다.
 
-```  
+```bash
+make init          # stack.env.example을 복사해 stack.env 생성 (최초 1회)
+vi stack.env        # 값 입력
+```
+
+`stack.env`에 채워야 할 값:
+```text
+FOLDER_NAME          # _project 폴더 확인 메시지에 표시할 임의의 식별용 이름
+STACK_NAME           # docker compose 프로젝트명(-p) / 백업 파일명 접두사
+
+COMPOSE_FILE_LOCAL    # 로컬환경 도커 컴포즈 명세파일명 (_project/compose 기준)
+COMPOSE_FILE_DEV      # 개발환경 도커 컴포즈 명세파일명
+COMPOSE_FILE_PROD     # 운영환경 도커 컴포즈 명세파일명
+
+ENV_FILE_LOCAL        # (선택) 로컬환경 환경변수 파일 경로
+ENV_FILE_DEV          # (선택) 개발환경 환경변수 파일 경로
+ENV_FILE_PROD         # (선택) 운영환경 환경변수 파일 경로
+```
+
+> `stack.env`는 `.gitignore`에 포함되어 있어 커밋되지 않으며, `deploy.sh`가 `_script`를 재배포해도 값이 보존됩니다.
 
 ---
 
@@ -139,6 +124,8 @@ make help           # 명령어 도움말 출력
 
 ## 🧪 예시
 ```bash
+make init
+# stack.env 값 입력 후
 make up local
 make status
 make volume-backup

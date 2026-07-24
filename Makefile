@@ -9,13 +9,22 @@ PARAMS := $(wordlist 2, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down update status start stop restart connect log \
+.PHONY: help init up down update status start stop restart connect log \
         volume-pull volume-push volume-backup volume-restore \
         image-backup image-restore clear
 
 # make 입력시 명령어 설명 출력
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+# setup
+init: ## stack.env 생성 (최초 1회, 이미 있으면 건드리지 않음)
+	@if [ -f stack.env ]; then \
+		echo "stack.env가 이미 존재합니다. 건드리지 않았습니다."; \
+	else \
+		cp stack.env.example stack.env; \
+		echo "stack.env를 생성했습니다. 값을 채운 후 다시 실행해주세요."; \
+	fi
 
 # stack
 up: ## Docker 스택을 생성 / 실행환경: local(DEFAULT), dev, prod

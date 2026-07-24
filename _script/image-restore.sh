@@ -22,7 +22,7 @@ BACKUP_HOME="../_backup"
 
 # 백업한날짜를 파라미터로 받음
 RESTORE_DATETIME=$1
-RESTORE_NAME="<스택명>.image.$RESTORE_DATETIME"
+RESTORE_NAME="$STACK_NAME.image.$RESTORE_DATETIME"
 
 console_out "입력 날짜 포맷이 올바른지 검사합니다."
 DATETIME_REGEX="^[0-9]{8}_[0-9]{4}$"  # %Y%m%d_%H%M 형식의 정규표현식

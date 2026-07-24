@@ -9,7 +9,6 @@ source ./common.sh
 
 VOLUME_HOME="../_volume"
 
-STACK_NAME="<스택명>"
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist

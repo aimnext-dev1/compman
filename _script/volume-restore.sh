@@ -13,11 +13,10 @@ cd "$(dirname "$0")"
 source ./common.sh
 
 BACKUP_HOME="../_backup"
-STACK_NAME="<스택명>"
 
 # 백업한날짜를 파라미터로 받음
 RESTORE_DATETIME=$1
-RESTORE_NAME="<스택명>.volume.$RESTORE_DATETIME"
+RESTORE_NAME="$STACK_NAME.volume.$RESTORE_DATETIME"
 
 # 프로젝트 폴더가 존재하는지 검사
 check_project_dir_not_exist

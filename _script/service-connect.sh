@@ -13,7 +13,6 @@ cd "$(dirname "$0")"
 # 공통 스크립트를 가져옵니다.
 source ./common.sh
 
-STACK_NAME="<스택명>"
 CONTAINER_NAME=$1
 
 # docker compose 스택 없으면 진행 불가능

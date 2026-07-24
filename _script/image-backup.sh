@@ -14,9 +14,8 @@ source ./common.sh
 
 BACKUP_HOME="../_backup"
 
-STACK_NAME="<스택명>"
 TIMESTAMP=$(date +"%Y%m%d_%H%M")
-BACKUP_NAME="<스택명>.image.$TIMESTAMP"
+BACKUP_NAME="$STACK_NAME.image.$TIMESTAMP"
 BACKUP_TARGET="$BACKUP_HOME/$BACKUP_NAME"
 
 # 프로젝트 폴더가 존재하는지 검사

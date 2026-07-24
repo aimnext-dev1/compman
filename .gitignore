@@ -10,3 +10,8 @@ _volume/
 
 # For empty directories
 !.gitkeep
+
+.idea/
+
+# 프로젝트별 실제 값 (stack.env.example만 트래킹)
+stack.env

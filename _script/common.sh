@@ -5,9 +5,20 @@
 # 명령어 실패 시 스크립트 즉시 종료되도록 설정
 set -e
 
-FOLDER_NAME="<루트폴더명>"
 PROJECT_HOME="../_project"
-STACK_NAME="<스택이름>"
+
+# 프로젝트 루트의 stack.env를 불러옵니다. (없으면 'make init'으로 생성)
+STACK_ENV_FILE="../stack.env"
+if [ ! -f "$STACK_ENV_FILE" ]; then
+    echo "$STACK_ENV_FILE 파일이 없습니다. 'make init' 실행 후 값을 채워주세요."
+    exit 1
+fi
+set -a
+source "$STACK_ENV_FILE"
+set +a
+
+: "${FOLDER_NAME:?FOLDER_NAME이 stack.env에 설정되지 않았습니다.}"
+: "${STACK_NAME:?STACK_NAME이 stack.env에 설정되지 않았습니다.}"
 
 # docker compose(v2) 우선, 없으면 docker-compose(v1) 사용
 if docker compose version &> /dev/null; then
