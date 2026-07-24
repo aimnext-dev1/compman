@@ -24,7 +24,7 @@ if [ -z "$CONTAINER_NAME" ]; then
     CONTAINERS=()
     while IFS= read -r container_name; do
         [ -n "$container_name" ] && CONTAINERS+=("$container_name")
-    done < <("$COMPOSE_CMD" -p "$STACK_NAME" ps -a --format "{{.Names}}")
+    done < <("${COMPOSE_CMD[@]}" -p "$STACK_NAME" ps -a --format "{{.Names}}")
 
     if [ "${#CONTAINERS[@]}" -eq 1 ]; then
         CONTAINER_NAME="${CONTAINERS[0]}"

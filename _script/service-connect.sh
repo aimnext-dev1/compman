@@ -24,7 +24,7 @@ if [ -z "$CONTAINER_NAME" ]; then
     CONTAINERS=()
     while IFS= read -r container_name; do
         [ -n "$container_name" ] && CONTAINERS+=("$container_name")
-    done < <("$COMPOSE_CMD" -p "$STACK_NAME" ps -a --format "{{.Names}}")
+    done < <("${COMPOSE_CMD[@]}" -p "$STACK_NAME" ps -a --format "{{.Names}}")
 
     if [ "${#CONTAINERS[@]}" -eq 1 ]; then
         CONTAINER_NAME="${CONTAINERS[0]}"
@@ -39,5 +39,6 @@ fi
 CONTAINER_KEY=$(docker ps -a --filter "name=^$CONTAINER_NAME$" --format "{{.ID}}")
 
 console_out "$CONTAINER_NAME 컨테이너로 접속합니다."
-docker exec -it "$CONTAINER_KEY" /bin/bash
+# bash가 없는 이미지(alpine 등)는 sh로 대체 접속
+docker exec -it "$CONTAINER_KEY" sh -c 'if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi'
 exit 0

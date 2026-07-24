@@ -22,7 +22,7 @@ console_out "볼륨 Pull을 수행합니다."
 
 # 스택 이름이 포함된 도커 볼륨 리스트 추출
 VOLUMES=$(docker volume ls --filter name=$STACK_NAME --format '{{.Name}}')
-CONTAINERS=$("$COMPOSE_CMD" -p $STACK_NAME ps -a --format '{{.Name}}')
+CONTAINERS=$("${COMPOSE_CMD[@]}" -p $STACK_NAME ps -a --format '{{.Name}}')
 
 if [ -z "$VOLUMES" ]; then
     echo "Pull할 볼륨이 없습니다."

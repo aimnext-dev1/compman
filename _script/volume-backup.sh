@@ -37,12 +37,14 @@ console_out "도커 백업을 수행합니다."
 
 # 스택 이름이 포함된 도커 볼륨 리스트 추출
 VOLUMES=$(docker volume ls --filter name=$STACK_NAME --format '{{.Name}}')
-CONTAINERS=$("$COMPOSE_CMD" -p $STACK_NAME ps -a --format '{{.Name}}')
+CONTAINERS=$("${COMPOSE_CMD[@]}" -p $STACK_NAME ps -a --format '{{.Name}}')
 
 if [ -z "$VOLUMES" ]; then
     echo "백업할 볼륨이 없습니다."
     exit 1
 fi
+
+mkdir -p "$BACKUP_TARGET"
 
 # 매핑 기록용 임시 json 파일 생성
 TEMP_JSON="./temp_volume_info.json"
@@ -62,8 +64,7 @@ for VOLUME in $VOLUMES; do
         if [ -n "$SOURCE" ] && [ -n "$DESTINATION" ]; then
             # 매핑 정보를 기록하고
             echo "\"$CONTAINER\":{\"volume\":\"$VOLUME\",\"destination\":\"$DESTINATION\"}," >> "$TEMP_JSON"
-            # 해당 데이터를 복사해온다.
-            mkdir -p "$BACKUP_TARGET/$VOLUME"
+            # 해당 데이터를 복사해온다. (대상 폴더가 미리 존재하면 안으로 중첩 복사되므로 만들지 않는다)
             docker cp "$CONTAINER:$DESTINATION" "$BACKUP_TARGET/$VOLUME"
         fi
     done

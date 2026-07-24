@@ -27,7 +27,7 @@ if [[ "$confirm" != "y" ]]; then
 fi
 
 console_out "스택 삭제 작업중"
-"$COMPOSE_CMD" -p "$STACK_NAME" down
+"${COMPOSE_CMD[@]}" -p "$STACK_NAME" down
 console_out "스택 삭제 완료!"
 
 exit 0

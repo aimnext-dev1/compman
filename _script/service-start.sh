@@ -23,12 +23,12 @@ check_project_not_exist
 
 if [ "${#SERVICE_NAME_LIST[@]}" -eq 0 ]; then
     console_out "모든 서비스를 시작합니다."
-    "$COMPOSE_CMD" -p "$STACK_NAME" start
+    "${COMPOSE_CMD[@]}" -p "$STACK_NAME" start
 else
     for f in "${SERVICE_NAME_LIST[@]}"; do
         console_out "$f 서비스를 시작합니다."
     done
-    "$COMPOSE_CMD" -p "$STACK_NAME" start "${SERVICE_NAME_LIST[@]}"
+    "${COMPOSE_CMD[@]}" -p "$STACK_NAME" start "${SERVICE_NAME_LIST[@]}"
 fi
 
 console_out "서비스 시작 완료!!!"
