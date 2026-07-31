@@ -173,28 +173,39 @@ def completion(shell: str, install: bool) -> None:
 @click.option("--repo", default="https://github.com/aimnext-dev1/compman.git", help="Git repository URL")
 def upgrade(repo: str) -> None:
     """Self-upgrade compman CLI to the latest version from GitHub."""
-    click.echo(f"🚀 Upgrading compman CLI from {repo}...")
-    
-    cmd_uv = ["uv", "tool", "install", "--reinstall", f"git+{repo}"]
-    cmd_pip = ["pip", "install", "--upgrade", f"git+{repo}"]
-    
-    try:
-        res = subprocess.run(cmd_uv, capture_output=True, text=True)
-        if res.returncode == 0:
-            click.echo("✅ compman CLI upgrade complete!")
-            return
-    except FileNotFoundError:
-        pass
+    import shutil
+    import sys
 
-    try:
-        res = subprocess.run(cmd_pip, capture_output=True, text=True)
+    click.echo(f"🚀 Upgrading compman CLI from {repo}...")
+
+    uv_path = shutil.which("uv")
+    if not uv_path:
+        possible_uv = [
+            pathlib.Path.home() / ".local" / "bin" / "uv.exe",
+            pathlib.Path.home() / ".local" / "bin" / "uv",
+            pathlib.Path.home() / ".cargo" / "bin" / "uv.exe",
+            pathlib.Path.home() / ".cargo" / "bin" / "uv",
+        ]
+        for p in possible_uv:
+            if p.is_file():
+                uv_path = str(p)
+                break
+
+    if uv_path:
+        cmd = [uv_path, "tool", "install", "--reinstall", f"git+{repo}"]
+        res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode == 0:
-            click.echo("✅ compman CLI upgrade complete!")
+            click.echo("✅ compman CLI upgraded successfully via uv!")
             return
-        else:
-            click.echo(f"Error upgrading compman: {res.stderr}", err=True)
-    except FileNotFoundError:
-        click.echo("Error: Neither 'uv' nor 'pip' command found in PATH.", err=True)
+
+    pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{repo}"]
+    res = subprocess.run(pip_cmd, capture_output=True, text=True)
+    if res.returncode == 0:
+        click.echo("✅ compman CLI upgraded successfully via pip!")
+        return
+
+    click.echo(f"Error upgrading compman: {res.stderr or res.stdout}", err=True)
+    raise SystemExit(1)
 
 
 # ---- main group ----
