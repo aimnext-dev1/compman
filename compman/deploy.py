@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import boto3
-import click
+import typer
 import yaml
 from botocore.exceptions import (
     ClientError,
@@ -41,19 +41,19 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
         try:
             s3_path = load_config().deploy
         except ConfigError:
-            click.echo("💡 [compman deploy] Empty directory without compman.yml config file.", err=True)
-            click.echo("", err=True)
-            click.echo("Start by running one of the following commands:", err=True)
-            click.echo("  1️⃣ Deploy directly by providing S3 path:", err=True)
-            click.echo("     compman deploy --path s3://<your-bucket>/path/to/app.tar.gz", err=True)
-            click.echo("  2️⃣ Generate default compman.yml config template:", err=True)
-            click.echo("     compman init", err=True)
+            typer.echo("💡 [compman deploy] Empty directory without compman.yml config file.", err=True)
+            typer.echo("", err=True)
+            typer.echo("Start by running one of the following commands:", err=True)
+            typer.echo("  1️⃣ Deploy directly by providing S3 path:", err=True)
+            typer.echo("     compman deploy --path s3://<your-bucket>/path/to/app.tar.gz", err=True)
+            typer.echo("  2️⃣ Generate default compman.yml config template:", err=True)
+            typer.echo("     compman init", err=True)
             raise SystemExit(1)
 
     if not s3_path:
-        click.echo("💡 [compman deploy] S3 deployment path is not configured.", err=True)
-        click.echo("  • Specify 'deploy' field in compman.yml, or", err=True)
-        click.echo("  • Pass S3 path via option: compman deploy --path s3://...", err=True)
+        typer.echo("💡 [compman deploy] S3 deployment path is not configured.", err=True)
+        typer.echo("  • Specify 'deploy' field in compman.yml, or", err=True)
+        typer.echo("  • Pass S3 path via option: compman deploy --path s3://...", err=True)
         raise SystemExit(1)
 
     project_subfolder = config.dirs.get("project", "project") if config else "project"
@@ -78,9 +78,9 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
         image = tag or sanitize_project_name(root.name)
         _generate_scaffold(root, project_subfolder, s3_path, image)
         if build:
-            click.echo(f"Building image '{image}' in {project_subfolder}...")
+            typer.echo(f"Building image '{image}' in {project_subfolder}...")
             detect_runtime().passthru_cli(["build", "-t", image, "."], cwd=deploy_target)
-        click.echo("Deploy done.")
+        typer.echo("Deploy done.")
     except Exception as e:
         _handle_s3_error(e, s3_path)
     finally:
@@ -101,8 +101,8 @@ def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: 
             f"    - docker-compose.yml\n"
         )
         compman_yml.write_text(content, encoding="utf-8")
-        click.echo("Created compman.yml:")
-        click.echo(f"----------------------------------------\n{content.strip()}\n----------------------------------------")
+        typer.echo("Created compman.yml:")
+        typer.echo(f"----------------------------------------\n{content.strip()}\n----------------------------------------")
     else:
         _update_compman_deploy(compman_yml, s3_path)
 
@@ -123,8 +123,8 @@ def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: 
             f"    restart: unless-stopped\n"
         )
         root_compose.write_text(compose_content, encoding="utf-8")
-        click.echo("Created docker-compose.yml:")
-        click.echo(f"----------------------------------------\n{compose_content.strip()}\n----------------------------------------")
+        typer.echo("Created docker-compose.yml:")
+        typer.echo(f"----------------------------------------\n{compose_content.strip()}\n----------------------------------------")
 
 
 def _update_compman_deploy(compman_yml: Path, s3_path: str) -> None:
@@ -190,8 +190,8 @@ def _update_compman_deploy(compman_yml: Path, s3_path: str) -> None:
         check_raw = yaml.safe_load(new_content)
         if isinstance(check_raw, dict) and check_raw.get("compman", {}).get("deploy") == s3_path:
             compman_yml.write_text(new_content, encoding="utf-8")
-            click.echo(f"Updated deploy in compman.yml ({s3_path}):")
-            click.echo(f"----------------------------------------\n{new_content.strip()}\n----------------------------------------")
+            typer.echo(f"Updated deploy in compman.yml ({s3_path}):")
+            typer.echo(f"----------------------------------------\n{new_content.strip()}\n----------------------------------------")
             return
     except Exception:
         pass
@@ -200,8 +200,8 @@ def _update_compman_deploy(compman_yml: Path, s3_path: str) -> None:
         raw["compman"]["deploy"] = s3_path
         dumped = yaml.safe_dump(raw, sort_keys=False, allow_unicode=True)
         compman_yml.write_text(dumped, encoding="utf-8")
-        click.echo(f"Updated deploy in compman.yml ({s3_path}):")
-        click.echo(f"----------------------------------------\n{dumped.strip()}\n----------------------------------------")
+        typer.echo(f"Updated deploy in compman.yml ({s3_path}):")
+        typer.echo(f"----------------------------------------\n{dumped.strip()}\n----------------------------------------")
 
 
 def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:
@@ -246,51 +246,51 @@ def _swap(src: Path, root: Path) -> None:
 
 
 def _handle_s3_error(e: Exception, s3_path: str) -> None:
-    click.echo(f"💡 [compman deploy] Failed to download from {s3_path}", err=True)
-    click.echo("", err=True)
+    typer.echo(f"💡 [compman deploy] Failed to download from {s3_path}", err=True)
+    typer.echo("", err=True)
 
     if isinstance(e, (NoCredentialsError, PartialCredentialsError)):
-        click.echo("Error: AWS credentials were not found or are incomplete.", err=True)
-        click.echo("", err=True)
-        click.echo("Guide - Please set your AWS credentials using environment variables:", err=True)
-        click.echo("  • Windows PowerShell:", err=True)
-        click.echo('      $env:AWS_ACCESS_KEY_ID="your-key-id"', err=True)
-        click.echo('      $env:AWS_SECRET_ACCESS_KEY="your-secret-key"', err=True)
-        click.echo('      $env:AWS_DEFAULT_REGION="ap-northeast-2"', err=True)
-        click.echo("  • Windows CMD:", err=True)
-        click.echo("      set AWS_ACCESS_KEY_ID=your-key-id", err=True)
-        click.echo("      set AWS_SECRET_ACCESS_KEY=your-secret-key", err=True)
-        click.echo("      set AWS_DEFAULT_REGION=ap-northeast-2", err=True)
-        click.echo("  • Or configure credentials in ~/.aws/credentials", err=True)
+        typer.echo("Error: AWS credentials were not found or are incomplete.", err=True)
+        typer.echo("", err=True)
+        typer.echo("Guide - Please set your AWS credentials using environment variables:", err=True)
+        typer.echo("  • Windows PowerShell:", err=True)
+        typer.echo('      $env:AWS_ACCESS_KEY_ID="your-key-id"', err=True)
+        typer.echo('      $env:AWS_SECRET_ACCESS_KEY="your-secret-key"', err=True)
+        typer.echo('      $env:AWS_DEFAULT_REGION="ap-northeast-2"', err=True)
+        typer.echo("  • Windows CMD:", err=True)
+        typer.echo("      set AWS_ACCESS_KEY_ID=your-key-id", err=True)
+        typer.echo("      set AWS_SECRET_ACCESS_KEY=your-secret-key", err=True)
+        typer.echo("      set AWS_DEFAULT_REGION=ap-northeast-2", err=True)
+        typer.echo("  • Or configure credentials in ~/.aws/credentials", err=True)
 
     elif isinstance(e, ClientError):
         err_code = str(e.response.get("Error", {}).get("Code", ""))
         err_msg = str(e.response.get("Error", {}).get("Message", e))
         if err_code in ("403", "AccessDenied", "Forbidden"):
-            click.echo(f"Error 403 (Access Denied): Access to '{s3_path}' was forbidden.", err=True)
-            click.echo("", err=True)
-            click.echo("Guide - Troubleshooting 403 Forbidden:", err=True)
-            click.echo("  1️⃣ Ensure AWS credentials have 's3:GetObject' and 's3:ListBucket' permissions.", err=True)
-            click.echo("  2️⃣ Verify S3 bucket name and key path are correct.", err=True)
-            click.echo("  3️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.", err=True)
+            typer.echo(f"Error 403 (Access Denied): Access to '{s3_path}' was forbidden.", err=True)
+            typer.echo("", err=True)
+            typer.echo("Guide - Troubleshooting 403 Forbidden:", err=True)
+            typer.echo("  1️⃣ Ensure AWS credentials have 's3:GetObject' and 's3:ListBucket' permissions.", err=True)
+            typer.echo("  2️⃣ Verify S3 bucket name and key path are correct.", err=True)
+            typer.echo("  3️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.", err=True)
         elif err_code in ("404", "NoSuchBucket", "NoSuchKey", "NotFound"):
-            click.echo(f"Error 404 (Not Found): Bucket or file does not exist: '{s3_path}'", err=True)
-            click.echo("", err=True)
-            click.echo("Guide - Troubleshooting 404 Not Found:", err=True)
-            click.echo("  1️⃣ Verify bucket name and file/archive path on S3.", err=True)
-            click.echo("  2️⃣ Check for typos in s3://bucket/path", err=True)
+            typer.echo(f"Error 404 (Not Found): Bucket or file does not exist: '{s3_path}'", err=True)
+            typer.echo("", err=True)
+            typer.echo("Guide - Troubleshooting 404 Not Found:", err=True)
+            typer.echo("  1️⃣ Verify bucket name and file/archive path on S3.", err=True)
+            typer.echo("  2️⃣ Check for typos in s3://bucket/path", err=True)
         else:
-            click.echo(f"S3 Client Error ({err_code}): {err_msg}", err=True)
+            typer.echo(f"S3 Client Error ({err_code}): {err_msg}", err=True)
 
     elif isinstance(e, EndpointConnectionError):
-        click.echo(f"Network Error: Unable to connect to S3 endpoint.", err=True)
-        click.echo("", err=True)
-        click.echo("Guide - Troubleshooting connection error:", err=True)
-        click.echo("  1️⃣ Check internet connection.", err=True)
-        click.echo("  2️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.", err=True)
+        typer.echo(f"Network Error: Unable to connect to S3 endpoint.", err=True)
+        typer.echo("", err=True)
+        typer.echo("Guide - Troubleshooting connection error:", err=True)
+        typer.echo("  1️⃣ Check internet connection.", err=True)
+        typer.echo("  2️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.", err=True)
 
     else:
-        click.echo(f"Download Error: {e}", err=True)
+        typer.echo(f"Download Error: {e}", err=True)
 
     raise SystemExit(1)
 

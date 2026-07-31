@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tarfile
 from pathlib import Path
-import click
+import typer
 from compman.config import sanitize_project_name
 from compman.i18n import t
 
@@ -20,7 +20,7 @@ def generate_seed(
     compose_yml = cwd / "docker-compose.yml"
 
     if (compman_yml.exists() or compose_yml.exists()) and not force:
-        click.echo(
+        typer.echo(
             t("msg.seed_exists", path="compman.yml / docker-compose.yml"),
             err=True,
         )
@@ -81,17 +81,17 @@ def generate_seed(
     )
     compman_yml.write_text(compman_content, encoding="utf-8")
 
-    click.echo(t("msg.seed_created", path=output))
-    click.echo("----------------------------------------")
-    click.echo("[compman.yml]")
-    click.echo(compman_content.strip())
-    click.echo("----------------------------------------")
-    click.echo("[docker-compose.yml]")
-    click.echo(compose_content.strip())
-    click.echo("----------------------------------------")
+    typer.echo(t("msg.seed_created", path=output))
+    typer.echo("----------------------------------------")
+    typer.echo("[compman.yml]")
+    typer.echo(compman_content.strip())
+    typer.echo("----------------------------------------")
+    typer.echo("[docker-compose.yml]")
+    typer.echo(compose_content.strip())
+    typer.echo("----------------------------------------")
 
     if archive:
         archive_file = cwd / f"{output}.tar.gz"
         with tarfile.open(archive_file, "w:gz") as tar:
             tar.add(target_dir, arcname=target_dir.name)
-        click.echo(t("msg.seed_archive_created", path=archive_file.name))
+        typer.echo(t("msg.seed_archive_created", path=archive_file.name))

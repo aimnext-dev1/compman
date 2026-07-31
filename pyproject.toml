@@ -3,10 +3,10 @@ name = "compman"
 version = "0.1.0"
 description = "Docker Compose stack management CLI"
 requires-python = ">=3.10"
-dependencies = ["click", "pyyaml", "boto3", "botocore"]
+dependencies = ["typer", "pyyaml", "boto3", "botocore"]
 
 [project.scripts]
-compman = "compman.cli:cli"
+compman = "compman.cli:app"
 
 [tool.uv]
 package = true

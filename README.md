@@ -196,7 +196,7 @@ compman clear                           # docker image prune -af
 
 ```text
 compman/               # Python CLI 패키지
-  cli.py               # click entrypoint (init, deploy, update, seed, upgrade 등)
+  cli.py               # typer entrypoint (init, deploy, update, seed, upgrade 등)
   config.py            # compman.yml loader (dirs.project, deploy)
   docker.py            # ContainerRuntime 추상화
   deploy.py            # S3 배포 및 스캐폴드 생성

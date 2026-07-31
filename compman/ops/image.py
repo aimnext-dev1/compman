@@ -6,7 +6,7 @@ import tarfile
 from datetime import datetime
 from pathlib import Path
 
-import click
+import typer
 
 from compman.config import Config
 from compman.docker import ContainerRuntime
@@ -18,7 +18,7 @@ def backup(
     source_mode: bool = False,
 ) -> None:
     if not runtime.stack_exists(config.name):
-        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
+        typer.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
         raise SystemExit(1)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
@@ -31,7 +31,7 @@ def backup(
     )
     container_ids = result.stdout.strip().splitlines()
     if not container_ids:
-        click.echo("💡 No running containers found in this stack to back up.")
+        typer.echo("💡 No running containers found in this stack to back up.")
         shutil.rmtree(backup_dir)
         return
 
@@ -76,7 +76,7 @@ def backup(
     with tarfile.open(tarball, "w:gz") as tar:
         tar.add(backup_dir, arcname=".")
     shutil.rmtree(backup_dir)
-    click.echo(f"Image backup done: {tarball}")
+    typer.echo(f"Image backup done: {tarball}")
 
 
 def restore(
@@ -87,7 +87,7 @@ def restore(
     backup_name = f"{config.name}.image.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
     if not tarball.is_file():
-        click.echo(f"Backup not found: {tarball}", err=True)
+        typer.echo(f"Backup not found: {tarball}", err=True)
         _list_backups(config)
         raise SystemExit(1)
 
@@ -97,19 +97,19 @@ def restore(
         tar.extractall(restore_dir)
 
     for tar_file in restore_dir.glob("*.tar"):
-        click.echo(f"Loading {tar_file.name} ...")
+        typer.echo(f"Loading {tar_file.name} ...")
         runtime.run_cli(["load", "-i", str(tar_file)], capture=False)
         tar_file.unlink()
 
     shutil.rmtree(restore_dir)
-    click.echo("Image restore done. Update docker-compose.yml image tags and run 'compman stack up'.")
+    typer.echo("Image restore done. Update docker-compose.yml image tags and run 'compman stack up'.")
 
 
 def _validate_timestamp(ts: str) -> None:
     try:
         datetime.strptime(ts, "%Y%m%d_%H%M")
     except ValueError:
-        click.echo(
+        typer.echo(
             f"Invalid timestamp: {ts} (expected YYYYMMDD_HHMM)", err=True
         )
         raise SystemExit(1)
@@ -117,7 +117,7 @@ def _validate_timestamp(ts: str) -> None:
 
 def _list_backups(config: Config) -> None:
     pattern = re.escape(config.name) + r"\.image\.\d{8}_\d{4}\.tar\.gz"
-    click.echo("Available image backups:")
+    typer.echo("Available image backups:")
     for f in sorted(config.backup_dir.glob(f"{config.name}.image.*.tar.gz")):
         ts = f.name.replace(f"{config.name}.image.", "").replace(".tar.gz", "")
-        click.echo(f"  {ts}")
+        typer.echo(f"  {ts}")

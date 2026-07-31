@@ -11,7 +11,7 @@ compman --help         # verify
 
 ```
 compman/               # Python package
-  cli.py               # click entrypoint: compman.cli:cli
+  cli.py               # typer entrypoint: compman.cli:app
   config.py            # compman.yml loader (Config dataclass)
   docker.py            # ContainerRuntime abstraction, compose file resolution
   deploy.py            # S3 deploy (paths hardcoded, currently empty)
@@ -23,7 +23,7 @@ test/                  # example configs only, NOT test suites
 ## Commands
 
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
-- Python >=3.10, deps: click, pyyaml.
+- Python >=3.10, deps: typer, pyyaml.
 - No tests, no CI, no linter/formatter/typechecker config.
 - No Makefile (legacy shell scripts in `_script/` use `make`, but compman CLI does not).
 
@@ -60,7 +60,7 @@ Two modes:
 
 ## CLI quirks
 
-- `stack down` requires `--yes` confirmation (click `confirmation_option`).
+- `stack down` requires `--yes` confirmation (`typer.confirm`).
 - `stack up/update` with profile mode requires valid profile name; without profiles, takes no argument.
 - `image backup` defaults to committing runtime container state; `--source-image` flag saves the original image instead.
 - `volume backup/restore` optional `--no-stop` flag skips stack teardown.

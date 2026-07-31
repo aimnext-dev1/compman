@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import click
+import typer
 
 from compman.config import Config
 from compman.docker import ContainerRuntime
@@ -42,19 +42,19 @@ def log(
     if not service:
         containers = runtime.list_containers(config.name)
         if len(containers) == 0:
-            click.echo(t("msg.no_running_containers"), err=True)
+            typer.echo(t("msg.no_running_containers"), err=True)
             return
         if len(containers) == 1:
             service = containers[0]
-            click.echo(f"Auto-selected: {service}")
+            typer.echo(f"Auto-selected: {service}")
         else:
-            click.echo("Available containers:")
+            typer.echo("Available containers:")
             for c in containers:
-                click.echo(f"  {c}")
+                typer.echo(f"  {c}")
             return
     cid = runtime.get_container_id(service)
     if not cid:
-        click.echo(t("msg.container_not_found", service=service), err=True)
+        typer.echo(t("msg.container_not_found", service=service), err=True)
         return
 
     cmd = ["logs"]
@@ -68,19 +68,19 @@ def connect(runtime: ContainerRuntime, config: Config, service: str | None) -> N
     if not service:
         containers = runtime.list_containers(config.name)
         if len(containers) == 0:
-            click.echo(t("msg.no_running_containers"), err=True)
+            typer.echo(t("msg.no_running_containers"), err=True)
             return
         if len(containers) == 1:
             service = containers[0]
-            click.echo(f"Auto-selected: {service}")
+            typer.echo(f"Auto-selected: {service}")
         else:
-            click.echo("Specify a container name:")
+            typer.echo("Specify a container name:")
             for c in containers:
-                click.echo(f"  {c}")
+                typer.echo(f"  {c}")
             return
     cid = runtime.get_container_id(service)
     if not cid:
-        click.echo(t("msg.container_not_found", service=service), err=True)
+        typer.echo(t("msg.container_not_found", service=service), err=True)
         return
     runtime.passthru_cli([
         "exec",
@@ -101,7 +101,7 @@ def _passthru_with_services(
     if services:
         args += list(services)
         names = ", ".join(services)
-        click.echo(f"Services: {names}")
+        typer.echo(f"Services: {names}")
     else:
-        click.echo("All services")
+        typer.echo("All services")
     runtime.passthru_compose(args, project=config.name)
