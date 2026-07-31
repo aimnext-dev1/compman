@@ -1,5 +1,5 @@
 # compman Windows One-Line Automatic Installer
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 Write-Host "🚀 Installing compman CLI..." -ForegroundColor Cyan
 

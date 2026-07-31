@@ -16,8 +16,9 @@ for %%D in (
     )
 )
 
-:: Run PowerShell installer (handles PATH + uv install)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 | iex"
+:: Run PowerShell installer with cache-busting timestamp to always fetch the latest version
+for /f %%T in ('powershell -NoProfile -Command "[int](Get-Date -UFormat %%s)"') do set TS=%%T
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1?t=%TS%' | iex"
 
 if %ERRORLEVEL% NEQ 0 (
     echo Error: Installation failed.
