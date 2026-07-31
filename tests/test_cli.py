@@ -329,6 +329,16 @@ def test_top_level_status_text_report_lists_each_service(runner: CliRunner, monk
     assert "worker" in result.stdout
 
 
+def test_top_level_status_text_report_includes_profile(runner: CliRunner, monkeypatch):
+    report = StatusReport(True, "docker", "app", "dev", ("compose.yml",), ())
+    monkeypatch.setattr("compman.cli.collect_status", lambda *_: report)
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0
+    assert "(profile: dev)" in result.stdout
+
+
 def test_top_level_status_failure_exits_one_after_text_report(runner: CliRunner, monkeypatch):
     report = StatusReport(False, None, "app", None, (), (), "Stack is not running.")
     monkeypatch.setattr("compman.cli.collect_status", lambda *_: report)
