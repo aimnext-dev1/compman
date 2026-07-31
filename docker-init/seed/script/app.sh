@@ -18,9 +18,9 @@ cat <<EOF > /www/index.html
 </head>
 <body>
     <div class="card">
-        <h1>🚀 compman Seed Daemon</h1>
-        <p>Status: <span class="tag">RUNNING</span></p>
-        <p>Message: <strong>${MESSAGE:-hello}</strong></p>
+        <h1>🚀 compman Seed Daemon (v2-updated)</h1>
+        <p>Status: <span class="tag">RUNNING v2</span></p>
+        <p>Message: <strong>${MESSAGE:-v2-new-release}</strong></p>
     </div>
 </body>
 </html>
