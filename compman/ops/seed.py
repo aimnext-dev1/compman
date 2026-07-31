@@ -12,11 +12,15 @@ def generate_seed(
     port: int = 18080,
     force: bool = False,
 ) -> None:
-    target_dir = Path(output).resolve()
+    cwd = Path.cwd()
+    target_dir = (cwd / output).resolve()
 
-    if target_dir.exists() and not force and any(target_dir.iterdir()):
+    compman_yml = cwd / "compman.yml"
+    compose_yml = cwd / "docker-compose.yml"
+
+    if (compman_yml.exists() or compose_yml.exists()) and not force:
         click.echo(
-            t("msg.seed_exists", path=target_dir.name),
+            t("msg.seed_exists", path="compman.yml / docker-compose.yml"),
             err=True,
         )
         return
@@ -55,36 +59,38 @@ def generate_seed(
     )
     (target_dir / "Dockerfile").write_text(dockerfile_content, encoding="utf-8")
 
+    rel_build_path = f"./{output}" if output != "." else "."
     compose_content = (
         "services:\n"
         "  app:\n"
-        "    build: .\n"
+        f"    build: {rel_build_path}\n"
         "    ports:\n"
         f'      - "{port}:{port}"\n'
         "    restart: unless-stopped\n"
     )
-    (target_dir / "docker-compose.yml").write_text(compose_content, encoding="utf-8")
+    compose_yml.write_text(compose_content, encoding="utf-8")
 
+    project_name = cwd.name
     compman_content = (
         "compman:\n"
-        f"  name: {target_dir.name}\n"
-        f"  deploy: s3://deploy-test/archives/{target_dir.name}.tar.gz\n"
+        f"  name: {project_name}\n"
+        f"  deploy: s3://deploy-test/archives/{output}.tar.gz\n"
         "  compose:\n"
         "    - docker-compose.yml\n"
     )
-    (target_dir / "compman.yml").write_text(compman_content, encoding="utf-8")
+    compman_yml.write_text(compman_content, encoding="utf-8")
 
-    click.echo(t("msg.seed_created", path=target_dir.name))
+    click.echo(t("msg.seed_created", path=output))
     click.echo("----------------------------------------")
-    click.echo(f"[{target_dir.name}/compman.yml]")
+    click.echo("[compman.yml]")
     click.echo(compman_content.strip())
     click.echo("----------------------------------------")
-    click.echo(f"[{target_dir.name}/docker-compose.yml]")
+    click.echo("[docker-compose.yml]")
     click.echo(compose_content.strip())
     click.echo("----------------------------------------")
 
     if archive:
-        archive_file = target_dir.parent / f"{target_dir.name}.tar.gz"
+        archive_file = cwd / f"{output}.tar.gz"
         with tarfile.open(archive_file, "w:gz") as tar:
             tar.add(target_dir, arcname=target_dir.name)
         click.echo(t("msg.seed_archive_created", path=archive_file.name))
