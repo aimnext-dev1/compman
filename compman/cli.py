@@ -46,8 +46,10 @@ def clear() -> None:
 
 @click.command()
 @click.argument("env", default="dev")
-def deploy(env: str) -> None:
-    _deploy(env)
+@click.option("--build", is_flag=True, help="Fetch 후 Docker 이미지 빌드")
+@click.option("--tag", default=None, help="--build 시 이미지 태그 (기본: 디렉토리명)")
+def deploy(env: str, build: bool, tag: str | None) -> None:
+    _deploy(env, build=build, tag=tag)
 
 
 # ---- main group ----

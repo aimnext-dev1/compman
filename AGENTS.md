@@ -66,7 +66,8 @@ Two modes:
 - `volume backup/restore` optional `--no-stop` flag skips stack teardown.
 - `service log` runs `docker logs -f -n 10000` (follow, last 10k lines).
 - `service connect` runs `docker exec -it` with bash fallback to sh.
-- `deploy` requires AWS CLI + configured S3 paths in `deploy.py:S3_PATHS` (currently empty strings).
+- `deploy` uses boto3 (no AWS CLI needed). S3 paths: `deploy.py:S3_PATHS` (currently empty) or env overrides `COMPMAN_S3_PATH_<ENV>` (e.g. `COMPMAN_S3_PATH_DEV`). `COMPMAN_S3_ENDPOINT` env redirects the S3 client (e.g. local ministack at `http://localhost:4566`). Creds via standard `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_DEFAULT_REGION` env vars.
+- Deploy key can be a **prefix path** (everything under it is downloaded, structure preserved) or an **archive file** (`.tar.gz`/`.tgz`/`.zip`, downloaded + extracted; a single top-level dir is flattened). Fetched tree replaces same-named entries in cwd (atomic swap, user files kept). Optional `--build` runs `docker build -t TAG .` after fetch (`--tag` defaults to cwd dirname). Run from scratch dir, not repo root — creates untracked files. Test setup: `test/deploy-project/` (seed + setup-s3.ps1, deploy into `target/`).
 
 ## Backup naming
 

@@ -30,6 +30,9 @@ _project/volume/*
 .deploy_tmp_*
 temp_volume_info.json
 
+# Deploy test target
+test/deploy-project/target/
+
 # Config (project-specific values)
 stack.env
 
