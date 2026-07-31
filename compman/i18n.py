@@ -128,6 +128,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Generate a sample seed project (app.py, Dockerfile, compose) for testing.",
         "ko": "배포 테스트용 샘플 시드 프로젝트(app.py, Dockerfile, compose)를 생성합니다.",
     },
+    "cmd.version": {
+        "en": "Display the current compman CLI version.",
+        "ko": "현재 compman CLI 버전을 표시합니다.",
+    },
 
     # Option descriptions
     "opt.lang": {

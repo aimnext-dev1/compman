@@ -5,8 +5,16 @@ import pathlib
 import shutil
 import subprocess
 import sys
+from importlib.metadata import version as _pkg_version, PackageNotFoundError
 from typing import Any
 import click
+
+
+def get_version() -> str:
+    try:
+        return _pkg_version("compman")
+    except PackageNotFoundError:
+        return "dev"
 
 from compman.config import ConfigError, dump_default_config, load_config
 from compman.docker import detect_runtime
@@ -148,7 +156,7 @@ def completion(shell: str, install: bool) -> None:
             "\n# compman shell completion\n"
             "Register-ArgumentCompleter -Native -CommandName compman -ScriptBlock {\n"
             "    param($wordToComplete, $commandAst, $cursorPosition)\n"
-            "    $subcommands = @('init', 'clear', 'deploy', 'update', 'upgrade', 'completion', 'seed', 'stack', 'service', 'volume', 'image')\n"
+            "    $subcommands = @('init', 'clear', 'deploy', 'update', 'upgrade', 'completion', 'seed', 'version', 'stack', 'service', 'volume', 'image')\n"
             "    $words = $commandAst.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)\n"
             "    if ($words.Count -le 2) {\n"
             "        $subcommands | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
@@ -304,10 +312,16 @@ def seed_cmd(output: str, archive: bool, port: int, force: bool) -> None:
 # ---- main group ----
 @click.group(cls=I18nGroup, key="root")
 @click.option("--lang", "-l", type=click.Choice(["en", "ko"]), default=None, cls=I18nOption, key="lang")
+@click.version_option(version=get_version(), prog_name="compman")
 @click.pass_context
 def cli(ctx: click.Context, lang: str | None) -> None:
     if lang:
         set_lang(lang)
+
+
+@click.command(cls=I18nCommand, key="version")
+def version_cmd() -> None:
+    click.echo(f"compman {get_version()}")
 
 
 cli.add_command(init)
@@ -317,6 +331,7 @@ cli.add_command(update)
 cli.add_command(completion)
 cli.add_command(upgrade)
 cli.add_command(seed_cmd, name="seed")
+cli.add_command(version_cmd, name="version")
 
 
 # ---- stack ----
