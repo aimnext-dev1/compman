@@ -78,19 +78,22 @@ export COMPMAN_LANG=ko
 
 ---
 
-## 🌱 샘플 시드 제네레이터 (`compman seed`)
+## 🚀 프로젝트 초기화 & 제네레이터 (`compman init`)
 
-배포 테스트용 샘플 애플리케이션, `Dockerfile`, `docker-compose.yml`, `compman.yml`을 한 번에 생성합니다.
+`compman init`을 실행하면 방향키(↑/↓) 대화형 메뉴로 3가지 초기화 모드를 제공하며, 직접 플래그로도 실행 가능합니다.
 
 ```bash
-# 1. 기본 시드 프로젝트 생성 (project/ 폴더)
-compman seed
+# 1. 대화형 선택 메뉴 실행 (스켈레톤 / S3 URL / 테스트 Seed)
+compman init
 
-# 2. S3 배포 테스트용 .tar.gz 압축 파일 함께 생성 (project.tar.gz)
-compman seed -a
+# 2. 모드 1: 기본 compman.yml 스켈레톤 생성
+compman init --skeleton
 
-# 3. 커스텀 프로젝트명 및 포트 지정
-compman seed -o my-app -p 8080 -a
+# 3. 모드 2: S3 URL로부터 패키지 수신 및 프로젝트 생성
+compman init --s3 s3://my-bucket/app.tar.gz --build
+
+# 4. 모드 3: 테스트용 Seed 프로젝트 생성 (project/ 폴더)
+compman init --seed -o project -p 8080 -a
 ```
 
 > 💡 **프로젝트명 자동 정규화**: 실행 디렉터리 이름이 자동으로 Docker 네이밍 규칙에 맞게 변환됩니다.  

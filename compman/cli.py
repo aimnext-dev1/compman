@@ -89,16 +89,57 @@ def root(
 # ---- init ----
 @app.command("init", help=t("cmd.init"))
 def init_cmd(
+    skeleton: Annotated[bool, typer.Option("--skeleton", help="Create default compman.yml skeleton")] = False,
+    s3: Annotated[Optional[str], typer.Option("--s3", help="Fetch package from S3 URL")] = None,
+    seed_mode: Annotated[bool, typer.Option("--seed", help="Generate test seed project")] = False,
+    output: Annotated[str, typer.Option("-o", "--output", help=t("opt.output"))] = "project",
+    archive: Annotated[bool, typer.Option("-a", "--archive", help=t("opt.archive"))] = False,
+    port: Annotated[int, typer.Option("-p", "--port", help=t("opt.port"))] = 18080,
+    build: Annotated[bool, typer.Option("--build", help=t("opt.build"))] = False,
+    tag: Annotated[Optional[str], typer.Option("--tag", help=t("opt.tag"))] = None,
     force: Annotated[bool, typer.Option("--force", help=t("opt.force"))] = False,
     config: Annotated[str, typer.Option("--config", "-c", help=t("opt.config"))] = "compman.yml",
 ) -> None:
-    path = pathlib.Path(config)
-    if path.is_file() and not force:
-        typer.echo(f"{config} already exists. Use --force to overwrite.")
-        return
-    content = dump_default_config(pathlib.Path.cwd().name)
-    path.write_text(content, encoding="utf-8")
-    typer.echo(f"{config} created:\n----------------------------------------\n{content.strip()}\n----------------------------------------")
+    from compman.ops.common import prompt_select
+
+    # Direct mode routing if explicit flag passed
+    if skeleton:
+        choice = 0
+    elif s3 is not None:
+        choice = 1
+    elif seed_mode or archive or port != 18080:
+        choice = 2
+    else:
+        # Interactive mode selection
+        modes = [
+            "1. Create skeleton config (compman.yml)",
+            "2. Fetch package from S3 URL",
+            "3. Generate test seed project (app.py, Dockerfile, compose)",
+        ]
+        choice = prompt_select("Select initialization mode", modes, default_index=0)
+
+    if choice == 0:
+        # Mode 1: Skeleton compman.yml
+        path = pathlib.Path(config)
+        if path.is_file() and not force:
+            typer.echo(f"{config} already exists. Use --force to overwrite.")
+            return
+        content = dump_default_config(pathlib.Path.cwd().name)
+        path.write_text(content, encoding="utf-8")
+        typer.echo(f"{config} created:\n----------------------------------------\n{content.strip()}\n----------------------------------------")
+
+    elif choice == 1:
+        # Mode 2: S3 URL
+        s3_url = s3
+        if not s3_url:
+            s3_url = typer.prompt("Enter S3 URL (e.g. s3://bucket/path/app.tar.gz)")
+        _deploy(build=build, tag=tag, s3_path=s3_url)
+
+    elif choice == 2:
+        # Mode 3: Test Seed Project
+        from compman.ops import seed
+
+        seed.generate_seed(output=output, archive=archive, port=port, force=force)
 
 
 # ---- clear ----
@@ -272,17 +313,7 @@ def upgrade_cmd(
         raise SystemExit(1)
 
 
-# ---- seed ----
-@app.command("seed", help=t("cmd.seed"))
-def seed_cmd(
-    output: Annotated[str, typer.Option("-o", "--output", help=t("opt.output"))] = "project",
-    archive: Annotated[bool, typer.Option("-a", "--archive", help=t("opt.archive"))] = False,
-    port: Annotated[int, typer.Option("-p", "--port", help=t("opt.port"))] = 18080,
-    force: Annotated[bool, typer.Option("--force", help=t("opt.force"))] = False,
-) -> None:
-    from compman.ops import seed
 
-    seed.generate_seed(output=output, archive=archive, port=port, force=force)
 
 
 # ---- version ----

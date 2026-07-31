@@ -26,20 +26,28 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     # Command descriptions
     "cmd.init": {
         "en": (
-            "Initialize default compman.yml configuration file.\n\n"
-            "Creates a compman.yml template in the current working directory.\n\n"
+            "Initialize project config, fetch S3 package, or generate seed project.\n\n"
+            "Provides interactive choices:\n"
+            "  1. Create skeleton config (compman.yml)\n"
+            "  2. Fetch package from S3 URL\n"
+            "  3. Generate test seed project\n\n"
             "Examples:\n"
             "  compman init\n"
-            "  compman init --force\n"
-            "  compman init -c custom-compman.yml"
+            "  compman init --skeleton\n"
+            "  compman init --s3 s3://my-bucket/app.tar.gz --build\n"
+            "  compman init --seed -o project -p 8080"
         ),
         "ko": (
-            "현재 디렉터리에 기본 compman.yml 설정 파일을 생성합니다.\n\n"
-            "템플릿 설정 파일을 새로 생성하거나 덮어씁니다.\n\n"
+            "프로젝트 설정, S3 패키지 수신 또는 시드 프로젝트를 생성합니다.\n\n"
+            "대화형 선택 지원:\n"
+            "  1. 스켈레톤 설정 (compman.yml) 생성\n"
+            "  2. S3 URL로부터 패키지 수신 및 프로젝트 생성\n"
+            "  3. 테스트용 Seed 프로젝트 생성\n\n"
             "사용 예시:\n"
             "  compman init\n"
-            "  compman init --force\n"
-            "  compman init -c custom-compman.yml"
+            "  compman init --skeleton\n"
+            "  compman init --s3 s3://my-bucket/app.tar.gz --build\n"
+            "  compman init --seed -o project -p 8080"
         ),
     },
     "cmd.clear": {
@@ -360,22 +368,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  compman image restore 20260731_1732"
         ),
     },
-    "cmd.seed": {
-        "en": (
-            "Generate a sample seed project (app.py, Dockerfile, compose).\n\n"
-            "Creates a runnable sample project directory and optionally compresses it into a .tar.gz archive.\n\n"
-            "Examples:\n"
-            "  compman seed\n"
-            "  compman seed -o project -p 8080 -a"
-        ),
-        "ko": (
-            "배포 테스트용 샘플 시드 프로젝트(app.py, Dockerfile, compose)를 생성합니다.\n\n"
-            "실행 가능한 샘플 웹 앱 프로젝트를 생성하며 선택적으로 .tar.gz 아카이브로 압축합니다.\n\n"
-            "사용 예시:\n"
-            "  compman seed\n"
-            "  compman seed -o project -p 8080 -a"
-        ),
-    },
+
     "cmd.version": {
         "en": "Display the current compman CLI version.",
         "ko": "현재 compman CLI 버전을 표시합니다.",

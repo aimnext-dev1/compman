@@ -20,8 +20,7 @@ compman/               # Python package
 test/                  # example configs only, NOT test suites
 ```
 
-## Commands
-
+- `compman init` provides an interactive 3-mode menu (1. Skeleton compman.yml, 2. S3 URL deploy, 3. Test seed project). Direct flags `--skeleton`, `--s3 <url>`, and `--seed` are also supported.
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
 - Python >=3.10, deps: typer, pyyaml.
 - No tests, no CI, no linter/formatter/typechecker config.
