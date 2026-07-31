@@ -13,8 +13,9 @@ Python CLI로 Docker/Podman Compose 스택 및 S3 기반 자동 배포를 효율
 ```bash
 # uv 사용 시 (가장 빠르고 권장)
 uv tool install git+https://github.com/aimnext-dev1/compman.git
+uv tool update-shell   # 최초 1회 PATH 등록 (이후 어느 터미널에서나 바로 compman 사용 가능)
 
-# pipx 사용 시
+# pipx 사용 시 (자동으로 PATH 등록됨)
 pipx install git+https://github.com/aimnext-dev1/compman.git
 
 # pip 사용 시
