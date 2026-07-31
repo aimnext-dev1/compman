@@ -50,6 +50,8 @@ Two modes:
 - `compose` key omitted → defaults to `docker-compose.yml`.
 - Optional `folder` key → compose files live under `_project/`.
 - Optional `base` key → prepended as `-f` before profile compose files.
+- Profile `file` is optional: omitted → fallback to `base` or `docker-compose.yml`.
+  Useful when all profiles share one compose file with different env vars only.
 
 ## Runtime
 
