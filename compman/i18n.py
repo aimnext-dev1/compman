@@ -85,8 +85,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "스택 내 모든 컨테이너의 현재 상태를 표시합니다.",
     },
     "cmd.service.log": {
-        "en": "Display or stream logs for a service container.",
-        "ko": "서비스 컨테이너의 로그를 조회하거나 실시간 스트리밍합니다.",
+        "en": "Display or stream logs for a service container (-f/--follow, -n/--tail).",
+        "ko": "서비스 컨테이너의 로그를 조회하거나 실시간 스트리밍합니다 (-f/--follow, -n/--tail).",
     },
     "cmd.service.connect": {
         "en": "Open an interactive shell inside a service container.",
