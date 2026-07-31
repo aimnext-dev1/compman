@@ -143,6 +143,18 @@ def test_cli_load_error(runner: CliRunner, temp_dir: pathlib.Path):
     assert res.exit_code != 0
 
 
+def test_cli_runtime_error_is_formatted(runner: CliRunner, temp_dir: pathlib.Path):
+    set_lang("en")
+    (temp_dir / "compman.yml").write_text(
+        "compman:\n  compose:\n    dev: missing.yml\n", encoding="utf-8"
+    )
+    with patch("compman.cli.detect_runtime", return_value=MagicMock()):
+        res = runner.invoke(app, ["stack", "up", "dev"])
+    assert res.exit_code == 1
+    assert "Error:" in res.output
+    assert "Compose file not found" in res.output
+
+
 def test_cli_unknown_command_shows_root_help(runner: CliRunner):
     set_lang("en")
     res = runner.invoke(app, ["unknown"])

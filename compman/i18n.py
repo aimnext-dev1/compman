@@ -477,6 +477,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Error: Unknown command '{command}'.",
         "ko": "오류: 알 수 없는 명령어입니다: '{command}'",
     },
+    "msg.command_failed": {
+        "en": "Error: {error}",
+        "ko": "오류: {error}",
+    },
     "msg.operation_cancelled": {
         "en": "Operation cancelled.",
         "ko": "작업이 취소되었습니다.",

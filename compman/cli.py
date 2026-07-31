@@ -47,6 +47,13 @@ class HelpOnUnknownCommandGroup(TyperGroup):
             typer.echo(ctx.get_help())
             raise _click.exceptions.Exit(2)
 
+    def main(self, *args, **kwargs):
+        try:
+            return super().main(*args, **kwargs)
+        except (ConfigError, RuntimeError) as error:
+            typer.echo(t("msg.command_failed", error=error), err=True)
+            raise _click.exceptions.Exit(1)
+
 
 # ---- pre-parse --lang for help text resolution ----
 for _idx, _arg in enumerate(sys.argv):

@@ -74,8 +74,11 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
     try:
         if parsed.scheme != "s3" or not bucket or not key:
             raise ValueError(f"Invalid S3 path: {s3_path}")
-        s3 = boto3.client("s3", endpoint_url=endpoint or None)
-        project_root = _fetch(s3, bucket, key, tmp)
+        try:
+            s3 = boto3.client("s3", endpoint_url=endpoint or None)
+            project_root = _fetch(s3, bucket, key, tmp)
+        except (ClientError, EndpointConnectionError, NoCredentialsError, PartialCredentialsError) as e:
+            _handle_s3_error(e, s3_path)
         _swap(project_root, deploy_target)
         image = tag or sanitize_project_name(root.name)
         _generate_scaffold(root, project_subfolder, s3_path, image)
