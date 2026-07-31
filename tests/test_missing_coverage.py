@@ -15,6 +15,7 @@ import compman.cli as cli
 import compman.deploy as deploy
 from compman.config import Config, ConfigError, Profile, load_config
 from compman.docker import ContainerRuntime, _run
+from compman.errors import CommandError
 from compman.ops import common, image, service, volume
 
 
@@ -289,16 +290,16 @@ def test_deploy_update_line_branches(temp_dir):
 def test_service_empty_and_multiple(dummy_runtime, temp_dir):
     cfg = Config("app", compose_files=["docker-compose.yml"])
     dummy_runtime.list_containers = MagicMock(return_value=[])
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         service.log(dummy_runtime, cfg, None)
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         service.connect(dummy_runtime, cfg, None)
     dummy_runtime.list_containers = MagicMock(return_value=["a", "b"])
     service.connect(dummy_runtime, cfg, None)
     dummy_runtime.get_container_id = MagicMock(return_value="")
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         service.log(dummy_runtime, cfg, "a")
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         service.connect(dummy_runtime, cfg, "a")
 
 
@@ -337,7 +338,7 @@ def test_image_remaining_branches(dummy_runtime, temp_dir):
 
     cfg.backup_dir.mkdir(parents=True, exist_ok=True)
     with patch("compman.ops.image.select_backup_timestamp", return_value="20000101_0000"):
-        with pytest.raises(SystemExit):
+        with pytest.raises(CommandError):
             image.restore(dummy_runtime, cfg)
 
     (cfg.backup_dir / "app.image.20000101_0000.tar.gz").touch()
@@ -392,7 +393,7 @@ def test_volume_all_remaining_paths(dummy_runtime, temp_dir):
     (cfg.volume_dir / "volume-map.json").write_text(json.dumps({"c": {"volume": "missing", "destination": "/d"}}), encoding="utf-8")
     volume.push(dummy_runtime, cfg)
     dummy_runtime.stack_exists = MagicMock(return_value=False)
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         volume.push(dummy_runtime, cfg)
 
     dummy_runtime.stack_exists = MagicMock(return_value=True)
@@ -402,7 +403,7 @@ def test_volume_all_remaining_paths(dummy_runtime, temp_dir):
     missing_map = cfg.backup_dir / "app.volume.20260101_0000.tar.gz"
     with tarfile.open(missing_map, "w:gz") as tar:
         tar.add(empty, arcname=".")
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         volume.restore(dummy_runtime, cfg, "20260101_0000", no_stop=True)
 
     data_dir = temp_dir / "vdata"

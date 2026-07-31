@@ -8,6 +8,7 @@ import pytest
 
 from compman.config import Config
 from compman.docker import ComposeContext
+from compman.errors import CommandError
 from compman.ops import common
 
 
@@ -35,14 +36,14 @@ def test_stack_paused_restores_after_failure(temp_dir: pathlib.Path):
 
 def test_select_backup_timestamp_none(temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         common.select_backup_timestamp(cfg, "volume")
 
 
 def test_select_backup_timestamp_empty_dir(temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
     cfg.backup_dir.mkdir(parents=True, exist_ok=True)
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         common.select_backup_timestamp(cfg, "volume")
 
 

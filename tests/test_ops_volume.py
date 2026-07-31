@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from compman.config import Config
+from compman.errors import CommandError
 from compman.ops import volume
 
 
@@ -29,7 +30,7 @@ def test_volume_backup_no_volumes(dummy_runtime, temp_dir: pathlib.Path):
 def test_volume_backup_not_running(dummy_runtime, temp_dir: pathlib.Path):
     dummy_runtime.stack_exists = MagicMock(return_value=False)
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         volume.backup(dummy_runtime, cfg)
 
 
@@ -51,14 +52,14 @@ def test_volume_restore(dummy_runtime, temp_dir: pathlib.Path):
 
 def test_volume_restore_invalid_timestamp(dummy_runtime, temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         volume.restore(dummy_runtime, cfg, timestamp="invalid_ts")
 
 
 def test_volume_restore_not_found(dummy_runtime, temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
     cfg.backup_dir.mkdir(parents=True, exist_ok=True)
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         volume.restore(dummy_runtime, cfg, timestamp="20260731_1200")
 
 
@@ -70,7 +71,7 @@ def test_volume_restore_not_running(dummy_runtime, temp_dir: pathlib.Path):
     backup_file.touch()
 
     dummy_runtime.stack_exists = MagicMock(return_value=False)
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         volume.restore(dummy_runtime, cfg, timestamp="20260731_1200")
 
 
@@ -95,11 +96,11 @@ def test_volume_pull_no_volumes(dummy_runtime, temp_dir: pathlib.Path):
 def test_volume_pull_not_running(dummy_runtime, temp_dir: pathlib.Path):
     dummy_runtime.stack_exists = MagicMock(return_value=False)
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         volume.pull(dummy_runtime, cfg)
 
 
 def test_volume_push_no_map(dummy_runtime, temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
-    with pytest.raises(SystemExit):
+    with pytest.raises(CommandError):
         volume.push(dummy_runtime, cfg)
