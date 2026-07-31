@@ -9,6 +9,8 @@ from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from typing import Annotated, Optional
 
 import typer
+from typer import _click
+from typer.core import TyperGroup
 
 
 
@@ -35,6 +37,15 @@ def _lang_callback(value: str | None) -> None:
         set_lang(value)
 
 
+class HelpOnUnknownCommandGroup(TyperGroup):
+    def resolve_command(self, ctx: typer.Context, args: list[str]):
+        try:
+            return super().resolve_command(ctx, args)
+        except _click.exceptions.UsageError:
+            typer.echo(ctx.get_help())
+            raise
+
+
 # ---- pre-parse --lang for help text resolution ----
 for _idx, _arg in enumerate(sys.argv):
     if _arg in ("--lang", "-l") and _idx + 1 < len(sys.argv):
@@ -47,6 +58,7 @@ for _idx, _arg in enumerate(sys.argv):
 
 app = typer.Typer(
     name="compman",
+    cls=HelpOnUnknownCommandGroup,
     help=t("cmd.root"),
     no_args_is_help=True,
     invoke_without_command=True,
@@ -351,7 +363,7 @@ def version_cmd() -> None:
 
 
 # ---- stack group ----
-stack_app = typer.Typer(help=t("cmd.stack"), no_args_is_help=True)
+stack_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.stack"), no_args_is_help=True)
 
 
 @stack_app.command("up", help=t("cmd.stack.up"))
@@ -387,7 +399,7 @@ app.add_typer(stack_app, name="stack")
 
 
 # ---- service group ----
-service_app = typer.Typer(help=t("cmd.service"), no_args_is_help=True)
+service_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.service"), no_args_is_help=True)
 
 
 @service_app.command("start", help=t("cmd.service.start"))
@@ -449,7 +461,7 @@ app.add_typer(service_app, name="service")
 
 
 # ---- volume group ----
-volume_app = typer.Typer(help=t("cmd.volume"), no_args_is_help=True)
+volume_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.volume"), no_args_is_help=True)
 
 
 @volume_app.command("backup", help=t("cmd.volume.backup"))
@@ -491,7 +503,7 @@ app.add_typer(volume_app, name="volume")
 
 
 # ---- image group ----
-image_app = typer.Typer(help=t("cmd.image"), no_args_is_help=True)
+image_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.image"), no_args_is_help=True)
 
 
 @image_app.command("backup", help=t("cmd.image.backup"))

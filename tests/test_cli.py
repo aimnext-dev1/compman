@@ -142,6 +142,20 @@ def test_cli_load_error(runner: CliRunner, temp_dir: pathlib.Path):
     assert res.exit_code != 0
 
 
+def test_cli_unknown_command_shows_root_help(runner: CliRunner):
+    res = runner.invoke(app, ["unknown"])
+    assert res.exit_code == 2
+    assert "Usage: compman" in res.output
+    assert "Commands" in res.output
+
+
+def test_cli_unknown_subcommand_shows_group_help(runner: CliRunner):
+    res = runner.invoke(app, ["service", "down"])
+    assert res.exit_code == 2
+    assert "Usage: compman service" in res.output
+    assert "status" in res.output
+
+
 def test_cli_upgrade(runner: CliRunner):
     with patch("subprocess.run", return_value=MagicMock(returncode=0)):
         res = runner.invoke(app, ["upgrade"])
