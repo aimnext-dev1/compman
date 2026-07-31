@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import os
+from contextvars import ContextVar
 from typing import Any
 
-_CURRENT_LANG: str | None = None
+_CURRENT_LANG: ContextVar[str | None] = ContextVar("compman_language", default=None)
 
 
 def get_lang() -> str:
     global _CURRENT_LANG
-    if _CURRENT_LANG:
-        return _CURRENT_LANG
+    current = _CURRENT_LANG.get()
+    if current:
+        return current
     env_lang = os.environ.get("COMPMAN_LANG", "en").lower()
     if env_lang in ("ko", "ko_kr", "korean"):
         return "ko"
@@ -19,7 +21,9 @@ def get_lang() -> str:
 def set_lang(lang: str | None) -> None:
     global _CURRENT_LANG
     if lang and lang.lower() in ("en", "ko"):
-        _CURRENT_LANG = lang.lower()
+        _CURRENT_LANG.set(lang.lower())
+    elif lang is None:
+        _CURRENT_LANG.set(None)
 
 
 TRANSLATIONS: dict[str, dict[str, str]] = {

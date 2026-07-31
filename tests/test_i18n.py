@@ -19,15 +19,15 @@ def test_i18n_lang_setting():
 
 def test_i18n_env_variable():
     with patch.dict(os.environ, {"COMPMAN_LANG": "ko"}):
-        i18n._CURRENT_LANG = None
+        i18n._CURRENT_LANG.set(None)
         assert get_lang() == "ko"
 
     with patch.dict(os.environ, {"COMPMAN_LANG": "korean"}):
-        i18n._CURRENT_LANG = None
+        i18n._CURRENT_LANG.set(None)
         assert get_lang() == "ko"
 
     with patch.dict(os.environ, {"COMPMAN_LANG": "en"}):
-        i18n._CURRENT_LANG = None
+        i18n._CURRENT_LANG.set(None)
         assert get_lang() == "en"
 
 
