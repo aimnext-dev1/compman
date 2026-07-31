@@ -96,10 +96,13 @@ def _get_key() -> str:
             return "other"
         elif ch in (b"\r", b"\n"):
             return "enter"
+        elif ch == b"\x1b":
+            return "esc"
         elif ch == b"\x03":
             raise KeyboardInterrupt()
         return "other"
     else:
+        import select
         import termios
         import tty
 
@@ -109,13 +112,16 @@ def _get_key() -> str:
             tty.setraw(fd)
             ch = sys.stdin.read(1)
             if ch == "\x1b":
-                ch2 = sys.stdin.read(1)
-                if ch2 == "[":
-                    ch3 = sys.stdin.read(1)
-                    if ch3 == "A":
-                        return "up"
-                    elif ch3 == "B":
-                        return "down"
+                rlist, _, _ = select.select([sys.stdin], [], [], 0.05)
+                if rlist:
+                    ch2 = sys.stdin.read(1)
+                    if ch2 == "[":
+                        ch3 = sys.stdin.read(1)
+                        if ch3 == "A":
+                            return "up"
+                        elif ch3 == "B":
+                            return "down"
+                return "esc"
             elif ch in ("\r", "\n"):
                 return "enter"
             elif ch == "\x03":
@@ -145,7 +151,7 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
                 sys.stdout.write(f"\033[K   {option}\n")
         sys.stdout.flush()
 
-    typer.echo(f"💡 {title} (Use ↑/↓ arrow keys and press Enter):")
+    typer.echo(f"💡 {title} (Use ↑/↓ arrow keys, Enter to select, ESC to cancel):")
     render(redraw=False)
 
     while True:
@@ -159,6 +165,9 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
                 render(redraw=True)
             elif key == "enter":
                 break
+            elif key == "esc":
+                typer.echo("Operation cancelled.")
+                raise SystemExit(0)
         except KeyboardInterrupt:
             typer.echo("")
             raise SystemExit(0)
@@ -178,10 +187,6 @@ def select_backup_timestamp(config: Config, kind: str) -> str:
         raise SystemExit(1)
 
     timestamps = [f.name.replace(pattern, "").replace(".tar.gz", "") for f in files]
-    if len(timestamps) == 1:
-        selected = timestamps[0]
-        typer.echo(f"Selecting backup: {selected}")
-        return selected
 
     idx = prompt_select(
         f"Available {kind} backups",
