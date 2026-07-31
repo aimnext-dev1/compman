@@ -3,9 +3,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
-import tarfile
 import tempfile
-import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -21,10 +19,9 @@ from botocore.exceptions import (
 
 from compman.config import ConfigError, load_config, sanitize_project_name
 from compman.docker import detect_runtime
-from compman.archive import extract_tar, extract_zip
-
-
-_ARCHIVE_SUFFIXES = (".tar.gz", ".tgz", ".zip")
+from compman.s3_source import fetch as _fetch
+from compman.s3_source import download as _download
+from compman.s3_source import download_recursive as _download_recursive
 
 
 def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = None) -> None:
@@ -208,28 +205,6 @@ def _update_compman_deploy(compman_yml: Path, s3_path: str) -> None:
         typer.echo(f"----------------------------------------\n{dumped.strip()}\n----------------------------------------")
 
 
-def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:
-    if key.endswith(_ARCHIVE_SUFFIXES):
-        archive = tmp / key.rsplit("/", 1)[-1]
-        _download(s3, bucket, key, archive)
-        extract_dir = tmp / "extract"
-        extract_dir.mkdir()
-        if key.endswith(".zip"):
-            with zipfile.ZipFile(archive) as zf:
-                extract_zip(zf, extract_dir)
-        else:
-            with tarfile.open(archive) as tf:
-                extract_tar(tf, extract_dir)
-        contents = [p for p in extract_dir.iterdir() if p.name != ".gitkeep"]
-        if len(contents) == 1 and contents[0].is_dir():
-            return contents[0]
-        return extract_dir
-
-    src = tmp / "src"
-    _download_recursive(s3, bucket, key, src)
-    return src
-
-
 def _swap(src: Path, root: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
     backup = Path(tempfile.mkdtemp(prefix=f".{root.name}.swap-", dir=root.parent))
@@ -309,22 +284,3 @@ def _handle_s3_error(e: Exception, s3_path: str) -> None:
         typer.echo(f"Download Error: {e}", err=True)
 
     raise SystemExit(1)
-
-
-def _download(s3, bucket: str, key: str, dst: Path) -> None:
-    s3.download_file(bucket, key, str(dst))
-
-
-def _download_recursive(s3, bucket: str, key_prefix: str, dst_dir: Path) -> None:
-    dst_dir.mkdir(parents=True, exist_ok=True)
-    paginator = s3.get_paginator("list_objects_v2")
-    prefix_arg = f"{key_prefix}/" if key_prefix else ""
-    for page in paginator.paginate(Bucket=bucket, Prefix=prefix_arg):
-        for obj in page.get("Contents", []):
-            key = obj["Key"]
-            rel = key[len(key_prefix) :].lstrip("/")
-            dest = dst_dir / rel
-            if dst_dir.resolve() not in dest.resolve().parents:
-                raise ValueError(f"Unsafe S3 object path: {key}")
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            _download(s3, bucket, key, dest)
