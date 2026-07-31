@@ -206,14 +206,21 @@ def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:
 
 
 def _swap(src: Path, root: Path) -> None:
+    if root.exists():
+        for item in list(root.iterdir()):
+            if item.name in (".git", ".gitkeep"):
+                continue
+            if item.is_dir():
+                shutil.rmtree(item, ignore_errors=True)
+            elif item.exists():
+                item.unlink()
+    else:
+        root.mkdir(parents=True, exist_ok=True)
+
     for item in src.iterdir():
         if item.name == ".gitkeep":
             continue
         dest = root / item.name
-        if dest.is_dir():
-            shutil.rmtree(dest, ignore_errors=True)
-        elif dest.exists():
-            dest.unlink()
         shutil.move(str(item), str(dest))
 
 
