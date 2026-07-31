@@ -76,10 +76,11 @@ def generate_seed(
 
     click.echo(t("msg.seed_created", path=target_dir.name))
     click.echo("----------------------------------------")
-    click.echo("  • app.py")
-    click.echo("  • Dockerfile")
-    click.echo("  • docker-compose.yml")
-    click.echo("  • compman.yml")
+    click.echo(f"[{target_dir.name}/compman.yml]")
+    click.echo(compman_content.strip())
+    click.echo("----------------------------------------")
+    click.echo(f"[{target_dir.name}/docker-compose.yml]")
+    click.echo(compose_content.strip())
     click.echo("----------------------------------------")
 
     if archive:
