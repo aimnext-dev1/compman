@@ -13,6 +13,13 @@ import typer
 
 
 
+from compman.config import ConfigError, dump_default_config, load_config
+from compman.deploy import deploy as _deploy
+from compman.docker import detect_runtime
+from compman.i18n import get_lang, set_lang, t
+from compman.ops import image, seed, service, stack, volume
+
+
 def _version_callback(value: bool) -> None:
     if value:
         try:
@@ -37,12 +44,6 @@ for _idx, _arg in enumerate(sys.argv):
         set_lang(_arg.split("=", 1)[1])
     elif _arg.startswith("-l="):
         set_lang(_arg.split("=", 1)[1])
-
-from compman.config import ConfigError, dump_default_config, load_config
-from compman.deploy import deploy as _deploy
-from compman.docker import detect_runtime
-from compman.i18n import get_lang, set_lang, t
-from compman.ops import image, seed, service, stack, volume
 
 app = typer.Typer(
     name="compman",
