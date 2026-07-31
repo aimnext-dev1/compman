@@ -14,12 +14,12 @@ def up(runtime: ContainerRuntime, config: Config, profile: str | None = None) ->
             typer.echo(f"No profile specified, using: {profile}")
         files, env = resolve_compose_files(config, profile)
         runtime.passthru_compose(
-            ["up", "-d"], project=config.name, compose_files=files, env=env,
+            ["up", "-d", "--force-recreate"], project=config.name, compose_files=files, env=env,
         )
     else:
         files = resolve_simple_files(config)
         runtime.passthru_compose(
-            ["up", "-d"], project=config.name, compose_files=files,
+            ["up", "-d", "--force-recreate"], project=config.name, compose_files=files,
         )
 
 
@@ -39,7 +39,7 @@ def update(
             typer.echo(f"No profile specified, using: {profile}")
         files, env = resolve_compose_files(config, profile)
         runtime.passthru_compose(
-            ["up", "-d", "--build"],
+            ["up", "-d", "--build", "--force-recreate"],
             project=config.name,
             compose_files=files,
             env=env,
@@ -47,7 +47,7 @@ def update(
     else:
         files = resolve_simple_files(config)
         runtime.passthru_compose(
-            ["up", "-d", "--build"],
+            ["up", "-d", "--build", "--force-recreate"],
             project=config.name,
             compose_files=files,
         )
