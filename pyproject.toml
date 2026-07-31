@@ -10,3 +10,6 @@ compman = "compman.cli:cli"
 
 [tool.uv]
 package = true
+
+[tool.setuptools.packages.find]
+include = ["compman*"]

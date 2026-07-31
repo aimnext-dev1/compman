@@ -58,7 +58,11 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
 
     project_subfolder = config.dirs.get("project", "project") if config else "project"
 
-    endpoint = os.environ.get("COMPMAN_S3_ENDPOINT")
+    endpoint = (
+        os.environ.get("COMPMAN_S3_ENDPOINT")
+        or os.environ.get("AWS_ENDPOINT_URL_S3")
+        or os.environ.get("AWS_ENDPOINT_URL")
+    )
 
     root = Path.cwd()
     deploy_target = root / project_subfolder
@@ -271,7 +275,7 @@ def _handle_s3_error(e: Exception, s3_path: str) -> None:
             click.echo("Guide - Troubleshooting 403 Forbidden:", err=True)
             click.echo("  1️⃣ Ensure AWS credentials have 's3:GetObject' and 's3:ListBucket' permissions.", err=True)
             click.echo("  2️⃣ Verify S3 bucket name and key path are correct.", err=True)
-            click.echo("  3️⃣ If using local S3 (e.g. ministack), check COMPMAN_S3_ENDPOINT environment variable.", err=True)
+            click.echo("  3️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3, AWS_ENDPOINT_URL, or COMPMAN_S3_ENDPOINT.", err=True)
         elif err_code in ("404", "NoSuchBucket", "NoSuchKey", "NotFound"):
             click.echo(f"Error 404 (Not Found): Bucket or file does not exist: '{s3_path}'", err=True)
             click.echo("", err=True)
@@ -286,7 +290,7 @@ def _handle_s3_error(e: Exception, s3_path: str) -> None:
         click.echo("", err=True)
         click.echo("Guide - Troubleshooting connection error:", err=True)
         click.echo("  1️⃣ Check internet connection.", err=True)
-        click.echo("  2️⃣ If using local S3 (e.g. ministack), check COMPMAN_S3_ENDPOINT environment variable.", err=True)
+        click.echo("  2️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3, AWS_ENDPOINT_URL, or COMPMAN_S3_ENDPOINT.", err=True)
 
     else:
         click.echo(f"Download Error: {e}", err=True)

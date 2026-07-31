@@ -57,6 +57,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
+    { name = "botocore" },
     { name = "click" },
     { name = "pyyaml" },
 ]
@@ -64,6 +65,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "boto3" },
+    { name = "botocore" },
     { name = "click" },
     { name = "pyyaml" },
 ]
