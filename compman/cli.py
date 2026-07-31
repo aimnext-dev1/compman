@@ -4,23 +4,92 @@ import os
 import pathlib
 import shutil
 import subprocess
+import sys
+from typing import Any
 import click
 
 from compman.config import ConfigError, dump_default_config, load_config
 from compman.docker import detect_runtime
 from compman.ops import image, service, stack, volume
 from compman.deploy import deploy as _deploy
+from compman.i18n import set_lang, t
+
+
+for _idx, _arg in enumerate(sys.argv):
+    if _arg in ("--lang", "-l") and _idx + 1 < len(sys.argv):
+        set_lang(sys.argv[_idx + 1])
+        break
+    elif _arg.startswith("--lang="):
+        set_lang(_arg.split("=", 1)[1])
+    elif _arg.startswith("-l="):
+        set_lang(_arg.split("=", 1)[1])
+
+
+class I18nOption(click.Option):
+    def __init__(self, param_decls: Any = None, key: str | None = None, **kwargs: Any) -> None:
+        self.i18n_key = key
+        super().__init__(param_decls=param_decls, **kwargs)
+
+    def get_help_record(self, ctx: click.Context) -> tuple[str, str] | None:
+        record = super().get_help_record(ctx)
+        if record and self.i18n_key:
+            return (record[0], t(f"opt.{self.i18n_key}"))
+        return record
+
+
+class I18nCommand(click.Command):
+    def __init__(self, name: str | None = None, key: str | None = None, **kwargs: Any) -> None:
+        self.i18n_key = key or name
+        super().__init__(name=name, **kwargs)
+
+    def get_short_help_str(self, limit: int = 45) -> str:
+        if self.i18n_key:
+            return t(f"cmd.{self.i18n_key}")
+        return super().get_short_help_str(limit)
+
+    def format_help_text(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        text = t(f"cmd.{self.i18n_key}") if self.i18n_key else self.help
+        if text:
+            formatter.write_paragraph()
+            with formatter.indentation():
+                formatter.write_text(text)
+
+
+class I18nGroup(click.Group):
+    def __init__(self, name: str | None = None, key: str | None = None, **kwargs: Any) -> None:
+        self.i18n_key = key or name
+        super().__init__(name=name, **kwargs)
+
+    def get_short_help_str(self, limit: int = 45) -> str:
+        if self.i18n_key:
+            return t(f"cmd.{self.i18n_key}")
+        return super().get_short_help_str(limit)
+
+    def format_help_text(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        text = t(f"cmd.{self.i18n_key}") if self.i18n_key else self.help
+        if text:
+            formatter.write_paragraph()
+            with formatter.indentation():
+                formatter.write_text(text)
+
+    def command(self, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("cls", I18nCommand)
+        return super().command(*args, **kwargs)
+
+    def group(self, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("cls", I18nGroup)
+        return super().group(*args, **kwargs)
 
 
 def _load(config_path: str | None = None) -> dict:
     try:
         cfg = load_config(config_path)
     except ConfigError as e:
-        click.echo(f"💡 compman.yml config file not found ({e})", err=True)
+        click.echo(t("msg.config_not_found", err=e), err=True)
         click.echo("", err=True)
-        click.echo("Start by running one of the following commands:", err=True)
-        click.echo("  • compman init                              (Generate default compman.yml)", err=True)
-        click.echo("  • compman deploy --path s3://<your-bucket>  (Deploy directly with S3 path)", err=True)
+        click.echo(t("msg.start_guide"), err=True)
+        click.echo(f"  • compman init                              ({t('msg.init_desc')})", err=True)
+        click.echo(f"  • compman deploy --path s3://<your-bucket>  ({t('msg.deploy_desc')})", err=True)
         raise SystemExit(1)
     try:
         runtime = detect_runtime()
@@ -31,11 +100,10 @@ def _load(config_path: str | None = None) -> dict:
 
 
 # ---- root level commands ----
-@click.command()
-@click.option("--force", is_flag=True, help="Overwrite existing compman.yml")
-@click.option("--config", "-c", default="compman.yml", help="Config file path")
+@click.command(cls=I18nCommand, key="init")
+@click.option("--force", is_flag=True, cls=I18nOption, key="force")
+@click.option("--config", "-c", default="compman.yml", cls=I18nOption, key="config")
 def init(force: bool, config: str) -> None:
-    """Initialize default compman.yml config file in current directory."""
     from pathlib import Path
 
     path = Path(config)
@@ -47,38 +115,34 @@ def init(force: bool, config: str) -> None:
     click.echo(f"{config} created:\n----------------------------------------\n{content.strip()}\n----------------------------------------")
 
 
-@click.command()
+@click.command(cls=I18nCommand, key="clear")
 def clear() -> None:
-    """Prune unused Docker images and build cache."""
     click.echo("Pruning unused Docker images...")
     runtime = detect_runtime()
     runtime.passthru_cli(["image", "prune", "-af"])
 
 
-@click.command()
-@click.option("--path", default=None, help="S3 URI path (default: 'deploy' in compman.yml)")
-@click.option("--build", is_flag=True, help="Build Docker image after fetching")
-@click.option("--tag", default=None, help="Image tag when building (default: directory name)")
+@click.command(cls=I18nCommand, key="deploy")
+@click.option("--path", default=None, cls=I18nOption, key="path")
+@click.option("--build", is_flag=True, cls=I18nOption, key="build")
+@click.option("--tag", default=None, cls=I18nOption, key="tag")
 def deploy(path: str | None, build: bool, tag: str | None) -> None:
-    """Fetch application package from S3 and generate scaffold if needed."""
     _deploy(build=build, tag=tag, s3_path=path)
 
 
-@click.command()
+@click.command(cls=I18nCommand, key="update")
 @click.argument("profile", required=False)
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def update(profile: str | None, config: str | None) -> None:
-    """Fetch latest S3 package, build Docker image, and recreate stack container."""
     _deploy(build=True, tag=None, s3_path=None)
     ctx = _load(config)
     stack.up(ctx["runtime"], ctx["config"], profile=profile)
 
 
-@click.command()
+@click.command(cls=I18nCommand, key="completion")
 @click.argument("shell", type=click.Choice(["powershell", "bash", "zsh", "fish"]), default="powershell")
-@click.option("--install", is_flag=True, help="Automatically install completion script into shell profile.")
+@click.option("--install", is_flag=True, cls=I18nOption, key="install")
 def completion(shell: str, install: bool) -> None:
-    """Output or install shell auto-completion script."""
     if shell == "powershell":
         snippet = (
             "\n# compman shell completion\n"
@@ -196,10 +260,9 @@ def _find_uv() -> str:
     return "uv"
 
 
-@click.command()
-@click.option("--repo", default="https://github.com/aimnext-dev1/compman.git", help="Git repository URL")
+@click.command(cls=I18nCommand, key="upgrade")
+@click.option("--repo", default="https://github.com/aimnext-dev1/compman.git", cls=I18nOption, key="repo")
 def upgrade(repo: str) -> None:
-    """Self-upgrade compman CLI to the latest version from GitHub."""
     import sys
 
     click.echo(f"🚀 Upgrading compman CLI from {repo}...")
@@ -230,9 +293,12 @@ def upgrade(repo: str) -> None:
 
 
 # ---- main group ----
-@click.group()
-def cli() -> None:
-    pass
+@click.group(cls=I18nGroup, key="root")
+@click.option("--lang", "-l", type=click.Choice(["en", "ko"]), default=None, cls=I18nOption, key="lang")
+@click.pass_context
+def cli(ctx: click.Context, lang: str | None) -> None:
+    if lang:
+        set_lang(lang)
 
 
 cli.add_command(init)
@@ -244,164 +310,145 @@ cli.add_command(upgrade)
 
 
 # ---- stack ----
-@cli.group("stack")
+@cli.group("stack", cls=I18nGroup, key="stack")
 def stack_cmd() -> None:
-    """Manage Docker Compose stack lifecycles."""
     pass
 
 
-@stack_cmd.command()
+@stack_cmd.command(cls=I18nCommand, key="stack.up")
 @click.argument("profile", required=False)
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def up(profile: str | None, config: str | None) -> None:
-    """Start stack containers in detached mode."""
     ctx = _load(config)
     stack.up(ctx["runtime"], ctx["config"], profile)
 
 
-@stack_cmd.command()
+@stack_cmd.command(cls=I18nCommand, key="stack.down")
 @click.confirmation_option(prompt="Remove the entire stack?")
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def down(config: str | None) -> None:
-    """Stop and remove stack containers and networks."""
     ctx = _load(config)
     stack.down(ctx["runtime"], ctx["config"])
 
 
-@stack_cmd.command()
+@stack_cmd.command(cls=I18nCommand, key="stack.update")
 @click.argument("profile", required=False)
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def update(profile: str | None, config: str | None) -> None:
-    """Rebuild images and recreate stack containers."""
     ctx = _load(config)
     stack.update(ctx["runtime"], ctx["config"], profile)
 
 
 # ---- service ----
-@cli.group("service")
+@cli.group("service", cls=I18nGroup, key="service")
 def service_cmd() -> None:
-    """Manage individual services within a stack."""
     pass
 
 
-@service_cmd.command()
+@service_cmd.command(cls=I18nCommand, key="service.start")
 @click.argument("services", nargs=-1)
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def start(services: tuple[str, ...], config: str | None) -> None:
-    """Start specific or all services in the stack."""
     ctx = _load(config)
     service.start(ctx["runtime"], ctx["config"], services)
 
 
-@service_cmd.command()
+@service_cmd.command(cls=I18nCommand, key="service.stop")
 @click.argument("services", nargs=-1)
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def stop(services: tuple[str, ...], config: str | None) -> None:
-    """Stop specific or all services in the stack."""
     ctx = _load(config)
     service.stop(ctx["runtime"], ctx["config"], services)
 
 
-@service_cmd.command()
+@service_cmd.command(cls=I18nCommand, key="service.restart")
 @click.argument("services", nargs=-1)
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def restart(services: tuple[str, ...], config: str | None) -> None:
-    """Restart specific or all services in the stack."""
     ctx = _load(config)
     service.restart(ctx["runtime"], ctx["config"], services)
 
 
-@service_cmd.command()
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@service_cmd.command(cls=I18nCommand, key="service.status")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def status(config: str | None) -> None:
-    """Display current status of all stack containers."""
     ctx = _load(config)
     service.status(ctx["runtime"], ctx["config"])
 
 
-@service_cmd.command()
+@service_cmd.command(cls=I18nCommand, key="service.log")
 @click.argument("name", required=False)
-@click.option("-f", "--follow", is_flag=True, help="Follow log output continuously.")
-@click.option("-n", "--tail", default=50, help="Number of lines to show from the end of logs (default: 50).")
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("-f", "--follow", is_flag=True, cls=I18nOption, key="follow")
+@click.option("-n", "--tail", default=50, cls=I18nOption, key="tail")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def log(name: str | None, follow: bool, tail: int, config: str | None) -> None:
-    """Display or stream logs for a service container."""
     ctx = _load(config)
     service.log(ctx["runtime"], ctx["config"], name, follow=follow, tail=tail)
 
 
-@service_cmd.command()
+@service_cmd.command(cls=I18nCommand, key="service.connect")
 @click.argument("name", required=False)
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def connect(name: str | None, config: str | None) -> None:
-    """Open an interactive shell inside a service container."""
     ctx = _load(config)
     service.connect(ctx["runtime"], ctx["config"], name)
 
 
 # ---- volume ----
-@cli.group("volume")
+@cli.group("volume", cls=I18nGroup, key="volume")
 def volume_cmd() -> None:
-    """Backup, restore, pull, or push Docker persistent volumes."""
     pass
 
 
-@volume_cmd.command()
-@click.option("--no-stop", is_flag=True, help="Don't stop stack during backup")
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@volume_cmd.command(cls=I18nCommand, key="volume.backup")
+@click.option("--no-stop", is_flag=True, cls=I18nOption, key="no_stop")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def backup(no_stop: bool, config: str | None) -> None:
-    """Create a compressed backup archive of stack volumes."""
     ctx = _load(config)
     volume.backup(ctx["runtime"], ctx["config"], no_stop=no_stop)
 
 
-@volume_cmd.command()
+@volume_cmd.command(cls=I18nCommand, key="volume.restore")
 @click.argument("timestamp")
-@click.option("--no-stop", is_flag=True, help="Don't stop stack during restore")
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--no-stop", is_flag=True, cls=I18nOption, key="no_stop")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def restore(timestamp: str, no_stop: bool, config: str | None) -> None:
-    """Restore stack volumes from a backup archive timestamp."""
     ctx = _load(config)
     volume.restore(ctx["runtime"], ctx["config"], timestamp, no_stop=no_stop)
 
 
-@volume_cmd.command()
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@volume_cmd.command(cls=I18nCommand, key="volume.pull")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def pull(config: str | None) -> None:
-    """Extract volume data from containers into local directory."""
     ctx = _load(config)
     volume.pull(ctx["runtime"], ctx["config"])
 
 
-@volume_cmd.command()
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@volume_cmd.command(cls=I18nCommand, key="volume.push")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def push(config: str | None) -> None:
-    """Upload local volume directory data into containers."""
     ctx = _load(config)
     volume.push(ctx["runtime"], ctx["config"])
 
 
 # ---- image ----
-@cli.group("image")
+@cli.group("image", cls=I18nGroup, key="image")
 def image_cmd() -> None:
-    """Backup or restore Docker container images."""
     pass
 
 
-@image_cmd.command("backup")
-@click.option("--source-image", is_flag=True, help="Backup original image instead of committing runtime state")
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@image_cmd.command("backup", cls=I18nCommand, key="image.backup")
+@click.option("--source-image", is_flag=True, cls=I18nOption, key="source_image")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def img_backup(source_image: bool, config: str | None) -> None:
-    """Commit and export stack container images to tar.gz archive."""
     ctx = _load(config)
     image.backup(ctx["runtime"], ctx["config"], source_mode=source_image)
 
 
-@image_cmd.command("restore")
+@image_cmd.command("restore", cls=I18nCommand, key="image.restore")
 @click.argument("timestamp")
-@click.option("--config", "-c", default=None, help="Path to compman.yml")
+@click.option("--config", "-c", default=None, cls=I18nOption, key="config")
 def img_restore(timestamp: str, config: str | None) -> None:
-    """Import container images from a backup archive timestamp."""
     ctx = _load(config)
     image.restore(ctx["runtime"], ctx["config"], timestamp)
 

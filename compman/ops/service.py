@@ -4,6 +4,7 @@ import click
 
 from compman.config import Config
 from compman.docker import ContainerRuntime
+from compman.i18n import t
 
 
 def start(
@@ -41,7 +42,7 @@ def log(
     if not service:
         containers = runtime.list_containers(config.name)
         if len(containers) == 0:
-            click.echo("💡 No running containers found in this stack. Run 'compman stack up' first.", err=True)
+            click.echo(t("msg.no_running_containers"), err=True)
             return
         if len(containers) == 1:
             service = containers[0]
@@ -53,7 +54,7 @@ def log(
             return
     cid = runtime.get_container_id(service)
     if not cid:
-        click.echo(f"💡 Container '{service}' not found. Run 'compman service status' to check running containers.", err=True)
+        click.echo(t("msg.container_not_found", service=service), err=True)
         return
 
     cmd = ["logs"]
@@ -67,7 +68,7 @@ def connect(runtime: ContainerRuntime, config: Config, service: str | None) -> N
     if not service:
         containers = runtime.list_containers(config.name)
         if len(containers) == 0:
-            click.echo("💡 No running containers found in this stack. Run 'compman stack up' first.", err=True)
+            click.echo(t("msg.no_running_containers"), err=True)
             return
         if len(containers) == 1:
             service = containers[0]
@@ -79,7 +80,7 @@ def connect(runtime: ContainerRuntime, config: Config, service: str | None) -> N
             return
     cid = runtime.get_container_id(service)
     if not cid:
-        click.echo(f"💡 Container '{service}' not found. Run 'compman service status' to check running containers.", err=True)
+        click.echo(t("msg.container_not_found", service=service), err=True)
         return
     runtime.passthru_cli([
         "exec",

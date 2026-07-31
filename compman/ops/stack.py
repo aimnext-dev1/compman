@@ -4,6 +4,7 @@ import click
 
 from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_files, resolve_simple_files
+from compman.i18n import t
 
 
 def up(runtime: ContainerRuntime, config: Config, profile: str | None = None) -> None:
@@ -24,7 +25,7 @@ def up(runtime: ContainerRuntime, config: Config, profile: str | None = None) ->
 
 def down(runtime: ContainerRuntime, config: Config) -> None:
     if not runtime.stack_exists(config.name):
-        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' to start it.", err=True)
+        click.echo(t("msg.stack_not_running", name=config.name), err=True)
         return
     runtime.passthru_compose(["down"], project=config.name)
 
@@ -33,7 +34,7 @@ def update(
     runtime: ContainerRuntime, config: Config, profile: str | None = None
 ) -> None:
     if not runtime.stack_exists(config.name):
-        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' to start it.", err=True)
+        click.echo(t("msg.stack_not_running", name=config.name), err=True)
         return
     if config.has_profiles():
         if not profile:
