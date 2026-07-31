@@ -10,11 +10,7 @@ from typing import Annotated, Optional
 
 import typer
 
-from compman.config import ConfigError, dump_default_config, load_config
-from compman.deploy import deploy as _deploy
-from compman.docker import detect_runtime
-from compman.i18n import get_lang, set_lang, t
-from compman.ops import image, seed, service, stack, volume
+
 
 
 def _version_callback(value: bool) -> None:
@@ -41,6 +37,12 @@ for _idx, _arg in enumerate(sys.argv):
         set_lang(_arg.split("=", 1)[1])
     elif _arg.startswith("-l="):
         set_lang(_arg.split("=", 1)[1])
+
+from compman.config import ConfigError, dump_default_config, load_config
+from compman.deploy import deploy as _deploy
+from compman.docker import detect_runtime
+from compman.i18n import get_lang, set_lang, t
+from compman.ops import image, seed, service, stack, volume
 
 app = typer.Typer(
     name="compman",
@@ -294,7 +296,7 @@ def version_cmd() -> None:
 
 
 # ---- stack group ----
-stack_app = typer.Typer(help=t("cmd.stack"))
+stack_app = typer.Typer(help=t("cmd.stack"), no_args_is_help=True)
 
 
 @stack_app.command("up", help=t("cmd.stack.up"))
@@ -330,7 +332,7 @@ app.add_typer(stack_app, name="stack")
 
 
 # ---- service group ----
-service_app = typer.Typer(help=t("cmd.service"))
+service_app = typer.Typer(help=t("cmd.service"), no_args_is_help=True)
 
 
 @service_app.command("start", help=t("cmd.service.start"))
@@ -392,7 +394,7 @@ app.add_typer(service_app, name="service")
 
 
 # ---- volume group ----
-volume_app = typer.Typer(help=t("cmd.volume"))
+volume_app = typer.Typer(help=t("cmd.volume"), no_args_is_help=True)
 
 
 @volume_app.command("backup", help=t("cmd.volume.backup"))
@@ -434,7 +436,7 @@ app.add_typer(volume_app, name="volume")
 
 
 # ---- image group ----
-image_app = typer.Typer(help=t("cmd.image"))
+image_app = typer.Typer(help=t("cmd.image"), no_args_is_help=True)
 
 
 @image_app.command("backup", help=t("cmd.image.backup"))
