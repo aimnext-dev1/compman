@@ -29,12 +29,8 @@ Write-Host "✅ Ensured '$binDir' is at the front of User PATH." -ForegroundColo
 
 # 3. Install compman via uv or pip
 if (Get-Command uv -ErrorAction SilentlyContinue) {
+    # uv tool install places shims in ~/.local/bin (already set at front of PATH above)
     uv tool install --reinstall git+https://github.com/aimnext-dev1/compman.git
-    # Make sure uv bin dir is also in PATH for this session
-    $uvBin = uv tool bin 2>$null
-    if ($uvBin -and (Test-Path $uvBin)) {
-        $env:PATH = "$uvBin;$env:PATH"
-    }
 } elseif (Get-Command pip -ErrorAction SilentlyContinue) {
     pip install --upgrade git+https://github.com/aimnext-dev1/compman.git --target "$binDir"
 } else {
