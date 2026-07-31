@@ -3,7 +3,7 @@ from __future__ import annotations
 import typer
 
 from compman.config import Config
-from compman.docker import ContainerRuntime, resolve_compose_context
+from compman.docker import ContainerRuntime, ComposeContext, resolve_compose_context
 from compman.i18n import t
 
 
@@ -44,19 +44,9 @@ def log(
     profile: str | None = None,
 ) -> None:
     context = resolve_compose_context(config, profile)
+    service = _resolve_container(runtime, config, service, context)
     if not service:
-        containers = runtime.list_containers(config.name, context.files, context.env)
-        if len(containers) == 0:
-            typer.echo(t("msg.no_running_containers"), err=True)
-            return
-        if len(containers) == 1:
-            service = containers[0]
-            typer.echo(t("msg.auto_selected", name=service))
-        else:
-            typer.echo(t("msg.available_containers"))
-            for c in containers:
-                typer.echo(f"  {c}")
-            return
+        return
     cid = runtime.get_container_id(service, config.name)
     if not cid:
         typer.echo(t("msg.container_not_found", service=service), err=True)
@@ -73,19 +63,9 @@ def connect(
     runtime: ContainerRuntime, config: Config, service: str | None, profile: str | None = None
 ) -> None:
     context = resolve_compose_context(config, profile)
+    service = _resolve_container(runtime, config, service, context, connect=True)
     if not service:
-        containers = runtime.list_containers(config.name, context.files, context.env)
-        if len(containers) == 0:
-            typer.echo(t("msg.no_running_containers"), err=True)
-            return
-        if len(containers) == 1:
-            service = containers[0]
-            typer.echo(t("msg.auto_selected", name=service))
-        else:
-            typer.echo(t("msg.specify_container"))
-            for c in containers:
-                typer.echo(f"  {c}")
-            return
+        return
     cid = runtime.get_container_id(service, config.name)
     if not cid:
         typer.echo(t("msg.container_not_found", service=service), err=True)
@@ -117,3 +97,26 @@ def _passthru_with_services(
     runtime.passthru_compose(
         args, project=context.project, compose_files=context.files, env=context.env
     )
+
+
+def _resolve_container(
+    runtime: ContainerRuntime,
+    config: Config,
+    service: str | None,
+    context: ComposeContext,
+    connect: bool = False,
+) -> str | None:
+    if service:
+        return service
+    containers = runtime.list_containers(config.name, context.files, context.env)
+    if not containers:
+        typer.echo(t("msg.no_running_containers"), err=True)
+        return None
+    if len(containers) == 1:
+        service = containers[0]
+        typer.echo(t("msg.auto_selected", name=service))
+        return service
+    typer.echo(t("msg.specify_container" if connect else "msg.available_containers"))
+    for container in containers:
+        typer.echo(f"  {container}")
+    return None
