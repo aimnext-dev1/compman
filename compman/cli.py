@@ -10,7 +10,7 @@ import click
 
 from compman.config import ConfigError, dump_default_config, load_config
 from compman.docker import detect_runtime
-from compman.ops import image, service, stack, volume
+from compman.ops import image, seed, service, stack, volume
 from compman.deploy import deploy as _deploy
 from compman.i18n import set_lang, t
 
@@ -148,7 +148,7 @@ def completion(shell: str, install: bool) -> None:
             "\n# compman shell completion\n"
             "Register-ArgumentCompleter -Native -CommandName compman -ScriptBlock {\n"
             "    param($wordToComplete, $commandAst, $cursorPosition)\n"
-            "    $subcommands = @('init', 'clear', 'deploy', 'update', 'upgrade', 'completion', 'stack', 'service', 'volume', 'image')\n"
+            "    $subcommands = @('init', 'clear', 'deploy', 'update', 'upgrade', 'completion', 'seed', 'stack', 'service', 'volume', 'image')\n"
             "    $words = $commandAst.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)\n"
             "    if ($words.Count -le 2) {\n"
             "        $subcommands | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
@@ -292,6 +292,15 @@ def upgrade(repo: str) -> None:
         raise SystemExit(1)
 
 
+@click.command(name="seed", cls=I18nCommand, key="seed")
+@click.option("-o", "--output", default="seed", cls=I18nOption, key="output")
+@click.option("-a", "--archive", is_flag=True, cls=I18nOption, key="archive")
+@click.option("-p", "--port", default=18080, type=int, cls=I18nOption, key="port")
+@click.option("--force", is_flag=True, cls=I18nOption, key="force")
+def seed_cmd(output: str, archive: bool, port: int, force: bool) -> None:
+    seed.generate_seed(output=output, archive=archive, port=port, force=force)
+
+
 # ---- main group ----
 @click.group(cls=I18nGroup, key="root")
 @click.option("--lang", "-l", type=click.Choice(["en", "ko"]), default=None, cls=I18nOption, key="lang")
@@ -307,6 +316,7 @@ cli.add_command(deploy)
 cli.add_command(update)
 cli.add_command(completion)
 cli.add_command(upgrade)
+cli.add_command(seed_cmd, name="seed")
 
 
 # ---- stack ----

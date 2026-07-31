@@ -16,7 +16,7 @@ compman/               # Python package
   docker.py            # ContainerRuntime abstraction, compose file resolution
   deploy.py            # S3 deploy (paths hardcoded, currently empty)
   ops/                 # business logic per domain
-    stack.py, service.py, volume.py, image.py
+    stack.py, service.py, volume.py, image.py, seed.py
 test/                  # example configs only, NOT test suites
 ```
 

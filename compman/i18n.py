@@ -124,6 +124,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Import container images from a backup archive timestamp.",
         "ko": "백업 아카이브 타임스탬프로부터 컨테이너 이미지를 불러옵니다.",
     },
+    "cmd.seed": {
+        "en": "Generate a sample seed project (app.py, Dockerfile, compose) for testing.",
+        "ko": "배포 테스트용 샘플 시드 프로젝트(app.py, Dockerfile, compose)를 생성합니다.",
+    },
 
     # Option descriptions
     "opt.lang": {
@@ -131,8 +135,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "CLI 도움말 및 메시지 언어 설정 (en/ko).",
     },
     "opt.force": {
-        "en": "Overwrite existing compman.yml",
-        "ko": "기존 compman.yml 파일 덮어쓰기",
+        "en": "Overwrite existing files",
+        "ko": "기존 파일 덮어쓰기",
+    },
+    "opt.archive": {
+        "en": "Compress generated seed files into a .tar.gz archive.",
+        "ko": "생성된 시드 파일들을 .tar.gz 아카이브 파일로 압축합니다.",
+    },
+    "opt.output": {
+        "en": "Output directory or archive base name (default: seed).",
+        "ko": "출력 디렉터리 또는 아카이브 기본 이름 (기본값: seed).",
+    },
+    "opt.port": {
+        "en": "Port number for the sample app (default: 18080).",
+        "ko": "샘플 애플리케이션의 포트 번호 (기본값: 18080).",
     },
     "opt.config": {
         "en": "Path to compman.yml",
@@ -251,6 +267,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "msg.s3_network": {
         "en": "Network Error: Unable to connect to S3 endpoint.\n\nGuide - Troubleshooting connection error:\n  1️⃣ Check internet connection.\n  2️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.",
         "ko": "네트워크 오류: S3 엔드포인트에 연결할 수 없습니다.\n\n가이드 - 네트워크 연결 오류 해결 방법:\n  1️⃣ 인터넷 연결 상태를 확인하세요.\n  2️⃣ 로컬 S3 에뮬레이터 사용 시 AWS_ENDPOINT_URL_S3 또는 AWS_ENDPOINT_URL 환경 변수를 확인하세요.",
+    },
+    "msg.seed_created": {
+        "en": "Created sample seed project: {path}/",
+        "ko": "샘플 시드 프로젝트가 생성되었습니다: {path}/",
+    },
+    "msg.seed_archive_created": {
+        "en": "Archive created: {path}",
+        "ko": "아카이브 파일이 생성되었습니다: {path}",
+    },
+    "msg.seed_exists": {
+        "en": "💡 Directory '{path}' already exists and is not empty. Use --force to overwrite.",
+        "ko": "💡 디렉터리 '{path}'가 이미 존재하며 비어있지 않습니다. 덮어쓰려면 --force 옵션을 사용하세요.",
     },
 }
 
