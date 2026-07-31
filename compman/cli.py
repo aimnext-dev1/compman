@@ -14,7 +14,11 @@ def _load(config_path: str | None = None) -> dict:
     try:
         cfg = load_config(config_path)
     except ConfigError as e:
-        click.echo(f"Config error: {e}", err=True)
+        click.echo(f"💡 compman.yml 설정 파일을 찾을 수 없습니다 ({e})", err=True)
+        click.echo("", err=True)
+        click.echo("다음 명령어로 기본 설정 파일을 생성하거나 첫 배포를 진행해보세요:", err=True)
+        click.echo("  • compman init                              (기본 compman.yml 생성)", err=True)
+        click.echo("  • compman deploy --path s3://<your-bucket>  (S3 경로로 바로 첫 배포)", err=True)
         raise SystemExit(1)
     try:
         runtime = detect_runtime()

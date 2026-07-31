@@ -34,13 +34,20 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
     if not s3_path and not config:
         try:
             s3_path = load_config().deploy
-        except ConfigError as e:
-            click.echo(f"Config error: {e}", err=True)
+        except ConfigError:
+            click.echo("💡 [compman deploy] compman.yml 설정 파일이 없는 빈 디렉터리입니다.", err=True)
+            click.echo("", err=True)
+            click.echo("다음 중 하나로 첫 배포 또는 설정을 시작해보세요:", err=True)
+            click.echo("  1️⃣ S3 경로를 직접 지정하여 첫 배포:", err=True)
+            click.echo("     compman deploy --path s3://<your-bucket>/path/to/app.tar.gz", err=True)
+            click.echo("  2️⃣ 기본 compman.yml 설정 템플릿 생성:", err=True)
+            click.echo("     compman init", err=True)
             raise SystemExit(1)
 
     if not s3_path:
-        click.echo("S3 path not configured.", err=True)
-        click.echo("Set 'deploy' in compman.yml or pass --path.")
+        click.echo("💡 [compman deploy] S3 배포 경로가 지정되지 않았습니다.", err=True)
+        click.echo("  • compman.yml 파일의 'deploy' 속성을 지정하거나,", err=True)
+        click.echo("  • compman deploy --path s3://... 옵션으로 S3 경로를 전달해주세요.", err=True)
         raise SystemExit(1)
 
     project_subfolder = config.dirs.get("project", "project") if config else "project"
