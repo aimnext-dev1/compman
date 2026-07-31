@@ -192,3 +192,77 @@ def test_container_runtime_methods():
         rt.passthru_compose(["ps"], project="my_proj")
         mock_passthru_cli.assert_called_once_with(["ps"])
         mock_passthru_compose.assert_called_once_with(["ps"], project="my_proj")
+
+
+def test_service_status_reads_compose_json(monkeypatch):
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    payload = (
+        '[{"Service":"web","Name":"app-web-1","State":"running",'
+        '"Status":"Up 5 seconds","Health":"healthy"}]'
+    )
+    with patch.object(
+        runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, payload, "")
+    ) as run:
+        rows = runtime.service_status("app", [pathlib.Path("compose.yml")], {})
+
+    assert rows[0]["service"] == "web"
+    run.assert_called_once_with(
+        ["ps", "-a", "--format", "json"],
+        project="app",
+        compose_files=[pathlib.Path("compose.yml")],
+        env={},
+        check=False,
+    )
+
+
+def test_service_status_reads_newline_delimited_json():
+    runtime = ContainerRuntime("podman", ["podman"], ["podman", "compose"])
+    payload = '{"Service":"web","Name":"app-web-1"}\n{"Service":"db","Name":"app-db-1"}'
+    with patch.object(
+        runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, payload, "")):
+        rows = runtime.service_status("app", [], {})
+
+    assert rows == [
+        {"service": "web", "name": "app-web-1"},
+        {"service": "db", "name": "app-db-1"},
+    ]
+
+
+def test_service_status_reads_single_json_object():
+    runtime = ContainerRuntime("podman", ["podman"], ["podman", "compose"])
+    with patch.object(
+        runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, '{"Service":"web"}', "")
+    ):
+        rows = runtime.service_status("app", [], {})
+
+    assert rows == [{"service": "web"}]
+
+
+def test_service_status_returns_empty_for_blank_output():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    with patch.object(runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, "\n", "")):
+        rows = runtime.service_status("app", [], {})
+
+    assert rows == []
+
+
+def test_service_status_rejects_invalid_json():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    with patch.object(runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, "bad json", "")):
+        with pytest.raises(RuntimeError, match="Invalid service status JSON"):
+            runtime.service_status("app", [], {})
+
+
+def test_service_status_rejects_json_without_object_rows():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    with patch.object(runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, "[1]", "")):
+        with pytest.raises(RuntimeError, match="Invalid service status JSON"):
+            runtime.service_status("app", [], {})
+
+
+def test_service_status_raises_on_failed_probe():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    result = subprocess.CompletedProcess(["docker", "compose"], 1, "", "failed")
+    with patch.object(runtime, "run_compose", return_value=result):
+        with pytest.raises(RuntimeError, match="Command failed"):
+            runtime.service_status("app", [], {})

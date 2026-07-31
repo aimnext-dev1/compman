@@ -35,6 +35,47 @@ class DoctorReport:
         }
 
 
+@dataclass(frozen=True)
+class ServiceStatus:
+    service: str
+    container: str
+    state: str
+    status: str
+    health: str | None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "service": self.service,
+            "container": self.container,
+            "state": self.state,
+            "status": self.status,
+            "health": self.health,
+        }
+
+
+@dataclass(frozen=True)
+class StatusReport:
+    ok: bool
+    runtime: str | None
+    stack: str | None
+    profile: str | None
+    compose_files: tuple[str, ...]
+    services: tuple[ServiceStatus, ...]
+    error: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema_version": 1,
+            "ok": self.ok,
+            "runtime": self.runtime,
+            "stack": self.stack,
+            "profile": self.profile,
+            "compose_files": list(self.compose_files),
+            "services": [service.to_dict() for service in self.services],
+            "error": self.error,
+        }
+
+
 def collect_doctor(config_path: str | None, profile: str | None = None) -> DoctorReport:
     checks: list[CheckResult] = []
     config = _collect_config(config_path, checks)
@@ -47,6 +88,56 @@ def collect_doctor(config_path: str | None, profile: str | None = None) -> Docto
         _collect_managed_dirs(config, checks)
     _collect_aws(checks)
     return DoctorReport(tuple(checks))
+
+
+def collect_status(config_path: str | None, profile: str | None = None) -> StatusReport:
+    try:
+        config = load_config(config_path)
+    except Exception as exc:
+        return StatusReport(False, None, None, None, (), (), str(exc))
+
+    effective_profile = profile
+    if config.has_profiles() and effective_profile is None:
+        effective_profile = next(iter(config.profiles))
+    try:
+        context = resolve_compose_context(config, effective_profile)
+    except Exception as exc:
+        return StatusReport(False, None, config.name, effective_profile, (), (), str(exc))
+
+    compose_files = tuple(str(path) for path in context.files)
+    try:
+        runtime = detect_runtime()
+    except Exception as exc:
+        return StatusReport(False, None, context.project, effective_profile, compose_files, (), str(exc))
+
+    try:
+        if not runtime.stack_exists(context.project, context.files, context.env):
+            return StatusReport(
+                False,
+                runtime.name,
+                context.project,
+                effective_profile,
+                compose_files,
+                (),
+                f"Stack '{context.project}' is not running.",
+            )
+        rows = runtime.service_status(context.project, context.files, context.env)
+    except Exception as exc:
+        return StatusReport(
+            False, runtime.name, context.project, effective_profile, compose_files, (), str(exc)
+        )
+
+    services = tuple(
+        ServiceStatus(
+            service=str(row.get("service", "")),
+            container=str(row.get("name", "")),
+            state=str(row.get("state", "")),
+            status=str(row.get("status", "")),
+            health=str(row["health"]) if row.get("health") else None,
+        )
+        for row in rows
+    )
+    return StatusReport(True, runtime.name, context.project, effective_profile, compose_files, services)
 
 
 def _collect_config(config_path: str | None, checks: list[CheckResult]) -> Config | None:

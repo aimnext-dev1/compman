@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from dataclasses import dataclass
@@ -165,6 +166,22 @@ class ContainerRuntime:
         _raise_probe_failure(result)
         return [c for c in result.stdout.strip().splitlines() if c]
 
+    def service_status(
+        self,
+        project: str,
+        compose_files: Sequence[Path] | None = None,
+        env: dict[str, str] | None = None,
+    ) -> list[dict[str, object]]:
+        result = self.run_compose(
+            ["ps", "-a", "--format", "json"],
+            project=project,
+            compose_files=compose_files,
+            env=env,
+            check=False,
+        )
+        _raise_probe_failure(result)
+        return _parse_service_status(result.stdout)
+
     def list_volumes(self, project: str) -> list[str]:
         result = self.run_cli(
             [
@@ -308,6 +325,23 @@ def _raise_probe_failure(result: subprocess.CompletedProcess) -> None:
     code = getattr(result, "returncode", 0)
     if isinstance(code, int) and code != 0:
         _die(getattr(result, "args", ["container runtime"]), result)
+
+
+def _parse_service_status(payload: str) -> list[dict[str, object]]:
+    if not payload.strip():
+        return []
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError:
+        try:
+            parsed = [json.loads(line) for line in payload.splitlines() if line.strip()]
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("Invalid service status JSON") from exc
+    if isinstance(parsed, dict):
+        parsed = [parsed]
+    if not isinstance(parsed, list) or not all(isinstance(row, dict) for row in parsed):
+        raise RuntimeError("Invalid service status JSON")
+    return [{str(key).lower(): value for key, value in row.items()} for row in parsed]
 
 
 def resolve_compose_files(
