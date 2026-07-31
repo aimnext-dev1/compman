@@ -24,4 +24,14 @@ if (Get-Command uv -ErrorAction SilentlyContinue) {
     exit 1
 }
 
+# 3. Automatically register PowerShell Tab auto-completion
+if (Get-Command compman -ErrorAction SilentlyContinue) {
+    try {
+        compman completion powershell --install | Out-Null
+        Write-Host "✅ Registered shell auto-completion for PowerShell." -ForegroundColor Green
+    } catch {
+        # ignore if profile cannot be modified
+    }
+}
+
 Write-Host "`n🎉 compman installed successfully! Run 'compman --help' to get started.`n" -ForegroundColor Cyan

@@ -32,4 +32,12 @@ case ":$PATH:" in
         ;;
 esac
 
+if command -v compman >/dev/null 2>&1; then
+    if [ -n "$ZSH_VERSION" ] || [ -f "$HOME/.zshrc" ]; then
+        compman completion zsh --install >/dev/null 2>&1 || true
+    elif [ -f "$HOME/.bashrc" ]; then
+        compman completion bash --install >/dev/null 2>&1 || true
+    fi
+fi
+
 echo "\n🎉 compman installed successfully! Run 'compman --help' to get started.\n"

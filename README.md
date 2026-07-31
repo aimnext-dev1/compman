@@ -60,8 +60,25 @@ compman deploy --path s3://my-bucket/app.tar.gz
 compman deploy --build
 
 # 3. ⭐ 단 한 줄로 S3 최신 수신 + Docker 이미지 빌드 + 무중단 컨테이너 교체 기동
-compman update
 ```
+
+---
+
+## ⚡ Shell 자동완성 (Tab Completion)
+
+콘솔 터미널에서 `compman` 입력 후 `Tab` 키를 누르면 서브 커맨드(`stack`, `service`, `deploy`, `update`, `volume`, `image`, `up`, `down`, `status` 등)가 **자동완성**됩니다.
+
+```bash
+# PowerShell 자동완성 프로필 자동 등록
+compman completion powershell --install
+
+# Bash/Zsh/Fish 자동완성 등록
+compman completion bash --install
+compman completion zsh --install
+compman completion fish --install
+```
+
+> 💡 원스톱 설치 스크립트(`install.ps1` / `install.sh`)로 설치 시 **자동완성까지 100% 자동 등록**됩니다.
 
 ---
 

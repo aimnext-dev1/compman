@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pathlib
+import subprocess
 import click
 
 from compman.config import ConfigError, dump_default_config, load_config
@@ -62,6 +64,79 @@ def update(profile: str | None, config: str | None) -> None:
     stack.up(ctx["runtime"], ctx["config"], profile=profile)
 
 
+@click.command()
+@click.argument("shell", type=click.Choice(["powershell", "bash", "zsh", "fish"]), default="powershell")
+@click.option("--install", is_flag=True, help="Shell 프로필에 자동완성 설정을 등록합니다.")
+def completion(shell: str, install: bool) -> None:
+    """Shell 자동완성(Tab-completion) 스크립트 출력 및 자동 등록."""
+    if shell == "powershell":
+        snippet = (
+            "\n# compman shell completion\n"
+            "if (Get-Command compman -ErrorAction SilentlyContinue) {\n"
+            "    $env:_COMPMAN_COMPLETE='powershell_source'\n"
+            "    compman | Out-String | Invoke-Expression\n"
+            "}\n"
+        )
+        if install:
+            try:
+                ps_profile = subprocess.check_output(
+                    ["powershell", "-NoProfile", "-Command", "echo $PROFILE"], text=True
+                ).strip()
+                profile_path = pathlib.Path(ps_profile)
+                profile_path.parent.mkdir(parents=True, exist_ok=True)
+                current_content = profile_path.read_text(encoding="utf-8") if profile_path.exists() else ""
+                if "_COMPMAN_COMPLETE" not in current_content:
+                    with profile_path.open("a", encoding="utf-8") as f:
+                        f.write(snippet)
+                    click.echo(f"✅ PowerShell 자동완성이 등록되었습니다: {profile_path}")
+                else:
+                    click.echo("✅ PowerShell 프로필에 이미 자동완성이 등록되어 있습니다.")
+            except Exception as e:
+                click.echo(f"Error registering PowerShell completion: {e}", err=True)
+        else:
+            click.echo(snippet.strip())
+    elif shell == "bash":
+        snippet = 'eval "$(_COMPMAN_COMPLETE=bash_source compman)"'
+        if install:
+            rc_path = pathlib.Path.home() / ".bashrc"
+            current_content = rc_path.read_text(encoding="utf-8") if rc_path.exists() else ""
+            if "_COMPMAN_COMPLETE" not in current_content:
+                with rc_path.open("a", encoding="utf-8") as f:
+                    f.write(f"\n{snippet}\n")
+                click.echo(f"✅ Bash 자동완성이 등록되었습니다: {rc_path}")
+            else:
+                click.echo("✅ .bashrc에 이미 자동완성이 등록되어 있습니다.")
+        else:
+            click.echo(snippet)
+    elif shell == "zsh":
+        snippet = 'eval "$(_COMPMAN_COMPLETE=zsh_source compman)"'
+        if install:
+            rc_path = pathlib.Path.home() / ".zshrc"
+            current_content = rc_path.read_text(encoding="utf-8") if rc_path.exists() else ""
+            if "_COMPMAN_COMPLETE" not in current_content:
+                with rc_path.open("a", encoding="utf-8") as f:
+                    f.write(f"\n{snippet}\n")
+                click.echo(f"✅ Zsh 자동완성이 등록되었습니다: {rc_path}")
+            else:
+                click.echo("✅ .zshrc에 이미 자동완성이 등록되어 있습니다.")
+        else:
+            click.echo(snippet)
+    elif shell == "fish":
+        snippet = "_COMPMAN_COMPLETE=fish_source compman | source"
+        if install:
+            fish_config = pathlib.Path.home() / ".config" / "fish" / "config.fish"
+            fish_config.parent.mkdir(parents=True, exist_ok=True)
+            current_content = fish_config.read_text(encoding="utf-8") if fish_config.exists() else ""
+            if "_COMPMAN_COMPLETE" not in current_content:
+                with fish_config.open("a", encoding="utf-8") as f:
+                    f.write(f"\n{snippet}\n")
+                click.echo(f"✅ Fish 자동완성이 등록되었습니다: {fish_config}")
+            else:
+                click.echo("✅ config.fish에 이미 자동완성이 등록되어 있습니다.")
+        else:
+            click.echo(snippet)
+
+
 # ---- main group ----
 @click.group()
 def cli() -> None:
@@ -72,6 +147,7 @@ cli.add_command(init)
 cli.add_command(clear)
 cli.add_command(deploy)
 cli.add_command(update)
+cli.add_command(completion)
 
 
 # ---- stack ----
