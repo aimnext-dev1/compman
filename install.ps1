@@ -3,28 +3,46 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "🚀 Installing compman CLI..." -ForegroundColor Cyan
 
-# 1. Automatically register ~/.local/bin to User PATH & process PATH
-$binDir = "$env:USERPROFILE\.local\bin"
-$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-
-if ($userPath -notlike "*$binDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$binDir;$userPath", "User")
-    Write-Host "✅ Automatically added '$binDir' to User PATH environment variable." -ForegroundColor Green
+# 1. Remove old pip-installed compman from any Python Scripts directory (prevents PATH conflicts)
+$oldPipPaths = @(
+    "$env:USERPROFILE\AppData\Local\Programs\Python\Python314\Scripts\compman.exe",
+    "$env:USERPROFILE\AppData\Local\Programs\Python\Python313\Scripts\compman.exe",
+    "$env:USERPROFILE\AppData\Local\Programs\Python\Python312\Scripts\compman.exe",
+    "$env:USERPROFILE\AppData\Local\Programs\Python\Python311\Scripts\compman.exe",
+    "$env:USERPROFILE\AppData\Roaming\Python\Scripts\compman.exe"
+)
+foreach ($p in $oldPipPaths) {
+    if (Test-Path $p) {
+        Remove-Item $p -Force -ErrorAction SilentlyContinue
+        Write-Host "🧹 Removed old pip-installed compman from: $p" -ForegroundColor Yellow
+    }
 }
 
+# 2. Ensure ~/.local/bin is at the FRONT of User PATH
+$binDir = "$env:USERPROFILE\.local\bin"
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+$pathParts = ($userPath -split ';') | Where-Object { $_ -ne "" -and $_ -ne $binDir }
+$newUserPath = ($binDir + ";" + ($pathParts -join ";")).TrimEnd(";")
+[Environment]::SetEnvironmentVariable("Path", $newUserPath, "User")
 $env:PATH = "$binDir;$env:PATH"
+Write-Host "✅ Ensured '$binDir' is at the front of User PATH." -ForegroundColor Green
 
-# 2. Install compman via uv or pip
+# 3. Install compman via uv or pip
 if (Get-Command uv -ErrorAction SilentlyContinue) {
     uv tool install --reinstall git+https://github.com/aimnext-dev1/compman.git
+    # Make sure uv bin dir is also in PATH for this session
+    $uvBin = uv tool bin 2>$null
+    if ($uvBin -and (Test-Path $uvBin)) {
+        $env:PATH = "$uvBin;$env:PATH"
+    }
 } elseif (Get-Command pip -ErrorAction SilentlyContinue) {
-    pip install --upgrade git+https://github.com/aimnext-dev1/compman.git
+    pip install --upgrade git+https://github.com/aimnext-dev1/compman.git --target "$binDir"
 } else {
     Write-Error "Neither 'uv' nor 'pip' was found. Please install Python or uv first."
     exit 1
 }
 
-# 3. Automatically register PowerShell Tab auto-completion & execution policy
+# 4. Automatically register PowerShell Tab auto-completion & execution policy
 if (Get-Command compman -ErrorAction SilentlyContinue) {
     try {
         Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction SilentlyContinue
@@ -35,4 +53,5 @@ if (Get-Command compman -ErrorAction SilentlyContinue) {
     }
 }
 
-Write-Host "`n🎉 compman installed successfully! Run 'compman --help' to get started.`n" -ForegroundColor Cyan
+Write-Host "`n🎉 compman installed successfully! Run 'compman --help' to get started." -ForegroundColor Cyan
+Write-Host "   ⚠️  Please open a new terminal window for the PATH changes to take effect." -ForegroundColor Yellow
