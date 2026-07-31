@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
+from pathlib import PurePosixPath, PureWindowsPath
 from urllib.parse import urlparse
 
 import boto3
@@ -70,9 +71,10 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
     bucket = parsed.netloc
     key = parsed.path.lstrip("/")
 
-    s3 = boto3.client("s3", endpoint_url=endpoint or None)
-
     try:
+        if parsed.scheme != "s3" or not bucket or not key:
+            raise ValueError(f"Invalid S3 path: {s3_path}")
+        s3 = boto3.client("s3", endpoint_url=endpoint or None)
         project_root = _fetch(s3, bucket, key, tmp)
         _swap(project_root, deploy_target)
         image = tag or sanitize_project_name(root.name)
@@ -211,9 +213,15 @@ def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:
         extract_dir.mkdir()
         if key.endswith(".zip"):
             with zipfile.ZipFile(archive) as zf:
-                zf.extractall(extract_dir)
+                for member in zf.infolist():
+                    _validate_archive_path(extract_dir, member.filename)
+                    zf.extract(member, extract_dir)
         else:
             with tarfile.open(archive) as tf:
+                for member in tf.getmembers():
+                    _validate_archive_path(extract_dir, member.name)
+                    if member.issym() or member.islnk():
+                        raise ValueError(f"Archive links are not allowed: {member.name}")
                 tf.extractall(extract_dir, filter="data")
         contents = [p for p in extract_dir.iterdir() if p.name != ".gitkeep"]
         if len(contents) == 1 and contents[0].is_dir():
@@ -226,22 +234,42 @@ def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:
 
 
 def _swap(src: Path, root: Path) -> None:
-    if root.exists():
+    root.mkdir(parents=True, exist_ok=True)
+    backup = Path(tempfile.mkdtemp(prefix=f".{root.name}.swap-", dir=root.parent))
+    moved_old: list[str] = []
+    moved_new: list[str] = []
+    try:
         for item in list(root.iterdir()):
             if item.name in (".git", ".gitkeep"):
                 continue
-            if item.is_dir():
-                shutil.rmtree(item, ignore_errors=True)
-            elif item.exists():
-                item.unlink()
-    else:
-        root.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(item), str(backup / item.name))
+            moved_old.append(item.name)
 
-    for item in src.iterdir():
-        if item.name == ".gitkeep":
-            continue
-        dest = root / item.name
-        shutil.move(str(item), str(dest))
+        for item in src.iterdir():
+            if item.name == ".gitkeep":
+                continue
+            shutil.move(str(item), str(root / item.name))
+            moved_new.append(item.name)
+    except Exception:
+        for name in moved_new:
+            dest = root / name
+            if dest.is_dir() and not dest.is_symlink():
+                shutil.rmtree(dest)
+            elif dest.exists():
+                dest.unlink()
+        for name in moved_old:
+            shutil.move(str(backup / name), str(root / name))
+        raise
+    finally:
+        shutil.rmtree(backup, ignore_errors=True)
+
+
+def _validate_archive_path(root: Path, name: str) -> None:
+    if not name or PurePosixPath(name).is_absolute() or PureWindowsPath(name).is_absolute():
+        raise ValueError(f"Unsafe archive path: {name}")
+    target = (root / name).resolve()
+    if target != root.resolve() and root.resolve() not in target.parents:
+        raise ValueError(f"Unsafe archive path: {name}")
 
 
 def _handle_s3_error(e: Exception, s3_path: str) -> None:

@@ -473,6 +473,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "💡 compman.yml config file not found ({err})",
         "ko": "💡 compman.yml 설정 파일을 찾을 수 없습니다 ({err})",
     },
+    "msg.unknown_command": {
+        "en": "Error: Unknown command '{command}'.",
+        "ko": "오류: 알 수 없는 명령어입니다: '{command}'",
+    },
     "msg.start_guide": {
         "en": "Start by running one of the following commands:",
         "ko": "다음 명령어로 기본 설정 파일을 생성하거나 첫 배포를 진행해보세요:",

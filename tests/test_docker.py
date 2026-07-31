@@ -156,6 +156,18 @@ def test_run_file_not_found(mock_run):
         _passthru(["nonexistent_cmd"])
 
 
+@patch("subprocess.run", return_value=MagicMock(returncode=1, stdout="", stderr="failed"))
+def test_passthru_failure_is_raised(mock_run):
+    with pytest.raises(RuntimeError, match="Command failed"):
+        _passthru(["docker", "compose", "up"])
+
+
+@patch("subprocess.run", side_effect=subprocess.TimeoutExpired(["docker", "compose", "up"], 3600))
+def test_passthru_timeout_is_raised(mock_run):
+    with pytest.raises(RuntimeError, match="timed out"):
+        _passthru(["docker", "compose", "up"])
+
+
 def test_container_runtime_methods():
     rt = ContainerRuntime(name="docker", cli=["docker"], compose=["docker", "compose"])
 

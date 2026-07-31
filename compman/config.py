@@ -71,7 +71,10 @@ def load_config(config_path: str | None = None) -> Config:
         raise ConfigError(
             f"{path} not found. Run 'compman init' first."
         )
-    raw = yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    except yaml.YAMLError as e:
+        raise ConfigError(f"Invalid YAML in {path}: {e}") from e
     if not raw or not isinstance(raw, dict):
         raise ConfigError("Invalid config file: not a YAML mapping.")
     root = raw.get("compman")
@@ -82,7 +85,11 @@ def load_config(config_path: str | None = None) -> Config:
     name = sanitize_project_name(str(raw_name))
 
     folder = root.get("folder")
+    if folder is not None and not isinstance(folder, str):
+        raise ConfigError("'folder' must be a string.")
     raw_dirs = root.get("dirs", {})
+    if not isinstance(raw_dirs, dict):
+        raise ConfigError("'dirs' must be a mapping.")
     dirs = {
         "backup": str(raw_dirs.get("backup", "backup")),
         "volume": str(raw_dirs.get("volume", "volume")),
@@ -106,9 +113,12 @@ def load_config(config_path: str | None = None) -> Config:
                 profiles[key] = Profile(file=str(val))
             elif isinstance(val, dict):
                 f = val.get("file")
+                raw_env = val.get("env", {})
+                if not isinstance(raw_env, dict):
+                    raise ConfigError(f"'compose.{key}.env' must be a mapping.")
                 profiles[key] = Profile(
                     file=str(f) if f else None,
-                    env={str(k): str(v) for k, v in val.get("env", {}).items()},
+                    env={str(k): str(v) for k, v in raw_env.items()},
                 )
             else:
                 raise ConfigError(

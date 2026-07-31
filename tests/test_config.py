@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import pathlib
 import pytest
-import yaml
-
 from compman.config import (
     Config,
     ConfigError,
@@ -102,7 +100,7 @@ def test_load_config_missing_file(temp_dir: pathlib.Path):
 def test_load_config_invalid_yaml(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
     config_file.write_text("invalid: : [", encoding="utf-8")
-    with pytest.raises((ConfigError, yaml.YAMLError)):
+    with pytest.raises(ConfigError, match="Invalid YAML"):
         load_config(str(config_file))
 
 
@@ -138,6 +136,20 @@ def test_load_config_compose_invalid_profile_value(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
     config_file.write_text("compman:\n  name: app\n  compose:\n    dev: 123\n", encoding="utf-8")
     with pytest.raises(ConfigError):
+        load_config(str(config_file))
+
+
+def test_load_config_invalid_nested_types(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text("compman:\n  dirs: []\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="dirs"):
+        load_config(str(config_file))
+
+    config_file.write_text(
+        "compman:\n  compose:\n    dev:\n      env: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="env"):
         load_config(str(config_file))
 
 

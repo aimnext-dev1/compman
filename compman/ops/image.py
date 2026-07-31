@@ -25,57 +25,65 @@ def backup(
     backup_name = f"{config.name}.image.{timestamp}"
     backup_dir = config.backup_dir / backup_name
     backup_dir.mkdir(parents=True)
-
-    result = runtime.run_compose(
-        ["ps", "-q"], project=config.name, capture=True
-    )
-    container_ids = result.stdout.strip().splitlines()
-    if not container_ids:
-        typer.echo("💡 No running containers found in this stack to back up.")
-        shutil.rmtree(backup_dir)
-        return
-
-    for cid in container_ids:
-        cid = cid.strip()
-        if not cid:
-            continue
-        r = runtime.run_cli(
-            ["inspect", "--format", "{{.Name}}", cid], capture=True
-        )
-        container_name = r.stdout.strip().strip("/")
-
-        if source_mode:
-            r2 = runtime.run_cli(
-                ["inspect", "--format", "{{.Image}}", cid], capture=True
-            )
-            image_id = r2.stdout.strip()
-            runtime.run_cli(
-                [
-                    "save",
-                    "-o",
-                    str(backup_dir / f"{container_name}.image.backup.tar"),
-                    image_id,
-                ],
-                capture=False,
-            )
-        else:
-            tag = f"{container_name}:backup"
-            runtime.run_cli(["commit", cid, tag], capture=False)
-            runtime.run_cli(
-                [
-                    "save",
-                    "-o",
-                    str(backup_dir / f"{container_name}.image.backup.tar"),
-                    tag,
-                ],
-                capture=False,
-            )
-            runtime.run_cli(["rmi", tag], capture=False)
-
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
-    with tarfile.open(tarball, "w:gz") as tar:
-        tar.add(backup_dir, arcname=".")
-    shutil.rmtree(backup_dir)
+    backup_tags: list[str] = []
+
+    try:
+        result = runtime.run_compose(
+            ["ps", "-q"], project=config.name, capture=True
+        )
+        container_ids = result.stdout.strip().splitlines()
+        if not container_ids:
+            typer.echo("💡 No running containers found in this stack to back up.")
+            return
+
+        for cid in container_ids:
+            cid = cid.strip()
+            if not cid:
+                continue
+            r = runtime.run_cli(
+                ["inspect", "--format", "{{.Name}}", cid], capture=True
+            )
+            container_name = r.stdout.strip().strip("/")
+
+            if source_mode:
+                r2 = runtime.run_cli(
+                    ["inspect", "--format", "{{.Image}}", cid], capture=True
+                )
+                image_id = r2.stdout.strip()
+                runtime.run_cli(
+                    [
+                        "save",
+                        "-o",
+                        str(backup_dir / f"{container_name}.image.backup.tar"),
+                        image_id,
+                    ],
+                    capture=False,
+                )
+            else:
+                tag = f"{container_name}:backup"
+                backup_tags.append(tag)
+                runtime.run_cli(["commit", cid, tag], capture=False)
+                runtime.run_cli(
+                    [
+                        "save",
+                        "-o",
+                        str(backup_dir / f"{container_name}.image.backup.tar"),
+                        tag,
+                    ],
+                    capture=False,
+                )
+
+        with tarfile.open(tarball, "w:gz") as tar:
+            tar.add(backup_dir, arcname=".")
+    except Exception:
+        tarball.unlink(missing_ok=True)
+        raise
+    finally:
+        for tag in backup_tags:
+            runtime.run_cli(["rmi", tag], capture=False, check=False)
+        shutil.rmtree(backup_dir, ignore_errors=True)
+
     typer.echo(f"Image backup done: {tarball}")
 
 

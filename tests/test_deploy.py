@@ -21,6 +21,11 @@ def test_deploy_no_s3_path(temp_dir: pathlib.Path):
         deploy.deploy(s3_path=None)
 
 
+def test_deploy_invalid_s3_path(temp_dir: pathlib.Path):
+    with pytest.raises(SystemExit):
+        deploy.deploy(s3_path="https://bucket/key")
+
+
 def test_deploy_empty_dir_help_exit(temp_dir: pathlib.Path):
     with pytest.raises(SystemExit):
         deploy.deploy(s3_path=None)
@@ -49,6 +54,38 @@ def test_deploy_zip_archive(dummy_runtime, temp_dir: pathlib.Path):
     with patch("boto3.client", return_value=mock_s3), patch("compman.deploy.detect_runtime", return_value=dummy_runtime):
         deploy.deploy(build=False, tag=None, s3_path="s3://my-bucket/app.zip")
         assert (temp_dir / "project" / "test.txt").exists()
+
+
+def test_deploy_rejects_zip_path_traversal(temp_dir: pathlib.Path):
+    zip_path = temp_dir / "unsafe.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("../outside.txt", "unsafe")
+
+    mock_s3 = MagicMock()
+    mock_s3.download_file.side_effect = lambda b, k, dst: pathlib.Path(dst).write_bytes(zip_path.read_bytes())
+    (temp_dir / "tmp").mkdir()
+    with patch("boto3.client", return_value=mock_s3):
+        with pytest.raises(ValueError, match="Unsafe archive path"):
+            deploy._fetch(mock_s3, "bucket", "unsafe.zip", temp_dir / "tmp")
+
+    assert not (temp_dir / "outside.txt").exists()
+
+
+def test_deploy_rejects_tar_path_traversal(temp_dir: pathlib.Path):
+    tar_path = temp_dir / "unsafe.tar.gz"
+    with tarfile.open(tar_path, "w:gz") as tar:
+        info = tarfile.TarInfo("../outside.txt")
+        info.size = len(b"unsafe")
+        import io
+        tar.addfile(info, io.BytesIO(b"unsafe"))
+
+    mock_s3 = MagicMock()
+    mock_s3.download_file.side_effect = lambda b, k, dst: pathlib.Path(dst).write_bytes(tar_path.read_bytes())
+    (temp_dir / "tmp").mkdir()
+    with pytest.raises(ValueError, match="Unsafe archive path"):
+        deploy._fetch(mock_s3, "bucket", "unsafe.tar.gz", temp_dir / "tmp")
+
+    assert not (temp_dir / "outside.txt").exists()
 
 
 def test_deploy_targz_single_dir(dummy_runtime, temp_dir: pathlib.Path):

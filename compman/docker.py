@@ -198,6 +198,10 @@ def _passthru(
         r = subprocess.run(list(cmd), env=env, cwd=cwd, timeout=3600)
     except FileNotFoundError:
         raise RuntimeError(f"Command not found: {cmd[0]}")
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"Command timed out after 3600 seconds: {' '.join(cmd)}") from e
+    if r.returncode != 0:
+        _die(cmd, r)
     return r.returncode
 
 

@@ -31,35 +31,40 @@ def backup(
     backup_name = f"{config.name}.volume.{timestamp}"
     backup_dir = config.backup_dir / backup_name
     backup_dir.mkdir(parents=True, exist_ok=True)
-
-    if not no_stop:
-        typer.echo("Stopping stack for consistent backup...")
-        runtime.run_compose(["stop"], project=config.name, capture=False)
-
-    mapping: list[dict[str, str]] = []
-    for volume in volumes:
-        for container in containers:
-            info = _inspect_mount(runtime, container, volume)
-            if info:
-                mapping.append(info)
-                target = backup_dir / volume
-                runtime.run_cli(
-                    ["cp", f"{container}:{info['destination']}", str(target)],
-                    capture=False,
-                )
-
-    if not no_stop:
-        typer.echo("Starting stack again...")
-        runtime.run_compose(["start"], project=config.name, capture=False)
-
-    map_path = backup_dir / "volume-map.json"
-    merged = _merge_mapping(mapping)
-    map_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
-
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
-    with tarfile.open(tarball, "w:gz") as tar:
-        tar.add(backup_dir, arcname=".")
-    shutil.rmtree(backup_dir)
+    stopped = False
+
+    try:
+        if not no_stop:
+            typer.echo("Stopping stack for consistent backup...")
+            runtime.run_compose(["stop"], project=config.name, capture=False)
+            stopped = True
+
+        mapping: list[dict[str, str]] = []
+        for volume in volumes:
+            for container in containers:
+                info = _inspect_mount(runtime, container, volume)
+                if info:
+                    mapping.append(info)
+                    target = backup_dir / volume
+                    runtime.run_cli(
+                        ["cp", f"{container}:{info['destination']}", str(target)],
+                        capture=False,
+                    )
+
+        map_path = backup_dir / "volume-map.json"
+        merged = _merge_mapping(mapping)
+        map_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        with tarfile.open(tarball, "w:gz") as tar:
+            tar.add(backup_dir, arcname=".")
+    finally:
+        try:
+            if stopped:
+                typer.echo("Starting stack again...")
+                runtime.run_compose(["start"], project=config.name, capture=False)
+        finally:
+            shutil.rmtree(backup_dir, ignore_errors=True)
 
     typer.echo(f"Volume backup done: {tarball}")
 
@@ -90,47 +95,51 @@ def restore(
 
     restore_dir = config.backup_dir / backup_name
     restore_dir.mkdir(parents=True, exist_ok=True)
-    with tarfile.open(tarball, "r:gz") as tar:
-        tar.extractall(restore_dir)
+    stopped = False
+    try:
+        with tarfile.open(tarball, "r:gz") as tar:
+            tar.extractall(restore_dir, filter="data")
 
-    map_path = restore_dir / "volume-map.json"
-    if not map_path.is_file():
-        typer.echo(f"volume-map.json not found in backup.", err=True)
-        shutil.rmtree(restore_dir)
-        raise SystemExit(1)
+        map_path = restore_dir / "volume-map.json"
+        if not map_path.is_file():
+            typer.echo(f"volume-map.json not found in backup.", err=True)
+            raise SystemExit(1)
 
-    mapping = json.loads(map_path.read_text(encoding="utf-8"))
+        mapping = json.loads(map_path.read_text(encoding="utf-8"))
 
-    if not no_stop:
-        typer.echo("Stopping stack for consistent restore...")
-        runtime.run_compose(["stop"], project=config.name, capture=False)
+        if not no_stop:
+            typer.echo("Stopping stack for consistent restore...")
+            runtime.run_compose(["stop"], project=config.name, capture=False)
+            stopped = True
 
-    for container, vol_info in mapping.items():
-        volume_name = vol_info["volume"]
-        dest = vol_info["destination"]
-        src = restore_dir / volume_name
-        if not src.is_dir():
-            typer.echo(f"Warning: data dir '{src}' not found, skipping {container}.")
-            continue
-        typer.echo(f"Restoring {container}:{dest} ...")
-        runtime.run_cli(
-            ["cp", f"{str(src)}/.", f"{container}:{dest}"],
-            capture=False,
-        )
+        for container, vol_info in mapping.items():
+            volume_name = vol_info["volume"]
+            dest = vol_info["destination"]
+            src = restore_dir / volume_name
+            if not src.is_dir():
+                typer.echo(f"Warning: data dir '{src}' not found, skipping {container}.")
+                continue
+            typer.echo(f"Restoring {container}:{dest} ...")
+            runtime.run_cli(
+                ["cp", f"{str(src)}/.", f"{container}:{dest}"],
+                capture=False,
+            )
 
-    if not no_stop:
-        typer.echo("Starting stack again...")
-        runtime.run_compose(["start"], project=config.name, capture=False)
+        for container, vol_info in mapping.items():
+            volume_name = vol_info["volume"]
+            dest = vol_info["destination"]
+            src = restore_dir / volume_name
+            if not src.is_dir():
+                continue
+            _fix_permissions(runtime, container, dest)
+    finally:
+        try:
+            if stopped:
+                typer.echo("Starting stack again...")
+                runtime.run_compose(["start"], project=config.name, capture=False)
+        finally:
+            shutil.rmtree(restore_dir, ignore_errors=True)
 
-    for container, vol_info in mapping.items():
-        volume_name = vol_info["volume"]
-        dest = vol_info["destination"]
-        src = restore_dir / volume_name
-        if not src.is_dir():
-            continue
-        _fix_permissions(runtime, container, dest)
-
-    shutil.rmtree(restore_dir)
     typer.echo("Volume restore done.")
 
 

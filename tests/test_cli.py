@@ -7,6 +7,7 @@ import compman.deploy
 from typer.testing import CliRunner
 
 from compman.cli import app
+from compman.i18n import set_lang
 
 
 def test_cli_version(runner: CliRunner):
@@ -143,19 +144,29 @@ def test_cli_load_error(runner: CliRunner, temp_dir: pathlib.Path):
 
 
 def test_cli_unknown_command_shows_root_help(runner: CliRunner):
+    set_lang("en")
     res = runner.invoke(app, ["unknown"])
     assert res.exit_code == 2
     assert "Usage: compman" in res.output
     assert "Commands" in res.output
-    assert res.output.index("No such command") < res.output.rfind("Usage: compman")
+    assert "Error: Unknown command 'unknown'." in res.output
+    assert res.output.count("Usage: compman") == 1
 
 
 def test_cli_unknown_subcommand_shows_group_help(runner: CliRunner):
+    set_lang("en")
     res = runner.invoke(app, ["service", "down"])
     assert res.exit_code == 2
     assert "Usage: compman service" in res.output
     assert "status" in res.output
-    assert res.output.index("No such command") < res.output.rfind("Usage: compman service")
+    assert "Error: Unknown command 'down'." in res.output
+    assert res.output.count("Usage: compman service") == 1
+
+    set_lang("ko")
+    res_ko = runner.invoke(app, ["service", "down"])
+    assert res_ko.exit_code == 2
+    assert "오류: 알 수 없는 명령어입니다: 'down'" in res_ko.output
+    set_lang("en")
 
 
 def test_cli_upgrade(runner: CliRunner):
