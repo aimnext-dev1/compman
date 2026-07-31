@@ -14,11 +14,11 @@ def _load(config_path: str | None = None) -> dict:
     try:
         cfg = load_config(config_path)
     except ConfigError as e:
-        click.echo(f"💡 compman.yml 설정 파일을 찾을 수 없습니다 ({e})", err=True)
+        click.echo(f"💡 compman.yml config file not found ({e})", err=True)
         click.echo("", err=True)
-        click.echo("다음 명령어로 기본 설정 파일을 생성하거나 첫 배포를 진행해보세요:", err=True)
-        click.echo("  • compman init                              (기본 compman.yml 생성)", err=True)
-        click.echo("  • compman deploy --path s3://<your-bucket>  (S3 경로로 바로 첫 배포)", err=True)
+        click.echo("Start by running one of the following commands:", err=True)
+        click.echo("  • compman init                              (Generate default compman.yml)", err=True)
+        click.echo("  • compman deploy --path s3://<your-bucket>  (Deploy directly with S3 path)", err=True)
         raise SystemExit(1)
     try:
         runtime = detect_runtime()
@@ -39,8 +39,9 @@ def init(force: bool, config: str) -> None:
     if path.is_file() and not force:
         click.echo(f"{config} already exists. Use --force to overwrite.")
         return
-    path.write_text(dump_default_config(Path.cwd().name), encoding="utf-8")
-    click.echo(f"{config} created. Edit it with your values.")
+    content = dump_default_config(Path.cwd().name)
+    path.write_text(content, encoding="utf-8")
+    click.echo(f"{config} created:\n----------------------------------------\n{content.strip()}\n----------------------------------------")
 
 
 @click.command()
@@ -51,9 +52,9 @@ def clear() -> None:
 
 
 @click.command()
-@click.option("--path", default=None, help="S3 경로 (기본: compman.yml의 deploy)")
-@click.option("--build", is_flag=True, help="Fetch 후 Docker 이미지 빌드")
-@click.option("--tag", default=None, help="--build 시 이미지 태그 (기본: 디렉토리명)")
+@click.option("--path", default=None, help="S3 URI path (default: 'deploy' in compman.yml)")
+@click.option("--build", is_flag=True, help="Build Docker image after fetching")
+@click.option("--tag", default=None, help="Image tag when building (default: directory name)")
 def deploy(path: str | None, build: bool, tag: str | None) -> None:
     _deploy(build=build, tag=tag, s3_path=path)
 
@@ -70,9 +71,9 @@ def update(profile: str | None, config: str | None) -> None:
 
 @click.command()
 @click.argument("shell", type=click.Choice(["powershell", "bash", "zsh", "fish"]), default="powershell")
-@click.option("--install", is_flag=True, help="Shell 프로필에 자동완성 설정을 등록합니다.")
+@click.option("--install", is_flag=True, help="Automatically install completion script into shell profile.")
 def completion(shell: str, install: bool) -> None:
-    """Shell 자동완성(Tab-completion) 스크립트 출력 및 자동 등록."""
+    """Output or install shell auto-completion script."""
     if shell == "powershell":
         snippet = (
             "\n# compman shell completion\n"
@@ -119,9 +120,9 @@ def completion(shell: str, install: bool) -> None:
                 if "Register-ArgumentCompleter -Native -CommandName compman" not in current_content:
                     with profile_path.open("w", encoding="utf-8") as f:
                         f.write(current_content.strip() + "\n" + snippet)
-                    click.echo(f"✅ PowerShell 자동완성이 등록되었습니다: {profile_path}")
+                    click.echo(f"✅ Registered PowerShell auto-completion script in {profile_path}")
                 else:
-                    click.echo("✅ PowerShell 프로필에 이미 자동완성이 등록되어 있습니다.")
+                    click.echo("✅ PowerShell profile already has auto-completion registered.")
             except Exception as e:
                 click.echo(f"Error registering PowerShell completion: {e}", err=True)
         else:
@@ -134,9 +135,9 @@ def completion(shell: str, install: bool) -> None:
             if "_COMPMAN_COMPLETE" not in current_content:
                 with rc_path.open("a", encoding="utf-8") as f:
                     f.write(f"\n{snippet}\n")
-                click.echo(f"✅ Bash 자동완성이 등록되었습니다: {rc_path}")
+                click.echo(f"✅ Registered Bash auto-completion script in {rc_path}")
             else:
-                click.echo("✅ .bashrc에 이미 자동완성이 등록되어 있습니다.")
+                click.echo("✅ .bashrc already has auto-completion registered.")
         else:
             click.echo(snippet)
     elif shell == "zsh":
@@ -147,9 +148,9 @@ def completion(shell: str, install: bool) -> None:
             if "_COMPMAN_COMPLETE" not in current_content:
                 with rc_path.open("a", encoding="utf-8") as f:
                     f.write(f"\n{snippet}\n")
-                click.echo(f"✅ Zsh 자동완성이 등록되었습니다: {rc_path}")
+                click.echo(f"✅ Registered Zsh auto-completion script in {rc_path}")
             else:
-                click.echo("✅ .zshrc에 이미 자동완성이 등록되어 있습니다.")
+                click.echo("✅ .zshrc already has auto-completion registered.")
         else:
             click.echo(snippet)
     elif shell == "fish":
@@ -161,9 +162,9 @@ def completion(shell: str, install: bool) -> None:
             if "_COMPMAN_COMPLETE" not in current_content:
                 with fish_config.open("a", encoding="utf-8") as f:
                     f.write(f"\n{snippet}\n")
-                click.echo(f"✅ Fish 자동완성이 등록되었습니다: {fish_config}")
+                click.echo(f"✅ Registered Fish auto-completion script in {fish_config}")
             else:
-                click.echo("✅ config.fish에 이미 자동완성이 등록되어 있습니다.")
+                click.echo("✅ config.fish already has auto-completion registered.")
         else:
             click.echo(snippet)
 
@@ -171,7 +172,7 @@ def completion(shell: str, install: bool) -> None:
 @click.command()
 @click.option("--repo", default="https://github.com/aimnext-dev1/compman.git", help="Git repository URL")
 def upgrade(repo: str) -> None:
-    """compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드합니다."""
+    """Self-upgrade compman CLI to the latest version from GitHub."""
     click.echo(f"🚀 Upgrading compman CLI from {repo}...")
     
     cmd_uv = ["uv", "tool", "install", "--reinstall", f"git+{repo}"]

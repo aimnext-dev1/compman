@@ -82,17 +82,18 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
 def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: str) -> None:
     compman_yml = root / "compman.yml"
     if not compman_yml.exists():
-        compman_yml.write_text(
+        content = (
             f"compman:\n"
             f"  name: {root.name}\n"
             f"  deploy: {s3_path}\n"
             f"  dirs:\n"
             f"    project: {project_subfolder}\n"
             f"  compose:\n"
-            f"    - docker-compose.yml\n",
-            encoding="utf-8",
+            f"    - docker-compose.yml\n"
         )
-        click.echo("Created compman.yml")
+        compman_yml.write_text(content, encoding="utf-8")
+        click.echo("Created compman.yml:")
+        click.echo(f"----------------------------------------\n{content.strip()}\n----------------------------------------")
     else:
         _update_compman_deploy(compman_yml, s3_path)
 
@@ -104,16 +105,17 @@ def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: 
         shutil.move(str(sub_compose), str(root_compose))
 
     if not root_compose.exists():
-        root_compose.write_text(
+        compose_content = (
             f"services:\n"
             f"  app:\n"
             f"    image: {image}\n"
             f"    ports:\n"
             f"      - \"18080:18080\"\n"
-            f"    restart: unless-stopped\n",
-            encoding="utf-8",
+            f"    restart: unless-stopped\n"
         )
-        click.echo("Created docker-compose.yml")
+        root_compose.write_text(compose_content, encoding="utf-8")
+        click.echo("Created docker-compose.yml:")
+        click.echo(f"----------------------------------------\n{compose_content.strip()}\n----------------------------------------")
 
 
 def _update_compman_deploy(compman_yml: Path, s3_path: str) -> None:
@@ -179,15 +181,18 @@ def _update_compman_deploy(compman_yml: Path, s3_path: str) -> None:
         check_raw = yaml.safe_load(new_content)
         if isinstance(check_raw, dict) and check_raw.get("compman", {}).get("deploy") == s3_path:
             compman_yml.write_text(new_content, encoding="utf-8")
-            click.echo(f"Updated deploy in compman.yml ({s3_path})")
+            click.echo(f"Updated deploy in compman.yml ({s3_path}):")
+            click.echo(f"----------------------------------------\n{new_content.strip()}\n----------------------------------------")
             return
     except Exception:
         pass
 
     if isinstance(raw, dict) and "compman" in raw and isinstance(raw["compman"], dict):
         raw["compman"]["deploy"] = s3_path
-        compman_yml.write_text(yaml.safe_dump(raw, sort_keys=False, allow_unicode=True), encoding="utf-8")
-        click.echo(f"Updated deploy in compman.yml ({s3_path})")
+        dumped = yaml.safe_dump(raw, sort_keys=False, allow_unicode=True)
+        compman_yml.write_text(dumped, encoding="utf-8")
+        click.echo(f"Updated deploy in compman.yml ({s3_path}):")
+        click.echo(f"----------------------------------------\n{dumped.strip()}\n----------------------------------------")
 
 
 def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:
