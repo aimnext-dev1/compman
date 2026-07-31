@@ -8,7 +8,7 @@ from compman.i18n import t
 
 
 def generate_seed(
-    output: str = "seed",
+    output: str = "project",
     archive: bool = False,
     port: int = 18080,
     force: bool = False,

@@ -269,7 +269,7 @@ def upgrade_cmd(
 # ---- seed ----
 @app.command("seed", help=t("cmd.seed"))
 def seed_cmd(
-    output: Annotated[str, typer.Option("-o", "--output", help=t("opt.output"))] = "seed",
+    output: Annotated[str, typer.Option("-o", "--output", help=t("opt.output"))] = "project",
     archive: Annotated[bool, typer.Option("-a", "--archive", help=t("opt.archive"))] = False,
     port: Annotated[int, typer.Option("-p", "--port", help=t("opt.port"))] = 18080,
     force: Annotated[bool, typer.Option("--force", help=t("opt.force"))] = False,

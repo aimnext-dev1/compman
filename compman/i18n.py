@@ -147,8 +147,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "생성된 시드 파일들을 .tar.gz 아카이브 파일로 압축합니다.",
     },
     "opt.output": {
-        "en": "Output directory or archive base name (default: seed).",
-        "ko": "출력 디렉터리 또는 아카이브 기본 이름 (기본값: seed).",
+        "en": "Output directory or archive base name (default: project).",
+        "ko": "출력 디렉터리 또는 아카이브 기본 이름 (기본값: project).",
     },
     "opt.port": {
         "en": "Port number for the sample app (default: 18080).",

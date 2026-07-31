@@ -83,10 +83,10 @@ export COMPMAN_LANG=ko
 배포 테스트용 샘플 애플리케이션, `Dockerfile`, `docker-compose.yml`, `compman.yml`을 한 번에 생성합니다.
 
 ```bash
-# 1. 기본 시드 프로젝트 생성 (seed/ 폴더)
+# 1. 기본 시드 프로젝트 생성 (project/ 폴더)
 compman seed
 
-# 2. S3 배포 테스트용 .tar.gz 압축 파일 함께 생성 (seed.tar.gz)
+# 2. S3 배포 테스트용 .tar.gz 압축 파일 함께 생성 (project.tar.gz)
 compman seed -a
 
 # 3. 커스텀 프로젝트명 및 포트 지정
