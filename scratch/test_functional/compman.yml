@@ -1,0 +1,4 @@
+compman:
+  name: test_functional
+  compose:
+    - docker-compose.yml

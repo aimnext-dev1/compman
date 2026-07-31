@@ -1,0 +1,4 @@
+compman:
+  name: test_speed
+  compose:
+    - docker-compose.yml

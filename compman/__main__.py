@@ -1,4 +1,4 @@
-from compman.cli import cli
+from compman.cli import app
 
 if __name__ == "__main__":
-    cli()
+    app()

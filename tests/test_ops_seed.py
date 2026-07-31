@@ -1,0 +1,32 @@
+from __future__ import annotations
+
+import pathlib
+
+from compman.ops import seed
+
+
+def test_generate_seed_normal(temp_dir: pathlib.Path):
+    seed.generate_seed(output="my_project", archive=False, port=18080, force=False)
+    proj_dir = temp_dir / "my_project"
+    assert proj_dir.is_dir()
+    assert (proj_dir / "index.html").exists()
+    assert (proj_dir / "Dockerfile").exists()
+    assert (temp_dir / "docker-compose.yml").exists()
+    assert (temp_dir / "compman.yml").exists()
+
+    content = (proj_dir / "Dockerfile").read_text(encoding="utf-8")
+    assert "nginx:alpine" in content
+
+    compose_content = (temp_dir / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "127.0.0.1:18080:80" in compose_content
+
+
+def test_generate_seed_archive(temp_dir: pathlib.Path):
+    seed.generate_seed(output="my_project", archive=True, port=18080, force=False)
+    assert (temp_dir / "my_project.tar.gz").exists()
+
+
+def test_generate_seed_existing(temp_dir: pathlib.Path):
+    (temp_dir / "compman.yml").touch()
+    # Should skip without error unless force
+    seed.generate_seed(output="my_project", archive=False, port=18080, force=False)

@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+import os
+import pathlib
+import sys
+from typing import Any, Generator
+from unittest.mock import MagicMock
+
+import pytest
+from typer.testing import CliRunner
+
+from compman.docker import ContainerRuntime
+
+
+class DummyRuntime(ContainerRuntime):
+    def __init__(self) -> None:
+        super().__init__(name="docker", cli=["docker"], compose=["docker", "compose"])
+        self.commands_run: list[list[str]] = []
+        self.compose_runs: list[dict[str, Any]] = []
+
+    def run_cli(
+        self,
+        args: Any,
+        capture: bool = True,
+        check: bool = True,
+    ) -> MagicMock:
+        self.commands_run.append(list(args))
+        m = MagicMock()
+        m.return_code = 0
+        m.returncode = 0
+        m.stdout = "my_stack_vol_1\nmy_stack-app-1\n"
+        return m
+
+    def run_compose(
+        self,
+        args: Any,
+        project: str | None = None,
+        compose_files: Any = None,
+        env: Any = None,
+        capture: bool = True,
+        check: bool = True,
+    ) -> MagicMock:
+        self.compose_runs.append(
+            {
+                "args": list(args),
+                "project": project,
+                "compose_files": compose_files,
+                "env": env,
+            }
+        )
+        m = MagicMock()
+        m.return_code = 0
+        m.returncode = 0
+        m.stdout = "my_stack_vol_1\nmy_stack-app-1\n"
+        return m
+
+    def passthru_cli(self, args: Any, cwd: pathlib.Path | str | None = None) -> int:
+        self.commands_run.append(list(args))
+        return 0
+
+    def passthru_compose(
+        self,
+        args: Any,
+        project: str | None = None,
+        compose_files: Any = None,
+        env: dict[str, str] | None = None,
+    ) -> int:
+        self.compose_runs.append(
+            {
+                "args": list(args),
+                "project": project,
+                "compose_files": compose_files,
+                "env": env,
+            }
+        )
+        return 0
+
+    def stack_exists(self, project: str) -> bool:
+        return True
+
+    def list_volumes(self, project: str) -> list[str]:
+        return ["vol1"]
+
+    def list_containers(self, project: str) -> list[str]:
+        return ["container1"]
+
+    def get_container_id(self, name: str) -> str:
+        return "cid123"
+
+
+@pytest.fixture
+def runner() -> CliRunner:
+    return CliRunner()
+
+
+@pytest.fixture
+def dummy_runtime() -> DummyRuntime:
+    return DummyRuntime()
+
+
+@pytest.fixture
+def temp_dir(tmp_path: pathlib.Path) -> Generator[pathlib.Path, None, None]:
+    old_cwd = pathlib.Path.cwd()
+    os.chdir(tmp_path)
+    try:
+        yield tmp_path
+    finally:
+        os.chdir(old_cwd)
