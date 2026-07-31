@@ -96,7 +96,6 @@ def restore(
 
     restore_dir = config.backup_dir / backup_name
     restore_dir.mkdir(parents=True, exist_ok=True)
-    stopped = False
     try:
         with tarfile.open(tarball, "r:gz") as tar:
             extract_tar(tar, restore_dir)
@@ -108,42 +107,29 @@ def restore(
 
         mapping = json.loads(map_path.read_text(encoding="utf-8"))
 
-        if not no_stop:
-            typer.echo("Stopping stack for consistent restore...")
-            runtime.run_compose(
-                ["stop"], project=context.project, compose_files=context.files, env=context.env, capture=False
-            )
-            stopped = True
-
-        for container, vol_info in mapping.items():
-            volume_name = vol_info["volume"]
-            dest = vol_info["destination"]
-            src = restore_dir / volume_name
-            if not src.is_dir():
-                typer.echo(f"Warning: data dir '{src}' not found, skipping {container}.")
-                continue
-            typer.echo(f"Restoring {container}:{dest} ...")
-            runtime.run_cli(
-                ["cp", f"{str(src)}/.", f"{container}:{dest}"],
-                capture=False,
-            )
-
-        for container, vol_info in mapping.items():
-            volume_name = vol_info["volume"]
-            dest = vol_info["destination"]
-            src = restore_dir / volume_name
-            if not src.is_dir():
-                continue
-            _fix_permissions(runtime, container, dest)
-    finally:
-        try:
-            if stopped:
-                typer.echo("Starting stack again...")
-                runtime.run_compose(
-                    ["start"], project=context.project, compose_files=context.files, env=context.env, capture=False
+        with stack_paused(runtime, context, enabled=not no_stop):
+            for container, vol_info in mapping.items():
+                volume_name = vol_info["volume"]
+                dest = vol_info["destination"]
+                src = restore_dir / volume_name
+                if not src.is_dir():
+                    typer.echo(f"Warning: data dir '{src}' not found, skipping {container}.")
+                    continue
+                typer.echo(f"Restoring {container}:{dest} ...")
+                runtime.run_cli(
+                    ["cp", f"{str(src)}/.", f"{container}:{dest}"],
+                    capture=False,
                 )
-        finally:
-            shutil.rmtree(restore_dir, ignore_errors=True)
+
+            for container, vol_info in mapping.items():
+                volume_name = vol_info["volume"]
+                dest = vol_info["destination"]
+                src = restore_dir / volume_name
+                if not src.is_dir():
+                    continue
+                _fix_permissions(runtime, container, dest)
+    finally:
+        shutil.rmtree(restore_dir, ignore_errors=True)
 
     typer.echo("Volume restore done.")
 

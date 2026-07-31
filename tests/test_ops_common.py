@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from compman.config import Config
+from compman.docker import ComposeContext
 from compman.ops import common
 
 
@@ -20,7 +21,16 @@ def test_select_backup_timestamp_single(temp_dir: pathlib.Path):
 
     with patch("compman.ops.common.prompt_select", return_value=0):
         ts = common.select_backup_timestamp(cfg, "volume")
-        assert ts == "20260731_1200"
+    assert ts == "20260731_1200"
+
+
+def test_stack_paused_restores_after_failure(temp_dir: pathlib.Path):
+    runtime = MagicMock()
+    context = ComposeContext("app", (temp_dir / "docker-compose.yml",), {})
+    with pytest.raises(RuntimeError, match="operation failed"):
+        with common.stack_paused(runtime, context):
+            raise RuntimeError("operation failed")
+    assert [call.args[0] for call in runtime.run_compose.call_args_list] == [["stop"], ["start"]]
 
 
 def test_select_backup_timestamp_none(temp_dir: pathlib.Path):
