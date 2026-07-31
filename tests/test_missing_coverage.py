@@ -39,11 +39,16 @@ def test_cli_internal_callbacks_and_load(runner, temp_dir):
 def test_cli_init_force_and_completion_existing(runner, temp_dir):
     profile = temp_dir / "profile.ps1"
     profile.write_text("# compman shell completion\nold _COMPMAN_COMPLETE\n", encoding="utf-8")
-    with patch("subprocess.check_output", return_value=str(profile).encode()):
+    with patch("subprocess.check_output", return_value=str(profile)):
         result = runner.invoke(cli.app, ["completion", "powershell", "--install"])
     assert result.exit_code == 0
     assert runner.invoke(cli.app, ["completion", "fish"]).exit_code == 0
     profile.write_text("existing", encoding="utf-8")
+    with patch("subprocess.check_output", return_value=str(profile)):
+        result = runner.invoke(cli.app, ["completion", "powershell", "--install"])
+    assert result.exit_code == 0
+
+    profile.write_text("Register-ArgumentCompleter -Native -CommandName compman", encoding="utf-8")
     with patch("subprocess.check_output", return_value=str(profile)):
         result = runner.invoke(cli.app, ["completion", "powershell", "--install"])
     assert result.exit_code == 0

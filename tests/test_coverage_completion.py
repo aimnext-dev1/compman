@@ -5,6 +5,7 @@ import pathlib
 import runpy
 import shutil
 import subprocess
+import sys
 import tarfile
 from unittest.mock import MagicMock, patch
 
@@ -141,6 +142,53 @@ def test_deploy_swap_rollback_tolerates_already_missing_new_entry(temp_dir):
             deploy._swap(src, root)
 
     assert not (root / "a-disappears").exists()
+
+
+def test_deploy_swap_rollback_cleanup_is_platform_independent(temp_dir):
+    root = temp_dir / "target"
+    src = temp_dir / "source"
+    root.mkdir()
+    src.mkdir()
+    (src / "a-directory").mkdir()
+    (src / "b-disappears").touch()
+    (src / "z-fail").touch()
+
+    def controlled_move(source, destination):
+        name = pathlib.Path(source).name
+        if name == "a-directory":
+            pathlib.Path(destination).mkdir()
+            return str(destination)
+        if name == "b-disappears":
+            pathlib.Path(source).unlink()
+            return str(destination)
+        raise OSError("swap failed")
+
+    with patch("compman.deploy.shutil.move", side_effect=controlled_move):
+        with pytest.raises(OSError, match="swap failed"):
+            deploy._swap(src, root)
+
+    assert not (root / "a-directory").exists()
+    assert not (root / "b-disappears").exists()
+
+
+def test_windows_key_reader_on_every_platform():
+    fake_msvcrt = MagicMock()
+    with patch.dict(sys.modules, {"msvcrt": fake_msvcrt}), patch.object(common.sys, "platform", "win32"):
+        fake_msvcrt.getch.side_effect = [b"\x00", b"H"]
+        assert common.get_key() == "up"
+        fake_msvcrt.getch.side_effect = [b"\xe0", b"P"]
+        assert common.get_key() == "down"
+        fake_msvcrt.getch.side_effect = [b"\x00", b"X"]
+        assert common.get_key() == "other"
+        fake_msvcrt.getch.side_effect = [b"\r"]
+        assert common.get_key() == "enter"
+        fake_msvcrt.getch.side_effect = [b"\x1b"]
+        assert common.get_key() == "esc"
+        fake_msvcrt.getch.side_effect = [b"\x03"]
+        with pytest.raises(KeyboardInterrupt):
+            common.get_key()
+        fake_msvcrt.getch.side_effect = [b"x"]
+        assert common.get_key() == "other"
 
 
 def test_container_runtime_passthru_helpers_and_shell():
