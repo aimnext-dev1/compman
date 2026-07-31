@@ -3,6 +3,7 @@ from __future__ import annotations
 import tarfile
 from pathlib import Path
 import click
+from compman.config import sanitize_project_name
 from compman.i18n import t
 
 
@@ -70,7 +71,7 @@ def generate_seed(
     )
     compose_yml.write_text(compose_content, encoding="utf-8")
 
-    project_name = cwd.name
+    project_name = sanitize_project_name(cwd.name)
     compman_content = (
         "compman:\n"
         f"  name: {project_name}\n"

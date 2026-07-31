@@ -75,7 +75,7 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
     try:
         project_root = _fetch(s3, bucket, key, tmp)
         _swap(project_root, deploy_target)
-        image = tag or root.name.lower()
+        image = tag or sanitize_project_name(root.name)
         _generate_scaffold(root, project_subfolder, s3_path, image)
         if build:
             click.echo(f"Building image '{image}' in {project_subfolder}...")
@@ -88,11 +88,12 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
 
 
 def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: str) -> None:
+    from compman.config import sanitize_project_name
     compman_yml = root / "compman.yml"
     if not compman_yml.exists():
         content = (
             f"compman:\n"
-            f"  name: {root.name}\n"
+            f"  name: {sanitize_project_name(root.name)}\n"
             f"  deploy: {s3_path}\n"
             f"  dirs:\n"
             f"    project: {project_subfolder}\n"

@@ -4,7 +4,23 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import re
 import yaml
+
+
+def sanitize_project_name(name: str) -> str:
+    """Normalize a string to a valid Docker Compose project name.
+
+    Docker Compose project names must match [a-z0-9_-], start with [a-z0-9],
+    and be entirely lowercase.
+    """
+    if not name:
+        return "compman-app"
+    s = str(name).lower()
+    s = re.sub(r"[^a-z0-9_-]", "-", s)
+    s = re.sub(r"^[^a-z0-9]+", "", s)
+    s = s.strip("-_")
+    return s or "compman-app"
 
 
 @dataclass
@@ -62,9 +78,8 @@ def load_config(config_path: str | None = None) -> Config:
     if not root or not isinstance(root, dict):
         raise ConfigError("'compman' key not found or not a mapping.")
 
-    name = root.get("name")
-    if not name:
-        raise ConfigError("'compman.name' is required.")
+    raw_name = root.get("name") or Path.cwd().name
+    name = sanitize_project_name(str(raw_name))
 
     folder = root.get("folder")
     raw_dirs = root.get("dirs", {})
@@ -120,8 +135,9 @@ def load_config(config_path: str | None = None) -> Config:
 
 
 def dump_default_config(name: str) -> str:
+    sanitized = sanitize_project_name(name)
     return f"""compman:
-  name: {name}
+  name: {sanitized}
   compose:
     - docker-compose.yml
   # --- optional features ---
