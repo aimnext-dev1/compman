@@ -78,7 +78,7 @@ def generate_seed(
         "  app:\n"
         f"    build: {rel_build_path}\n"
         "    ports:\n"
-        f'      - "{port}:80"\n'
+        f'      - "127.0.0.1:{port}:80"\n'
         "    restart: unless-stopped\n"
     )
     compose_yml.write_text(compose_content, encoding="utf-8")

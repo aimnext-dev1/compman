@@ -118,7 +118,7 @@ def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: 
             f"  app:\n"
             f"    image: {image}\n"
             f"    ports:\n"
-            f"      - \"18080:18080\"\n"
+            f"      - \"127.0.0.1:18080:18080\"\n"
             f"    restart: unless-stopped\n"
         )
         root_compose.write_text(compose_content, encoding="utf-8")
