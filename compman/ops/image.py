@@ -79,6 +79,93 @@ def backup(
     typer.echo(f"Image backup done: {tarball}")
 
 
+import sys
+
+
+def _get_key() -> str:
+    if sys.platform == "win32":
+        import msvcrt
+
+        ch = msvcrt.getch()
+        if ch in (b"\x00", b"\xe0"):
+            ch2 = msvcrt.getch()
+            if ch2 == b"H":
+                return "up"
+            elif ch2 == b"P":
+                return "down"
+            return "other"
+        elif ch in (b"\r", b"\n"):
+            return "enter"
+        elif ch == b"\x03":
+            raise KeyboardInterrupt()
+        return "other"
+    else:
+        import termios
+        import tty
+
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+            if ch == "\x1b":
+                ch2 = sys.stdin.read(1)
+                if ch2 == "[":
+                    ch3 = sys.stdin.read(1)
+                    if ch3 == "A":
+                        return "up"
+                    elif ch3 == "B":
+                        return "down"
+            elif ch in ("\r", "\n"):
+                return "enter"
+            elif ch == "\x03":
+                raise KeyboardInterrupt()
+            return "other"
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+
+def prompt_select(title: str, options: list[str], default_index: int = 0) -> int:
+    if not sys.stdin.isatty():
+        typer.echo(title)
+        for i, opt in enumerate(options, 1):
+            typer.echo(f"  [{i}] {opt}")
+        choice = typer.prompt(f"Select option [1-{len(options)}]", default=str(default_index + 1))
+        return int(choice) - 1 if choice.isdigit() and 1 <= int(choice) <= len(options) else default_index
+
+    selected = default_index
+
+    def render(redraw: bool = False) -> None:
+        if redraw:
+            sys.stdout.write(f"\033[{len(options)}A")
+        for i, option in enumerate(options):
+            if i == selected:
+                sys.stdout.write(f"\033[K \033[36m❯ {option}\033[0m\n")
+            else:
+                sys.stdout.write(f"\033[K   {option}\n")
+        sys.stdout.flush()
+
+    typer.echo(f"💡 {title} (Use ↑/↓ arrow keys and press Enter):")
+    render(redraw=False)
+
+    while True:
+        try:
+            key = _get_key()
+            if key == "up":
+                selected = (selected - 1) % len(options)
+                render(redraw=True)
+            elif key == "down":
+                selected = (selected + 1) % len(options)
+                render(redraw=True)
+            elif key == "enter":
+                break
+        except KeyboardInterrupt:
+            typer.echo("")
+            raise SystemExit(0)
+
+    return selected
+
+
 def select_backup_timestamp(config: Config, kind: str) -> str:
     pattern = f"{config.name}.{kind}."
     if not config.backup_dir.is_dir():
@@ -96,21 +183,14 @@ def select_backup_timestamp(config: Config, kind: str) -> str:
         typer.echo(f"Selecting backup: {selected}")
         return selected
 
-    typer.echo(f"Available {kind} backups:")
-    for idx, ts in enumerate(timestamps, 1):
-        typer.echo(f"  [{idx}] {ts}")
-
-    default_idx = len(timestamps)
-    while True:
-        choice = typer.prompt(
-            f"Select backup to restore [1-{len(timestamps)}]",
-            default=str(default_idx),
-        )
-        if choice.isdigit() and 1 <= int(choice) <= len(timestamps):
-            selected = timestamps[int(choice) - 1]
-            typer.echo(f"Selected backup: {selected}")
-            return selected
-        typer.echo(f"Invalid selection: '{choice}'. Please enter a number between 1 and {len(timestamps)}.")
+    idx = prompt_select(
+        f"Available {kind} backups",
+        timestamps,
+        default_index=len(timestamps) - 1,
+    )
+    selected = timestamps[idx]
+    typer.echo(f"Selected backup: {selected}")
+    return selected
 
 
 def restore(
