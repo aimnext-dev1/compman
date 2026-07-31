@@ -132,6 +132,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "  compman update dev"
         ),
     },
+    "cmd.doctor": {
+        "en": "Diagnose configuration, Compose files, runtime, and AWS credentials.",
+        "ko": "구성, Compose 파일, 런타임 및 AWS 자격 증명을 진단합니다.",
+    },
+    "cmd.status": {
+        "en": "Show structured status for services in a running stack.",
+        "ko": "실행 중인 스택 서비스의 구조화된 상태를 표시합니다.",
+    },
     "cmd.completion": {
         "en": (
             "Output or install shell auto-completion script.\n\n"
@@ -434,6 +442,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "opt.config": {
         "en": "Path to compman.yml",
         "ko": "compman.yml 설정 파일 경로",
+    },
+    "opt.json": {
+        "en": "Output as JSON",
+        "ko": "JSON으로 출력",
     },
     "opt.path": {
         "en": "S3 URI path (default: 'deploy' in compman.yml)",

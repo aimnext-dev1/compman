@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import shutil
@@ -15,6 +16,7 @@ from typer.core import TyperGroup
 
 from compman.config import ConfigError, dump_default_config, load_config
 from compman.deploy import deploy as _deploy
+from compman.diagnostics import DoctorReport, StatusReport, collect_doctor, collect_status
 from compman.docker import detect_runtime
 from compman.errors import CommandError
 from compman.i18n import get_lang, set_lang, t
@@ -196,6 +198,62 @@ def update_cmd(
         stack.update(ctx["runtime"], cfg, profile=profile)
 
 
+def _render_doctor(report: DoctorReport) -> None:
+    typer.echo("Doctor:")
+    for check in report.checks:
+        marker = "!" if check.severity == "warning" else "✓" if check.ok else "✗"
+        typer.echo(f"{marker} {check.id}: {check.message}")
+
+
+def _render_status(report: StatusReport) -> None:
+    header = f"Status: {report.stack or 'unknown'}"
+    if report.runtime:
+        header += f" (runtime: {report.runtime})"
+    if report.profile:
+        header += f" (profile: {report.profile})"
+    if report.error:
+        header += f" — {report.error}"
+    typer.echo(header)
+    for service_status in report.services:
+        health = f", health: {service_status.health}" if service_status.health else ""
+        typer.echo(
+            f"{service_status.service}: {service_status.state} — "
+            f"{service_status.status} (container: {service_status.container}{health})"
+        )
+
+
+# ---- doctor ----
+@app.command("doctor", help=t("cmd.doctor"))
+def doctor_cmd(
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
+    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    json_output: Annotated[bool, typer.Option("--json", help=t("opt.json"))] = False,
+) -> None:
+    report = collect_doctor(config, profile)
+    if json_output:
+        typer.echo(json.dumps(report.to_dict(), ensure_ascii=False))
+    else:
+        _render_doctor(report)
+    if not report.ok:
+        raise typer.Exit(1)
+
+
+# ---- status ----
+@app.command("status", help=t("cmd.status"))
+def status_cmd(
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
+    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    json_output: Annotated[bool, typer.Option("--json", help=t("opt.json"))] = False,
+) -> None:
+    report = collect_status(config, profile)
+    if json_output:
+        typer.echo(json.dumps(report.to_dict(), ensure_ascii=False))
+    else:
+        _render_status(report)
+    if not report.ok:
+        raise typer.Exit(1)
+
+
 # ---- completion ----
 @app.command("completion", help=t("cmd.completion"))
 def completion_cmd(
@@ -273,7 +331,7 @@ def _ps_completion_snippet() -> str:
         "\n# compman shell completion\n"
         "Register-ArgumentCompleter -Native -CommandName compman -ScriptBlock {\n"
         "    param($wordToComplete, $commandAst, $cursorPosition)\n"
-        "    $subcommands = @('init', 'clear', 'deploy', 'update', 'upgrade', 'completion', 'seed', 'version', 'stack', 'service', 'volume', 'image')\n"
+        "    $subcommands = @('init', 'clear', 'deploy', 'update', 'doctor', 'status', 'upgrade', 'completion', 'seed', 'version', 'stack', 'service', 'volume', 'image')\n"
         "    $words = $commandAst.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)\n"
         "    if ($words.Count -le 2) {\n"
         "        $subcommands | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"

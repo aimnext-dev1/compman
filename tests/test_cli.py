@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 from unittest.mock import MagicMock, patch
@@ -7,6 +8,7 @@ from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
 from compman.cli import app
+from compman.diagnostics import CheckResult, DoctorReport, ServiceStatus, StatusReport
 from compman.i18n import set_lang
 
 
@@ -193,6 +195,8 @@ def test_cli_completion(runner: CliRunner):
     res = runner.invoke(app, ["completion", "powershell"])
     assert res.exit_code == 0
     assert "Register-ArgumentCompleter" in res.output
+    assert "'doctor'" in res.output
+    assert "'status'" in res.output
 
     res_install = runner.invoke(app, ["completion", "powershell", "--install"])
     assert res_install.exit_code == 0
@@ -242,6 +246,97 @@ def test_cli_completion_install_ps_error(runner: CliRunner):
     with patch("subprocess.check_output", side_effect=Exception("mock fail")):
         res = runner.invoke(app, ["completion", "powershell", "--install"])
         assert res.exit_code == 0
+
+
+def test_doctor_json_is_single_document(runner: CliRunner, monkeypatch):
+    report = DoctorReport((CheckResult("config", "required", True, "valid"),))
+    monkeypatch.setattr("compman.cli.collect_doctor", lambda *_: report)
+
+    result = runner.invoke(app, ["doctor", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["ok"] is True
+    assert result.stdout.startswith("{")
+
+
+def test_doctor_failure_exits_one_after_text_report(runner: CliRunner, monkeypatch):
+    report = DoctorReport((CheckResult("config", "required", False, "missing"),))
+    monkeypatch.setattr("compman.cli.collect_doctor", lambda *_: report)
+
+    result = runner.invoke(app, ["doctor"])
+
+    assert result.exit_code == 1
+    assert "✗" in result.stdout
+    assert "missing" in result.stdout
+
+
+def test_doctor_forwards_config_and_profile(runner: CliRunner, monkeypatch):
+    report = DoctorReport(())
+    calls: list[tuple[str | None, str | None]] = []
+    monkeypatch.setattr(
+        "compman.cli.collect_doctor",
+        lambda config, profile: calls.append((config, profile)) or report,
+    )
+
+    result = runner.invoke(app, ["doctor", "--config", "custom.yml", "--profile", "dev"])
+
+    assert result.exit_code == 0
+    assert calls == [("custom.yml", "dev")]
+
+
+def test_top_level_status_json_is_single_document_and_forwards_options(runner: CliRunner, monkeypatch):
+    report = StatusReport(
+        True,
+        "docker",
+        "app",
+        "dev",
+        ("compose.yml",),
+        (ServiceStatus("web", "app-web-1", "running", "Up", "healthy"),),
+    )
+    calls: list[tuple[str | None, str | None]] = []
+    monkeypatch.setattr(
+        "compman.cli.collect_status",
+        lambda config, profile: calls.append((config, profile)) or report,
+    )
+
+    result = runner.invoke(app, ["status", "--json", "--config", "custom.yml", "--profile", "dev"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["services"][0]["service"] == "web"
+    assert result.stdout.startswith("{")
+    assert calls == [("custom.yml", "dev")]
+
+
+def test_top_level_status_text_report_lists_each_service(runner: CliRunner, monkeypatch):
+    report = StatusReport(
+        True,
+        "docker",
+        "app",
+        None,
+        ("compose.yml",),
+        (
+            ServiceStatus("web", "app-web-1", "running", "Up", "healthy"),
+            ServiceStatus("worker", "app-worker-1", "running", "Up", None),
+        ),
+    )
+    monkeypatch.setattr("compman.cli.collect_status", lambda *_: report)
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0
+    assert "Status: app" in result.stdout
+    assert "web" in result.stdout
+    assert "worker" in result.stdout
+
+
+def test_top_level_status_failure_exits_one_after_text_report(runner: CliRunner, monkeypatch):
+    report = StatusReport(False, None, "app", None, (), (), "Stack is not running.")
+    monkeypatch.setattr("compman.cli.collect_status", lambda *_: report)
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 1
+    assert "Stack is not running." in result.stdout
 
 
 def test_cli_init_s3_interactive(runner: CliRunner, temp_dir: pathlib.Path):
