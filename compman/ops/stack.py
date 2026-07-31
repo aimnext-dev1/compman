@@ -33,9 +33,6 @@ def down(runtime: ContainerRuntime, config: Config) -> None:
 def update(
     runtime: ContainerRuntime, config: Config, profile: str | None = None
 ) -> None:
-    if not runtime.stack_exists(config.name):
-        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
-        return
     if config.has_profiles():
         if not profile:
             profile = next(iter(config.profiles))

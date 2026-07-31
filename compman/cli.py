@@ -123,9 +123,13 @@ def update_cmd(
     profile: Annotated[Optional[str], typer.Argument()] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
-    _deploy(build=True, tag=None, s3_path=None)
     ctx = _load(config)
-    stack.up(ctx["runtime"], ctx["config"], profile=profile)
+    cfg = ctx["config"]
+    if cfg.deploy:
+        _deploy(build=True, tag=None, s3_path=None)
+        stack.up(ctx["runtime"], cfg, profile=profile)
+    else:
+        stack.update(ctx["runtime"], cfg, profile=profile)
 
 
 # ---- completion ----
