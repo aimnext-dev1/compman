@@ -42,15 +42,57 @@ uv tool install .
 # 또는 개발 연결 설치: pip install -e .
 ```
 
-### 4. 최신 기능 버전 업데이트
+### 4. CLI 자체 셀프 업그레이드
 
 ```bash
-uv tool upgrade compman
+compman upgrade
 ```
 
 ---
 
-## 🚀 S3 배포 & 단독 업데이트 (`deploy` & `update`)
+## 🌐 Multi-Language Support (다국어 지원)
+
+`compman`은 **영어(English)**와 **한국어(Korean)** 도움말 및 가이드 메시지를 모두 지원합니다.
+
+### 1. CLI 옵션 사용 (`--lang` / `-l`)
+```bash
+compman --lang ko --help
+compman -l ko service --help
+compman -l ko stack up
+```
+
+### 2. 환경 변수 설정 (`COMPMAN_LANG`)
+```bash
+# Windows PowerShell
+$env:COMPMAN_LANG="ko"
+
+# Windows CMD
+set COMPMAN_LANG=ko
+
+# Linux / macOS
+export COMPMAN_LANG=ko
+```
+
+---
+
+## 🌱 샘플 시드 제네레이터 (`compman seed`)
+
+배포 테스트용 샘플 애플리케이션, `Dockerfile`, `docker-compose.yml`, `compman.yml`을 한 번에 생성합니다.
+
+```bash
+# 1. 기본 시드 프로젝트 생성 (seed/ 폴더)
+compman seed
+
+# 2. S3 배포 테스트용 .tar.gz 압축 파일 함께 생성 (seed.tar.gz)
+compman seed -a
+
+# 3. 커스텀 프로젝트명 및 포트 지정
+compman seed -o my-app -p 8080 -a
+```
+
+---
+
+## 🚀 S3 배포 & 단독 무중단 업데이트 (`deploy` & `update`)
 
 ```bash
 # 1. S3 경로 지정 첫 배포 (compman.yml에 deploy 경로 자동 저장 & project/ 소스 분리)
@@ -59,14 +101,20 @@ compman deploy --path s3://my-bucket/app.tar.gz
 # 2. S3 소스 수신 + Docker 이미지 자동 빌드
 compman deploy --build
 
-# 3. ⭐ 단 한 줄로 S3 최신 수신 + Docker 이미지 빌드 + 무중단 컨테이너 교체 기동
+# 3. ⭐ 단 한 줄로 S3 최신 수신 + Docker 이미지 빌드 + 컨테이너 무중단 교체 기동
+compman update
 ```
+
+> 💡 **로컬 S3 에뮬레이터 (Ministack / LocalStack) 지원**: `AWS_ENDPOINT_URL_S3` 또는 `AWS_ENDPOINT_URL` 환경변수를 설정하여 로컬 S3 엔드포인트에 접속할 수 있습니다.
+> ```bash
+> $env:AWS_ENDPOINT_URL_S3="http://localhost:4567"
+> ```
 
 ---
 
 ## ⚡ Shell 자동완성 (Tab Completion)
 
-콘솔 터미널에서 `compman` 입력 후 `Tab` 키를 누르면 서브 커맨드(`stack`, `service`, `deploy`, `update`, `volume`, `image`, `up`, `down`, `status` 등)가 **자동완성**됩니다.
+콘솔 터미널에서 `compman` 입력 후 `Tab` 키를 누르면 서브 커맨드(`stack`, `service`, `deploy`, `update`, `volume`, `image`, `seed`, `up`, `down`, `status` 등)가 **자동완성**됩니다.
 
 ```bash
 # PowerShell 자동완성 프로필 자동 등록
@@ -97,27 +145,29 @@ compman:
 ```
 
 - `compman.yml` 및 `docker-compose.yml`은 루트 디렉터리에 위치하며, S3 다운로드 프로젝트 소스는 `project/` 디렉터리에 분리 관리됩니다.
+- `compman init` 또는 `compman deploy` 시 파일이 신규 생성되면 콘솔 화면에 생성된 YAML 내용이 자동으로 출력됩니다.
 
 ---
 
-## 📋 주요 명령어 (Commands)
+## 📋 주요 명령어 요약 (Commands Summary)
 
 ```text
-compman init [-c compman.yml]           # compman.yml 템플릿 생성
+compman seed [-o DIR] [-a] [-p PORT]    # 🌱 배포 테스트용 샘플 시드 프로젝트 생성 (.tar.gz 아카이브 지원)
+compman init [-c compman.yml]           # ⚙️ compman.yml 기본 템플릿 생성 (콘솔 내용 출력)
 compman update [profile]                # ⭐ S3 최신 다운로드 + 이미지 빌드 + 컨테이너 무중단 교체
-compman deploy [--path S3_URI] [--build]# S3 배포 (compman.yml 경로 자동 저장)
+compman deploy [--path S3_URI] [--build]# 🚀 S3 배포 (compman.yml 경로 자동 저장)
 compman upgrade                         # 🔄 compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드
 
 compman stack up [profile]              # compose up -d
-compman stack down --yes                # compose down (확인 필요)
+compman stack down --yes                # compose down (확인 옵션)
 compman stack update [profile]          # compose up -d --build
 
 compman service start [name...]         # compose start
 compman service stop [name...]          # compose stop
 compman service restart [name...]       # compose restart
 compman service status                  # compose ps -a
-compman service log [name]              # docker logs -f -n 10000
-compman service connect [name]          # docker exec -it (bash→sh)
+compman service log [name] [-f] [-n 50] # 컨테이너 로그 조회 (기본 50줄, -f 스트리밍, -n 라인수)
+compman service connect [name]          # docker exec -it (bash→sh 대화형 쉘 접속)
 
 compman volume backup [--no-stop]       # 볼륨 백업
 compman volume restore <YYYYMMDD_HHMM>  # 볼륨 복원
@@ -138,12 +188,13 @@ compman clear                           # docker image prune -af
 - **Podman 강제 지정**: `CONTAINER_RUNTIME=podman`
 
 ```text
-compman/               # Python CLI 모듈
-  cli.py               # click entrypoint (init, deploy, update, clear 등)
+compman/               # Python CLI 패키지
+  cli.py               # click entrypoint (init, deploy, update, seed, upgrade 등)
   config.py            # compman.yml loader (dirs.project, deploy)
   docker.py            # ContainerRuntime 추상화
-  deploy.py            # S3 배포 및 _update_compman_deploy
-  ops/                 # 비즈니스 로직 (stack, service, volume, image)
+  deploy.py            # S3 배포 및 스캐폴드 생성
+  i18n.py              # 영문/한글 다국어 (i18n) 번역 모듈
+  ops/                 # 비즈니스 로직 (stack, service, volume, image, seed)
 test/                  # 테스트 및 가이드 문서 (FULL_SCENARIO_GUIDE.md)
 ```
 
