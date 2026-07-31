@@ -133,6 +133,7 @@ class ContainerRuntime:
         result = self.run_compose(
             ["ls", "-a"], compose_files=compose_files, env=env, capture=True, check=False
         )
+        _raise_probe_failure(result)
         if any(line.split(maxsplit=1)[0] == name for line in result.stdout.splitlines() if line.strip()):
             return True
         r = self.run_cli(
@@ -161,6 +162,7 @@ class ContainerRuntime:
             env=env,
             check=False,
         )
+        _raise_probe_failure(result)
         return [c for c in result.stdout.strip().splitlines() if c]
 
     def list_volumes(self, project: str) -> list[str]:
@@ -175,6 +177,7 @@ class ContainerRuntime:
             ],
             check=False,
         )
+        _raise_probe_failure(result)
         return [v for v in result.stdout.strip().splitlines() if v]
 
     def get_container_id(self, name: str, project: str | None = None) -> str:
@@ -299,6 +302,12 @@ def _die(cmd: Sequence[str], r: subprocess.CompletedProcess) -> None:
     if r.stdout:
         msg += f"\nstdout: {r.stdout.strip()}"
     raise RuntimeError(msg)
+
+
+def _raise_probe_failure(result: subprocess.CompletedProcess) -> None:
+    code = getattr(result, "returncode", 0)
+    if isinstance(code, int) and code != 0:
+        _die(getattr(result, "args", ["container runtime"]), result)
 
 
 def resolve_compose_files(
