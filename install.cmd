@@ -9,6 +9,6 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 
-set "PATH=%USERPROFILE%\.local\bin;%PATH%"
+set PATH=%USERPROFILE%\.local\bin;%PATH%
 
 echo [compman] Installation complete!
