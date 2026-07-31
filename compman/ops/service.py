@@ -31,7 +31,13 @@ def status(runtime: ContainerRuntime, config: Config) -> None:
     runtime.passthru_compose(["ps", "-a"], project=config.name)
 
 
-def log(runtime: ContainerRuntime, config: Config, service: str | None) -> None:
+def log(
+    runtime: ContainerRuntime,
+    config: Config,
+    service: str | None,
+    follow: bool = False,
+    tail: int = 50,
+) -> None:
     if not service:
         containers = runtime.list_containers(config.name)
         if len(containers) == 0:
@@ -49,7 +55,12 @@ def log(runtime: ContainerRuntime, config: Config, service: str | None) -> None:
     if not cid:
         click.echo(f"💡 Container '{service}' not found. Run 'compman service status' to check running containers.", err=True)
         return
-    runtime.passthru_cli(["logs", "-f", "-n", "10000", cid])
+
+    cmd = ["logs"]
+    if follow:
+        cmd.append("-f")
+    cmd.extend(["-n", str(tail), cid])
+    runtime.passthru_cli(cmd)
 
 
 def connect(runtime: ContainerRuntime, config: Config, service: str | None) -> None:

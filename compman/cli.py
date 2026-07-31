@@ -321,11 +321,13 @@ def status(config: str | None) -> None:
 
 @service_cmd.command()
 @click.argument("name", required=False)
+@click.option("-f", "--follow", is_flag=True, help="Follow log output continuously.")
+@click.option("-n", "--tail", default=50, help="Number of lines to show from the end of logs (default: 50).")
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
-def log(name: str | None, config: str | None) -> None:
-    """Stream logs for a service or container (last 10k lines)."""
+def log(name: str | None, follow: bool, tail: int, config: str | None) -> None:
+    """Display or stream logs for a service container."""
     ctx = _load(config)
-    service.log(ctx["runtime"], ctx["config"], name)
+    service.log(ctx["runtime"], ctx["config"], name, follow=follow, tail=tail)
 
 
 @service_cmd.command()
