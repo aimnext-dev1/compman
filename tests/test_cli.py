@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+import re
 from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
@@ -157,21 +158,23 @@ def test_cli_runtime_error_is_formatted(runner: CliRunner, temp_dir: pathlib.Pat
 def test_cli_unknown_command_shows_root_help(runner: CliRunner):
     set_lang("en")
     res = runner.invoke(app, ["unknown"])
+    output = re.sub(r"\x1b\[[0-9;]*m", "", res.output)
     assert res.exit_code == 2
-    assert "Usage: compman" in res.output
-    assert "Commands" in res.output
-    assert "Error: Unknown command 'unknown'." in res.output
-    assert res.output.count("Usage: compman") == 1
+    assert "Usage: compman" in output
+    assert "Commands" in output
+    assert "Error: Unknown command 'unknown'." in output
+    assert output.count("Usage: compman") == 1
 
 
 def test_cli_unknown_subcommand_shows_group_help(runner: CliRunner):
     set_lang("en")
     res = runner.invoke(app, ["service", "down"])
+    output = re.sub(r"\x1b\[[0-9;]*m", "", res.output)
     assert res.exit_code == 2
-    assert "Usage: compman service" in res.output
-    assert "status" in res.output
-    assert "Error: Unknown command 'down'." in res.output
-    assert res.output.count("Usage: compman service") == 1
+    assert "Usage: compman service" in output
+    assert "status" in output
+    assert "Error: Unknown command 'down'." in output
+    assert output.count("Usage: compman service") == 1
 
     set_lang("ko")
     res_ko = runner.invoke(app, ["service", "down"])
