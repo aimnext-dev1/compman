@@ -191,15 +191,28 @@ def test_cli_upgrade(runner: CliRunner):
         assert res.exit_code == 0
 
 
-def test_cli_completion(runner: CliRunner):
+def test_cli_completion(runner: CliRunner, temp_dir: pathlib.Path):
     res = runner.invoke(app, ["completion", "powershell"])
     assert res.exit_code == 0
     assert "Register-ArgumentCompleter" in res.output
     assert "'doctor'" in res.output
     assert "'status'" in res.output
 
-    res_install = runner.invoke(app, ["completion", "powershell", "--install"])
-    assert res_install.exit_code == 0
+    profile = temp_dir / "Microsoft.PowerShell_profile.ps1"
+    with patch("compman.cli.subprocess.check_output", return_value=str(profile)) as profile_lookup:
+        res_install = runner.invoke(app, ["completion", "powershell", "--install"])
+        assert res_install.exit_code == 0
+        assert "Registered PowerShell" in res_install.output
+        installed = profile.read_text(encoding="utf-8")
+        assert "Register-ArgumentCompleter -Native -CommandName compman" in installed
+        assert "'doctor'" in installed
+        assert "'status'" in installed
+
+        res_reinstall = runner.invoke(app, ["completion", "powershell", "--install"])
+        assert res_reinstall.exit_code == 0
+        assert "already has auto-completion registered" in res_reinstall.output
+        assert profile.read_text(encoding="utf-8") == installed
+        assert profile_lookup.call_count == 2
 
 
 def test_cli_completion_bash(runner: CliRunner):
