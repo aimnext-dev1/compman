@@ -1,17 +1,37 @@
-# MacOS fs metadata
+# OS
 .DS_Store
+Thumbs.db
 
-# backup files
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg
+.env
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Backup & volume (compman)
+backup/
+volume/
+
+# Backup & volume (legacy shell scripts)
 _backup/*
-# docker volume files
+_volume/
 _project/volume/*
 
-_volume/
+# Temp / transient
+.deploy_tmp_*
+temp_volume_info.json
+
+# Config (project-specific values)
+stack.env
 
 # For empty directories
 !.gitkeep
-
-.idea/
-
-# 프로젝트별 실제 값 (stack.env.example만 트래킹)
-stack.env
