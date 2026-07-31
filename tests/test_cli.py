@@ -147,6 +147,7 @@ def test_cli_unknown_command_shows_root_help(runner: CliRunner):
     assert res.exit_code == 2
     assert "Usage: compman" in res.output
     assert "Commands" in res.output
+    assert res.output.index("No such command") < res.output.rfind("Usage: compman")
 
 
 def test_cli_unknown_subcommand_shows_group_help(runner: CliRunner):
@@ -154,6 +155,7 @@ def test_cli_unknown_subcommand_shows_group_help(runner: CliRunner):
     assert res.exit_code == 2
     assert "Usage: compman service" in res.output
     assert "status" in res.output
+    assert res.output.index("No such command") < res.output.rfind("Usage: compman service")
 
 
 def test_cli_upgrade(runner: CliRunner):

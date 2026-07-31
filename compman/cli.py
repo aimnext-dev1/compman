@@ -41,9 +41,10 @@ class HelpOnUnknownCommandGroup(TyperGroup):
     def resolve_command(self, ctx: typer.Context, args: list[str]):
         try:
             return super().resolve_command(ctx, args)
-        except _click.exceptions.UsageError:
+        except _click.exceptions.UsageError as error:
+            error.show()
             typer.echo(ctx.get_help())
-            raise
+            raise _click.exceptions.Exit(error.exit_code)
 
 
 # ---- pre-parse --lang for help text resolution ----
