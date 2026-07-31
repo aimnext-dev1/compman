@@ -32,6 +32,8 @@ class Profile:
 @dataclass
 class Config:
     name: str
+    root_dir: Path = field(default_factory=Path.cwd)
+    source_path: Path | None = None
     folder: str | None = None
     dirs: dict[str, str] = field(
         default_factory=lambda: {"backup": "backup", "volume": "volume", "project": "project"}
@@ -43,20 +45,19 @@ class Config:
 
     @property
     def project_dir(self) -> Path:
-        base = Path.cwd()
-        return base / "_project" if self.folder else base
+        return self.root_dir / self.folder if self.folder else self.root_dir
 
     @property
     def backup_dir(self) -> Path:
-        return Path.cwd() / self.dirs.get("backup", "backup")
+        return self.root_dir / self.dirs.get("backup", "backup")
 
     @property
     def volume_dir(self) -> Path:
-        return Path.cwd() / self.dirs.get("volume", "volume")
+        return self.root_dir / self.dirs.get("volume", "volume")
 
     @property
     def deploy_dir(self) -> Path:
-        return Path.cwd() / self.dirs.get("project", "project")
+        return self.root_dir / self.dirs.get("project", "project")
 
     def has_profiles(self) -> bool:
         return bool(self.profiles)
@@ -66,7 +67,7 @@ class Config:
 
 
 def load_config(config_path: str | None = None) -> Config:
-    path = Path(config_path) if config_path else Path.cwd() / "compman.yml"
+    path = (Path(config_path) if config_path else Path.cwd() / "compman.yml").resolve()
     if not path.is_file():
         raise ConfigError(
             f"{path} not found. Run 'compman init' first."
@@ -81,7 +82,7 @@ def load_config(config_path: str | None = None) -> Config:
     if not root or not isinstance(root, dict):
         raise ConfigError("'compman' key not found or not a mapping.")
 
-    raw_name = root.get("name") or Path.cwd().name
+    raw_name = root.get("name") or path.parent.name
     name = sanitize_project_name(str(raw_name))
 
     folder = root.get("folder")
@@ -135,6 +136,8 @@ def load_config(config_path: str | None = None) -> Config:
 
     return Config(
         name=name,
+        root_dir=path.parent,
+        source_path=path,
         folder=folder,
         dirs=dirs,
         compose_base=compose_base,

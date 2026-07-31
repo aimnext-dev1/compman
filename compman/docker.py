@@ -62,8 +62,15 @@ class ContainerRuntime:
                 cmd += ["-f", str(f)]
         return cmd
 
-    def stack_exists(self, name: str) -> bool:
-        result = self.run_compose(["ls", "-a"], capture=True, check=False)
+    def stack_exists(
+        self,
+        name: str,
+        compose_files: Sequence[Path] | None = None,
+        env: dict[str, str] | None = None,
+    ) -> bool:
+        result = self.run_compose(
+            ["ls", "-a"], compose_files=compose_files, env=env, capture=True, check=False
+        )
         if any(line.split(maxsplit=1)[0] == name for line in result.stdout.splitlines() if line.strip()):
             return True
         r = self.run_cli(
@@ -79,10 +86,17 @@ class ContainerRuntime:
         )
         return bool(r.stdout.strip())
 
-    def list_containers(self, project: str) -> list[str]:
+    def list_containers(
+        self,
+        project: str,
+        compose_files: Sequence[Path] | None = None,
+        env: dict[str, str] | None = None,
+    ) -> list[str]:
         result = self.run_compose(
             ["ps", "-a", "--format", "{{.Names}}"],
             project=project,
+            compose_files=compose_files,
+            env=env,
             check=False,
         )
         return [c for c in result.stdout.strip().splitlines() if c]
@@ -250,6 +264,35 @@ def resolve_compose_files(
         files.insert(0, base)
 
     return files, dict(prof.env)
+
+
+@dataclass(frozen=True)
+class ComposeContext:
+    project: str
+    files: tuple[Path, ...]
+    env: dict[str, str]
+
+
+def resolve_compose_context(config: Config, profile: str | None = None) -> ComposeContext:
+    if config.has_profiles():
+        if profile is None:
+            profile = next(iter(config.profiles))
+        if config.source_path:
+            files, env = resolve_compose_files(config, profile)
+        else:
+            prof = config.profiles[profile]
+            file_name = prof.file or config.compose_base or "docker-compose.yml"
+            files = [config.project_dir / file_name]
+            env = dict(prof.env)
+    else:
+        if profile:
+            raise ConfigError("No profiles configured. Remove profile argument.")
+        if config.source_path:
+            files = resolve_simple_files(config)
+        else:
+            files = [config.project_dir / name for name in (config.compose_files or [])]
+        env = {}
+    return ComposeContext(config.name, tuple(files), env)
 
 
 def resolve_simple_files(config: Config) -> list[Path]:

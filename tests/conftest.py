@@ -75,13 +75,13 @@ class DummyRuntime(ContainerRuntime):
         )
         return 0
 
-    def stack_exists(self, project: str) -> bool:
+    def stack_exists(self, project: str, compose_files: Any = None, env: Any = None) -> bool:
         return True
 
     def list_volumes(self, project: str) -> list[str]:
         return ["vol1"]
 
-    def list_containers(self, project: str) -> list[str]:
+    def list_containers(self, project: str, compose_files: Any = None, env: Any = None) -> list[str]:
         return ["container1"]
 
     def get_container_id(self, name: str, project: str | None = None) -> str:

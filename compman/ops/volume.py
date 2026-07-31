@@ -10,7 +10,7 @@ from typing import Any
 import typer
 
 from compman.config import Config
-from compman.docker import ContainerRuntime
+from compman.docker import ContainerRuntime, resolve_compose_context
 from compman.i18n import t
 
 
@@ -18,15 +18,17 @@ def backup(
     runtime: ContainerRuntime,
     config: Config,
     no_stop: bool = False,
+    profile: str | None = None,
 ) -> None:
-    if not runtime.stack_exists(config.name):
+    context = resolve_compose_context(config, profile)
+    if not runtime.stack_exists(config.name, context.files, context.env):
         typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
     volumes = runtime.list_volumes(config.name)
     if not volumes:
         typer.echo("💡 No volumes found to back up.")
         return
-    containers = runtime.list_containers(config.name)
+    containers = runtime.list_containers(config.name, context.files, context.env)
 
     now = datetime.now()
     timestamp = now.strftime("%Y%m%d_%H%M%S")
@@ -44,7 +46,9 @@ def backup(
     try:
         if not no_stop:
             typer.echo("Stopping stack for consistent backup...")
-            runtime.run_compose(["stop"], project=config.name, capture=False)
+            runtime.run_compose(
+                ["stop"], project=context.project, compose_files=context.files, env=context.env, capture=False
+            )
             stopped = True
 
         mapping: list[dict[str, str]] = []
@@ -69,7 +73,9 @@ def backup(
         try:
             if stopped:
                 typer.echo("Starting stack again...")
-                runtime.run_compose(["start"], project=config.name, capture=False)
+                runtime.run_compose(
+                    ["start"], project=context.project, compose_files=context.files, env=context.env, capture=False
+                )
         finally:
             shutil.rmtree(backup_dir, ignore_errors=True)
 
@@ -84,7 +90,9 @@ def restore(
     config: Config,
     timestamp: str | None = None,
     no_stop: bool = False,
+    profile: str | None = None,
 ) -> None:
+    context = resolve_compose_context(config, profile)
     if not timestamp:
         timestamp = select_backup_timestamp(config, "volume")
 
@@ -96,7 +104,7 @@ def restore(
         _list_backups(config, "volume")
         raise SystemExit(1)
 
-    if not runtime.stack_exists(config.name):
+    if not runtime.stack_exists(config.name, context.files, context.env):
         typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
 
@@ -116,7 +124,9 @@ def restore(
 
         if not no_stop:
             typer.echo("Stopping stack for consistent restore...")
-            runtime.run_compose(["stop"], project=config.name, capture=False)
+            runtime.run_compose(
+                ["stop"], project=context.project, compose_files=context.files, env=context.env, capture=False
+            )
             stopped = True
 
         for container, vol_info in mapping.items():
@@ -143,22 +153,25 @@ def restore(
         try:
             if stopped:
                 typer.echo("Starting stack again...")
-                runtime.run_compose(["start"], project=config.name, capture=False)
+                runtime.run_compose(
+                    ["start"], project=context.project, compose_files=context.files, env=context.env, capture=False
+                )
         finally:
             shutil.rmtree(restore_dir, ignore_errors=True)
 
     typer.echo("Volume restore done.")
 
 
-def pull(runtime: ContainerRuntime, config: Config) -> None:
-    if not runtime.stack_exists(config.name):
+def pull(runtime: ContainerRuntime, config: Config, profile: str | None = None) -> None:
+    context = resolve_compose_context(config, profile)
+    if not runtime.stack_exists(config.name, context.files, context.env):
         typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
     volumes = runtime.list_volumes(config.name)
     if not volumes:
         typer.echo("💡 No volumes found to pull.")
         return
-    containers = runtime.list_containers(config.name)
+    containers = runtime.list_containers(config.name, context.files, context.env)
 
     volume_dir = config.volume_dir
     if volume_dir.is_dir():
@@ -183,13 +196,14 @@ def pull(runtime: ContainerRuntime, config: Config) -> None:
     typer.echo("Volume pull done.")
 
 
-def push(runtime: ContainerRuntime, config: Config) -> None:
+def push(runtime: ContainerRuntime, config: Config, profile: str | None = None) -> None:
+    context = resolve_compose_context(config, profile)
     volume_dir = config.volume_dir
     map_path = volume_dir / "volume-map.json"
     if not map_path.is_file():
         typer.echo(t("msg.volume_map_not_found", path=map_path), err=True)
         raise SystemExit(1)
-    if not runtime.stack_exists(config.name):
+    if not runtime.stack_exists(config.name, context.files, context.env):
         typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
 

@@ -28,6 +28,17 @@ def test_stack_up_profiles(dummy_runtime, temp_dir: pathlib.Path):
     assert dummy_runtime.compose_runs[0]["args"] == ["up", "-d", "--force-recreate"]
 
 
+def test_stack_profile_context(dummy_runtime, temp_dir: pathlib.Path):
+    cfg = Config(
+        name="my_stack",
+        profiles={"dev": Profile(file="docker-compose.dev.yml", env={"MODE": "dev"})},
+    )
+    stack.up(dummy_runtime, cfg, profile="dev")
+    run = dummy_runtime.compose_runs[0]
+    assert run["compose_files"] == (temp_dir / "docker-compose.dev.yml",)
+    assert run["env"] == {"MODE": "dev"}
+
+
 def test_stack_up_profiles_default(dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "docker-compose.dev.yml").touch()
     cfg = Config(

@@ -8,7 +8,7 @@ from pathlib import Path
 import typer
 
 from compman.config import Config
-from compman.docker import ContainerRuntime
+from compman.docker import ContainerRuntime, resolve_compose_context
 from compman.i18n import t
 
 
@@ -16,8 +16,10 @@ def backup(
     runtime: ContainerRuntime,
     config: Config,
     source_mode: bool = False,
+    profile: str | None = None,
 ) -> None:
-    if not runtime.stack_exists(config.name):
+    context = resolve_compose_context(config, profile)
+    if not runtime.stack_exists(config.name, context.files, context.env):
         typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
 
@@ -36,7 +38,7 @@ def backup(
 
     try:
         result = runtime.run_compose(
-            ["ps", "-q"], project=config.name, capture=True
+            ["ps", "-q"], project=context.project, compose_files=context.files, env=context.env, capture=True
         )
         container_ids = result.stdout.strip().splitlines()
         if not container_ids:
@@ -97,7 +99,10 @@ from compman.ops.common import prompt_select, select_backup_timestamp
 
 
 def restore(
-    runtime: ContainerRuntime, config: Config, timestamp: str | None = None
+    runtime: ContainerRuntime,
+    config: Config,
+    timestamp: str | None = None,
+    profile: str | None = None,
 ) -> None:
     if not timestamp:
         timestamp = select_backup_timestamp(config, "image")

@@ -26,7 +26,7 @@ def test_dump_default_config():
 
 def test_config_properties(temp_dir: pathlib.Path):
     cfg = Config(name="test", folder="sub", dirs={"backup": "bak", "volume": "vol", "project": "proj"})
-    assert cfg.project_dir == temp_dir / "_project"
+    assert cfg.project_dir == temp_dir / "sub"
     assert cfg.backup_dir == temp_dir / "bak"
     assert cfg.volume_dir == temp_dir / "vol"
     assert cfg.deploy_dir == temp_dir / "proj"
@@ -159,3 +159,25 @@ def test_load_config_no_name_uses_cwd(temp_dir: pathlib.Path):
     cfg = load_config(str(config_file))
     assert cfg.name == sanitize_project_name(temp_dir.name)
     assert cfg.compose_files == ["docker-compose.yml"]
+
+
+def test_load_config_resolves_paths_from_config_directory(tmp_path: pathlib.Path):
+    project = tmp_path / "project"
+    project.mkdir()
+    config_file = project / "compman.yml"
+    config_file.write_text(
+        "compman:\n"
+        "  name: app\n"
+        "  folder: compose\n"
+        "  dirs:\n"
+        "    backup: backups\n"
+        "    volume: volumes\n"
+        "    project: source\n",
+        encoding="utf-8",
+    )
+    cfg = load_config(str(config_file))
+    assert cfg.root_dir == project
+    assert cfg.project_dir == project / "compose"
+    assert cfg.backup_dir == project / "backups"
+    assert cfg.volume_dir == project / "volumes"
+    assert cfg.deploy_dir == project / "source"

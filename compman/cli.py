@@ -181,7 +181,7 @@ def update_cmd(
     ctx = _load(config)
     cfg = ctx["config"]
     if cfg.deploy:
-        _deploy(build=True, tag=None, s3_path=None)
+        _deploy(build=True, tag=None, s3_path=cfg.deploy)
         stack.up(ctx["runtime"], cfg, profile=profile)
     else:
         stack.update(ctx["runtime"], cfg, profile=profile)
@@ -379,13 +379,14 @@ def stack_up(
 
 @stack_app.command("down", help=t("cmd.stack.down"))
 def stack_down(
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
     yes: Annotated[bool, typer.Option("--yes", help="Confirm stack removal")] = False,
 ) -> None:
     if not yes:
         typer.confirm("Remove the entire stack?", abort=True)
     ctx = _load(config)
-    stack.down(ctx["runtime"], ctx["config"])
+    stack.down(ctx["runtime"], ctx["config"], profile)
 
 
 @stack_app.command("update", help=t("cmd.stack.update"))
@@ -407,36 +408,40 @@ service_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.service"), 
 @service_app.command("start", help=t("cmd.service.start"))
 def service_start(
     services: Annotated[list[str], typer.Argument()] = [],
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.start(ctx["runtime"], ctx["config"], tuple(services))
+    service.start(ctx["runtime"], ctx["config"], tuple(services), profile)
 
 
 @service_app.command("stop", help=t("cmd.service.stop"))
 def service_stop(
     services: Annotated[list[str], typer.Argument()] = [],
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.stop(ctx["runtime"], ctx["config"], tuple(services))
+    service.stop(ctx["runtime"], ctx["config"], tuple(services), profile)
 
 
 @service_app.command("restart", help=t("cmd.service.restart"))
 def service_restart(
     services: Annotated[list[str], typer.Argument()] = [],
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.restart(ctx["runtime"], ctx["config"], tuple(services))
+    service.restart(ctx["runtime"], ctx["config"], tuple(services), profile)
 
 
 @service_app.command("status", help=t("cmd.service.status"))
 def service_status(
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.status(ctx["runtime"], ctx["config"])
+    service.status(ctx["runtime"], ctx["config"], profile)
 
 
 @service_app.command("log", help=t("cmd.service.log"))
@@ -444,19 +449,21 @@ def service_log(
     name: Annotated[Optional[str], typer.Argument()] = None,
     follow: Annotated[bool, typer.Option("-f", "--follow", help=t("opt.follow"))] = False,
     tail: Annotated[int, typer.Option("-n", "--tail", help=t("opt.tail"))] = 50,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.log(ctx["runtime"], ctx["config"], name, follow=follow, tail=tail)
+    service.log(ctx["runtime"], ctx["config"], name, follow=follow, tail=tail, profile=profile)
 
 
 @service_app.command("connect", help=t("cmd.service.connect"))
 def service_connect(
     name: Annotated[Optional[str], typer.Argument()] = None,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.connect(ctx["runtime"], ctx["config"], name)
+    service.connect(ctx["runtime"], ctx["config"], name, profile)
 
 
 app.add_typer(service_app, name="service")
@@ -469,36 +476,40 @@ volume_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.volume"), no
 @volume_app.command("backup", help=t("cmd.volume.backup"))
 def volume_backup(
     no_stop: Annotated[bool, typer.Option("--no-stop", help=t("opt.no_stop"))] = False,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    volume.backup(ctx["runtime"], ctx["config"], no_stop=no_stop)
+    volume.backup(ctx["runtime"], ctx["config"], no_stop=no_stop, profile=profile)
 
 
 @volume_app.command("restore", help=t("cmd.volume.restore"))
 def volume_restore(
     timestamp: Annotated[Optional[str], typer.Argument(help="Timestamp of backup to restore (YYYYMMDD_HHMM)")] = None,
     no_stop: Annotated[bool, typer.Option("--no-stop", help=t("opt.no_stop"))] = False,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    volume.restore(ctx["runtime"], ctx["config"], timestamp, no_stop=no_stop)
+    volume.restore(ctx["runtime"], ctx["config"], timestamp, no_stop=no_stop, profile=profile)
 
 
 @volume_app.command("pull", help=t("cmd.volume.pull"))
 def volume_pull(
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    volume.pull(ctx["runtime"], ctx["config"])
+    volume.pull(ctx["runtime"], ctx["config"], profile)
 
 
 @volume_app.command("push", help=t("cmd.volume.push"))
 def volume_push(
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    volume.push(ctx["runtime"], ctx["config"])
+    volume.push(ctx["runtime"], ctx["config"], profile)
 
 
 app.add_typer(volume_app, name="volume")
@@ -511,19 +522,21 @@ image_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.image"), no_a
 @image_app.command("backup", help=t("cmd.image.backup"))
 def image_backup(
     source_image: Annotated[bool, typer.Option("--source-image", help=t("opt.source_image"))] = False,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    image.backup(ctx["runtime"], ctx["config"], source_mode=source_image)
+    image.backup(ctx["runtime"], ctx["config"], source_mode=source_image, profile=profile)
 
 
 @image_app.command("restore", help=t("cmd.image.restore"))
 def image_restore(
     timestamp: Annotated[Optional[str], typer.Argument(help="Timestamp of backup to restore (YYYYMMDD_HHMM)")] = None,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    image.restore(ctx["runtime"], ctx["config"], timestamp)
+    image.restore(ctx["runtime"], ctx["config"], timestamp, profile)
 
 
 app.add_typer(image_app, name="image")
