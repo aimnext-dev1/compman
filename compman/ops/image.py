@@ -3,7 +3,6 @@ from __future__ import annotations
 import shutil
 import tarfile
 from datetime import datetime
-from pathlib import Path
 
 import typer
 
@@ -12,6 +11,7 @@ from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_context
 from compman.errors import CommandError
 from compman.i18n import t
+from compman.ops.common import select_backup_timestamp
 
 
 def backup(
@@ -74,9 +74,6 @@ def backup(
         shutil.rmtree(backup_dir, ignore_errors=True)
 
     typer.echo(f"Image backup done: {tarball}")
-
-
-from compman.ops.common import prompt_select, select_backup_timestamp
 
 
 def restore(

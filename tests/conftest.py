@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import pathlib
-import sys
 from typing import Any, Generator
 from unittest.mock import MagicMock
 

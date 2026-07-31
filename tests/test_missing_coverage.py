@@ -13,7 +13,7 @@ import typer
 
 import compman.cli as cli
 import compman.deploy as deploy
-from compman.config import Config, ConfigError, Profile, load_config
+from compman.config import Config, ConfigError, load_config
 from compman.docker import ContainerRuntime, _run
 from compman.errors import CommandError
 from compman.ops import common, image, service, volume
@@ -417,5 +417,4 @@ def test_volume_all_remaining_paths(dummy_runtime, temp_dir):
     mount_result = MagicMock(returncode=0, stdout=json.dumps([{"Mounts": [{"Name": "v", "Destination": "/d"}]}]))
     with patch.object(dummy_runtime, "run_cli", return_value=mount_result):
         assert volume._inspect_mount(dummy_runtime, "c", "v")["destination"] == "/d"
-    backup_listing = cfg.backup_dir / "app.volume.20260101_0000.tar.gz"
     volume._list_backups(cfg, "volume")

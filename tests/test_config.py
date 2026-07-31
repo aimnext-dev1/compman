@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import pathlib
+
 import pytest
+
 from compman.config import (
     Config,
     ConfigError,

@@ -314,7 +314,7 @@ def resolve_compose_files(
     config: Config, profile: str
 ) -> tuple[list[Path], dict[str, str]]:
     if not config.has_profiles():
-        raise ConfigError(f"No profiles configured. Use 'compman stack up' without env.")
+        raise ConfigError("No profiles configured. Use 'compman stack up' without env.")
 
     prof = config.profiles.get(profile)
     if not prof:
@@ -369,9 +369,12 @@ def resolve_compose_context(config: Config, profile: str | None = None) -> Compo
 def resolve_simple_files(config: Config) -> list[Path]:
     if not config.has_simple_files():
         raise ConfigError("No compose files configured.")
+    compose_files = config.compose_files
+    if compose_files is None:
+        raise ConfigError("No compose files configured.")
     project_dir = config.project_dir
     files: list[Path] = []
-    for name in config.compose_files:
+    for name in compose_files:
         f = project_dir / name
         if not f.is_file():
             raise ConfigError(f"Compose file not found: {f}")

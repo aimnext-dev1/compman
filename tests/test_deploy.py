@@ -35,7 +35,7 @@ def test_deploy_existing_config_s3(dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  deploy: s3://b/k.tar.gz\n", encoding="utf-8")
     mock_s3 = MagicMock()
     tar_path = temp_dir / "k.tar.gz"
-    with tarfile.open(tar_path, "w:gz") as tar:
+    with tarfile.open(tar_path, "w:gz"):
         pass
     mock_s3.download_file.side_effect = lambda b, k, dst: pathlib.Path(dst).write_bytes(tar_path.read_bytes())
 

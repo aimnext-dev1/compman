@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import sys
 import tarfile
 import zipfile
-import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 

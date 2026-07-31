@@ -3,7 +3,6 @@ from __future__ import annotations
 import pathlib
 from unittest.mock import MagicMock, patch
 
-import compman.deploy
 from typer.testing import CliRunner
 
 from compman.cli import app
@@ -215,7 +214,6 @@ def test_cli_completion_fish(runner: CliRunner):
 
 
 def test_cli_completion_install_bash(runner: CliRunner, temp_dir: pathlib.Path):
-    mock_home = MagicMock()
     rc = temp_dir / ".bashrc"
     with patch("pathlib.Path.home", return_value=temp_dir), patch("pathlib.Path.read_text", side_effect=FileNotFoundError if not rc.exists() else None):
         try:

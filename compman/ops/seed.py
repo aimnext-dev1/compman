@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import tarfile
 from pathlib import Path
+
 import typer
+
 from compman.config import sanitize_project_name
 from compman.errors import CommandError
 from compman.i18n import t

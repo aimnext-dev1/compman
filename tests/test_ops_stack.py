@@ -3,8 +3,6 @@ from __future__ import annotations
 import pathlib
 from unittest.mock import MagicMock
 
-import pytest
-
 from compman.config import Config, Profile
 from compman.ops import stack
 

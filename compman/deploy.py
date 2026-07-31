@@ -17,12 +17,12 @@ from botocore.exceptions import (
 
 from compman.config import ConfigError, load_config, sanitize_project_name
 from compman.docker import detect_runtime
-from compman.s3_source import fetch as _fetch
-from compman.s3_source import download as _download
-from compman.s3_source import download_recursive as _download_recursive
-from compman.scaffold import generate as _generate_scaffold
-from compman.scaffold import update_deploy as _update_compman_deploy
 from compman.i18n import t
+from compman.s3_source import download as _download  # noqa: F401
+from compman.s3_source import download_recursive as _download_recursive  # noqa: F401
+from compman.s3_source import fetch as _fetch
+from compman.scaffold import generate as _generate_scaffold
+from compman.scaffold import update_deploy as _update_compman_deploy  # noqa: F401
 
 
 def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = None) -> None:

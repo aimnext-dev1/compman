@@ -3,7 +3,7 @@ from __future__ import annotations
 import typer
 
 from compman.config import Config
-from compman.docker import ContainerRuntime, ComposeContext, resolve_compose_context
+from compman.docker import ComposeContext, ContainerRuntime, resolve_compose_context
 from compman.errors import CommandError
 from compman.i18n import t
 

@@ -5,22 +5,20 @@ import pathlib
 import shutil
 import subprocess
 import sys
-from importlib.metadata import PackageNotFoundError, version as _pkg_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from typing import Annotated, Optional
 
 import typer
 from typer import _click
 from typer.core import TyperGroup
 
-
-
-
 from compman.config import ConfigError, dump_default_config, load_config
 from compman.deploy import deploy as _deploy
 from compman.docker import detect_runtime
 from compman.errors import CommandError
 from compman.i18n import get_lang, set_lang, t
-from compman.ops import image, seed, service, stack, volume
+from compman.ops import image, service, stack, volume
 
 
 def _version_callback(value: bool) -> None:
@@ -39,7 +37,7 @@ def _lang_callback(value: str | None) -> None:
 
 
 class HelpOnUnknownCommandGroup(TyperGroup):
-    def resolve_command(self, ctx: typer.Context, args: list[str]):
+    def resolve_command(self, ctx: _click.Context, args: list[str]):
         try:
             return super().resolve_command(ctx, args)
         except _click.exceptions.UsageError:
@@ -216,7 +214,7 @@ def completion_cmd(
                 current_content = profile_path.read_text(encoding="utf-8") if profile_path.exists() else ""
                 if "compman shell completion" in current_content:
                     lines = current_content.splitlines()
-                    new_lines = [l for l in lines if "_COMPMAN_COMPLETE" not in l and "compman | Out-String" not in l]
+                    new_lines = [line for line in lines if "_COMPMAN_COMPLETE" not in line and "compman | Out-String" not in line]
                     current_content = "\n".join(new_lines)
                 if "Register-ArgumentCompleter -Native -CommandName compman" not in current_content:
                     with profile_path.open("w", encoding="utf-8") as f:

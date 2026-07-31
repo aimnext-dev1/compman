@@ -613,9 +613,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
 
 def t(key: str, lang: str | None = None, **kwargs: Any) -> str:
-    l = lang or get_lang()
+    language = lang or get_lang()
     entry = TRANSLATIONS.get(key, {})
-    text = entry.get(l) or entry.get("en") or key
+    text = entry.get(language) or entry.get("en") or key
     if kwargs:
         try:
             return text.format(**kwargs)
