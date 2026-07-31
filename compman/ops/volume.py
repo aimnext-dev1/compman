@@ -64,6 +64,9 @@ def backup(
     typer.echo(f"Volume backup done: {tarball}")
 
 
+from compman.ops.common import select_backup_timestamp
+
+
 def restore(
     runtime: ContainerRuntime,
     config: Config,
@@ -71,8 +74,6 @@ def restore(
     no_stop: bool = False,
 ) -> None:
     if not timestamp:
-        from compman.ops.image import select_backup_timestamp
-
         timestamp = select_backup_timestamp(config, "volume")
 
     _validate_timestamp(timestamp)
