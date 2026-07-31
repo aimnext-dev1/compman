@@ -16,9 +16,13 @@ for %%D in (
     )
 )
 
-:: Run PowerShell installer with cache-busting timestamp to always fetch the latest version
-for /f %%T in ('powershell -NoProfile -Command "[int](Get-Date -UFormat %%s)"') do set TS=%%T
-powershell -NoProfile -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1?t=%TS%' | iex"
+:: Download install.ps1 to temp with cache-busting header, then execute locally
+curl -fsSL -H "Cache-Control: no-cache" https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 -o "%TEMP%\compman_install.ps1"
+if %ERRORLEVEL% NEQ 0 (
+    echo Error: Failed to download install.ps1.
+    exit /b %ERRORLEVEL%
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%TEMP%\compman_install.ps1"
 
 if %ERRORLEVEL% NEQ 0 (
     echo Error: Installation failed.
