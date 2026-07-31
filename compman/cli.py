@@ -18,6 +18,7 @@ from typer.core import TyperGroup
 from compman.config import ConfigError, dump_default_config, load_config
 from compman.deploy import deploy as _deploy
 from compman.docker import detect_runtime
+from compman.errors import CommandError
 from compman.i18n import get_lang, set_lang, t
 from compman.ops import image, seed, service, stack, volume
 
@@ -50,6 +51,9 @@ class HelpOnUnknownCommandGroup(TyperGroup):
     def main(self, *args, **kwargs):
         try:
             return super().main(*args, **kwargs)
+        except CommandError as error:
+            typer.echo(error.message, err=True)
+            raise _click.exceptions.Exit(error.code)
         except (ConfigError, RuntimeError) as error:
             typer.echo(t("msg.command_failed", error=error), err=True)
             raise _click.exceptions.Exit(1)

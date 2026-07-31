@@ -4,6 +4,7 @@ import typer
 
 from compman.config import Config
 from compman.docker import ContainerRuntime, ComposeContext, resolve_compose_context
+from compman.errors import CommandError
 from compman.i18n import t
 
 
@@ -49,8 +50,7 @@ def log(
         return
     cid = runtime.get_container_id(service, config.name)
     if not cid:
-        typer.echo(t("msg.container_not_found", service=service), err=True)
-        return
+        raise CommandError(t("msg.container_not_found", service=service))
 
     runtime.logs(cid, follow=follow, tail=tail)
 
@@ -64,8 +64,7 @@ def connect(
         return
     cid = runtime.get_container_id(service, config.name)
     if not cid:
-        typer.echo(t("msg.container_not_found", service=service), err=True)
-        return
+        raise CommandError(t("msg.container_not_found", service=service))
     runtime.exec_shell(cid)
 
 
@@ -99,8 +98,7 @@ def _resolve_container(
         return service
     containers = runtime.list_containers(config.name, context.files, context.env)
     if not containers:
-        typer.echo(t("msg.no_running_containers"), err=True)
-        return None
+        raise CommandError(t("msg.no_running_containers"))
     if len(containers) == 1:
         service = containers[0]
         typer.echo(t("msg.auto_selected", name=service))

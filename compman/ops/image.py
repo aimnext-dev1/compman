@@ -10,6 +10,7 @@ import typer
 from compman.archive import extract_tar
 from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_context
+from compman.errors import CommandError
 from compman.i18n import t
 
 
@@ -21,8 +22,7 @@ def backup(
 ) -> None:
     context = resolve_compose_context(config, profile)
     if not runtime.stack_exists(config.name, context.files, context.env):
-        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
-        raise SystemExit(1)
+        raise CommandError(t("msg.stack_not_running", name=config.name))
 
     now = datetime.now()
     timestamp = now.strftime("%Y%m%d_%H%M%S")
@@ -93,9 +93,8 @@ def restore(
     backup_name = f"{config.name}.image.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
     if not tarball.is_file():
-        typer.echo(t("msg.backup_not_found", tarball=tarball), err=True)
         _list_backups(config)
-        raise SystemExit(1)
+        raise CommandError(t("msg.backup_not_found", tarball=tarball))
 
     restore_dir = config.backup_dir / backup_name
     restore_dir.mkdir(parents=True)
@@ -116,10 +115,7 @@ def _validate_timestamp(ts: str) -> None:
         _valid_timestamp(ts, fmt)
         for fmt in ("%Y%m%d_%H%M", "%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S_%f")
     ):
-        typer.echo(
-            f"Invalid timestamp: {ts} (expected YYYYMMDD_HHMM[SS])", err=True
-        )
-        raise SystemExit(1)
+        raise CommandError(f"Invalid timestamp: {ts} (expected YYYYMMDD_HHMM[SS])")
 
 
 def _valid_timestamp(value: str, fmt: str) -> bool:

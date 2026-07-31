@@ -47,7 +47,8 @@ def test_service_log_multiple_containers(dummy_runtime, temp_dir: pathlib.Path):
 def test_service_log_no_containers(dummy_runtime, temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
     dummy_runtime.list_containers = MagicMock(return_value=[])
-    service.log(dummy_runtime, cfg, service=None)
+    with pytest.raises(SystemExit):
+        service.log(dummy_runtime, cfg, service=None)
 
 
 def test_service_connect_auto_select(dummy_runtime, temp_dir: pathlib.Path):
@@ -59,4 +60,5 @@ def test_service_connect_auto_select(dummy_runtime, temp_dir: pathlib.Path):
 def test_service_connect_not_found(dummy_runtime, temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
     dummy_runtime.get_container_id = MagicMock(return_value="")
-    service.connect(dummy_runtime, cfg, service="nonexistent")
+    with pytest.raises(SystemExit):
+        service.connect(dummy_runtime, cfg, service="nonexistent")

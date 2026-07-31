@@ -12,6 +12,7 @@ import typer
 from compman.archive import extract_tar
 from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_context
+from compman.errors import CommandError
 from compman.i18n import t
 
 
@@ -23,8 +24,7 @@ def backup(
 ) -> None:
     context = resolve_compose_context(config, profile)
     if not runtime.stack_exists(config.name, context.files, context.env):
-        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
-        raise SystemExit(1)
+        raise CommandError(t("msg.stack_not_running", name=config.name))
     volumes = runtime.list_volumes(config.name)
     if not volumes:
         typer.echo("💡 No volumes found to back up.")
@@ -83,13 +83,11 @@ def restore(
     backup_name = f"{config.name}.volume.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
     if not tarball.is_file():
-        typer.echo(t("msg.backup_not_found", tarball=tarball), err=True)
         _list_backups(config, "volume")
-        raise SystemExit(1)
+        raise CommandError(t("msg.backup_not_found", tarball=tarball))
 
     if not runtime.stack_exists(config.name, context.files, context.env):
-        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
-        raise SystemExit(1)
+        raise CommandError(t("msg.stack_not_running", name=config.name))
 
     restore_dir = config.backup_dir / backup_name
     restore_dir.mkdir(parents=True, exist_ok=True)
@@ -99,8 +97,7 @@ def restore(
 
         map_path = restore_dir / "volume-map.json"
         if not map_path.is_file():
-            typer.echo(t("msg.volume_map_not_found", path=map_path), err=True)
-            raise SystemExit(1)
+            raise CommandError(t("msg.volume_map_not_found", path=map_path))
 
         mapping = json.loads(map_path.read_text(encoding="utf-8"))
 
@@ -131,8 +128,7 @@ def restore(
 def pull(runtime: ContainerRuntime, config: Config, profile: str | None = None) -> None:
     context = resolve_compose_context(config, profile)
     if not runtime.stack_exists(config.name, context.files, context.env):
-        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
-        raise SystemExit(1)
+        raise CommandError(t("msg.stack_not_running", name=config.name))
     volumes = runtime.list_volumes(config.name)
     if not volumes:
         typer.echo("💡 No volumes found to pull.")
@@ -164,11 +160,9 @@ def push(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
     volume_dir = config.volume_dir
     map_path = volume_dir / "volume-map.json"
     if not map_path.is_file():
-        typer.echo(t("msg.volume_map_not_found", path=map_path), err=True)
-        raise SystemExit(1)
+        raise CommandError(t("msg.volume_map_not_found", path=map_path))
     if not runtime.stack_exists(config.name, context.files, context.env):
-        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
-        raise SystemExit(1)
+        raise CommandError(t("msg.stack_not_running", name=config.name))
 
     mapping = json.loads(map_path.read_text(encoding="utf-8"))
     for container, vol_info in mapping.items():
@@ -221,10 +215,7 @@ def _validate_timestamp(ts: str) -> None:
         _valid_timestamp(ts, fmt)
         for fmt in ("%Y%m%d_%H%M", "%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S_%f")
     ):
-        typer.echo(
-            f"Invalid timestamp format: {ts} (expected YYYYMMDD_HHMM[SS])", err=True
-        )
-        raise SystemExit(1)
+        raise CommandError(f"Invalid timestamp format: {ts} (expected YYYYMMDD_HHMM[SS])")
 
 
 def _valid_timestamp(value: str, fmt: str) -> bool:

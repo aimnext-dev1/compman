@@ -8,6 +8,7 @@ import typer
 
 from compman.config import Config
 from compman.docker import ComposeContext, ContainerRuntime
+from compman.errors import CommandError
 from compman.i18n import t
 
 
@@ -107,13 +108,11 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
 def select_backup_timestamp(config: Config, kind: str) -> str:
     pattern = f"{config.name}.{kind}."
     if not config.backup_dir.is_dir():
-        typer.echo(t("msg.backup_dir_not_found", path=config.backup_dir), err=True)
-        raise SystemExit(1)
+        raise CommandError(t("msg.backup_dir_not_found", path=config.backup_dir))
 
     files = sorted(config.backup_dir.glob(f"{pattern}*.tar.gz"))
     if not files:
-        typer.echo(t("msg.no_backups", kind=kind, path=config.backup_dir), err=True)
-        raise SystemExit(1)
+        raise CommandError(t("msg.no_backups", kind=kind, path=config.backup_dir))
 
     timestamps = [f.name.replace(pattern, "").replace(".tar.gz", "") for f in files]
 

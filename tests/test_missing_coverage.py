@@ -289,13 +289,17 @@ def test_deploy_update_line_branches(temp_dir):
 def test_service_empty_and_multiple(dummy_runtime, temp_dir):
     cfg = Config("app", compose_files=["docker-compose.yml"])
     dummy_runtime.list_containers = MagicMock(return_value=[])
-    service.log(dummy_runtime, cfg, None)
-    service.connect(dummy_runtime, cfg, None)
+    with pytest.raises(SystemExit):
+        service.log(dummy_runtime, cfg, None)
+    with pytest.raises(SystemExit):
+        service.connect(dummy_runtime, cfg, None)
     dummy_runtime.list_containers = MagicMock(return_value=["a", "b"])
     service.connect(dummy_runtime, cfg, None)
     dummy_runtime.get_container_id = MagicMock(return_value="")
-    service.log(dummy_runtime, cfg, "a")
-    service.connect(dummy_runtime, cfg, "a")
+    with pytest.raises(SystemExit):
+        service.log(dummy_runtime, cfg, "a")
+    with pytest.raises(SystemExit):
+        service.connect(dummy_runtime, cfg, "a")
 
 
 def test_common_remaining_branches(temp_dir):
