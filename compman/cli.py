@@ -72,9 +72,31 @@ def completion(shell: str, install: bool) -> None:
     if shell == "powershell":
         snippet = (
             "\n# compman shell completion\n"
-            "if (Get-Command compman -ErrorAction SilentlyContinue) {\n"
-            "    $env:_COMPMAN_COMPLETE='powershell_source'\n"
-            "    compman | Out-String | Invoke-Expression\n"
+            "Register-ArgumentCompleter -Native -CommandName compman -ScriptBlock {\n"
+            "    param($wordToComplete, $commandAst, $cursorPosition)\n"
+            "    $subcommands = @('init', 'clear', 'deploy', 'update', 'upgrade', 'completion', 'stack', 'service', 'volume', 'image')\n"
+            "    $words = $commandAst.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)\n"
+            "    if ($words.Count -le 2) {\n"
+            "        $subcommands | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+            "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+            "        }\n"
+            "    } elseif ($words[1] -eq 'stack') {\n"
+            "        @('up', 'down', 'update') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+            "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+            "        }\n"
+            "    } elseif ($words[1] -eq 'service') {\n"
+            "        @('start', 'stop', 'restart', 'status', 'log', 'connect') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+            "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+            "        }\n"
+            "    } elseif ($words[1] -eq 'volume') {\n"
+            "        @('backup', 'restore', 'pull', 'push') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+            "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+            "        }\n"
+            "    } elseif ($words[1] -eq 'image') {\n"
+            "        @('backup', 'restore') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+            "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+            "        }\n"
+            "    }\n"
             "}\n"
         )
         if install:
@@ -85,9 +107,14 @@ def completion(shell: str, install: bool) -> None:
                 profile_path = pathlib.Path(ps_profile)
                 profile_path.parent.mkdir(parents=True, exist_ok=True)
                 current_content = profile_path.read_text(encoding="utf-8") if profile_path.exists() else ""
-                if "_COMPMAN_COMPLETE" not in current_content:
-                    with profile_path.open("a", encoding="utf-8") as f:
-                        f.write(snippet)
+                # Replace old broken snippet if present
+                if "compman shell completion" in current_content:
+                    lines = current_content.splitlines()
+                    new_lines = [l for l in lines if "_COMPMAN_COMPLETE" not in l and "compman | Out-String" not in l]
+                    current_content = "\n".join(new_lines)
+                if "Register-ArgumentCompleter -Native -CommandName compman" not in current_content:
+                    with profile_path.open("w", encoding="utf-8") as f:
+                        f.write(current_content.strip() + "\n" + snippet)
                     click.echo(f"✅ PowerShell 자동완성이 등록되었습니다: {profile_path}")
                 else:
                     click.echo("✅ PowerShell 프로필에 이미 자동완성이 등록되어 있습니다.")

@@ -24,9 +24,10 @@ if (Get-Command uv -ErrorAction SilentlyContinue) {
     exit 1
 }
 
-# 3. Automatically register PowerShell Tab auto-completion
+# 3. Automatically register PowerShell Tab auto-completion & execution policy
 if (Get-Command compman -ErrorAction SilentlyContinue) {
     try {
+        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction SilentlyContinue
         compman completion powershell --install | Out-Null
         Write-Host "✅ Registered shell auto-completion for PowerShell." -ForegroundColor Green
     } catch {
