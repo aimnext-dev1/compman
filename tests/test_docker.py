@@ -171,7 +171,12 @@ def test_passthru_timeout_is_raised(mock_run):
 def test_container_runtime_methods():
     rt = ContainerRuntime(name="docker", cli=["docker"], compose=["docker", "compose"])
 
-    with patch.object(rt, "run_compose") as mock_compose, patch.object(rt, "run_cli") as mock_cli:
+    with (
+        patch.object(rt, "run_compose") as mock_compose,
+        patch.object(rt, "run_cli") as mock_cli,
+        patch.object(rt, "passthru_cli") as mock_passthru_cli,
+        patch.object(rt, "passthru_compose") as mock_passthru_compose,
+    ):
         mock_compose.return_value = MagicMock(returncode=0, stdout="container1\n")
         mock_cli.side_effect = [
             MagicMock(returncode=0, stdout="vol1\n"),
@@ -185,3 +190,5 @@ def test_container_runtime_methods():
 
         rt.passthru_cli(["ps"])
         rt.passthru_compose(["ps"], project="my_proj")
+        mock_passthru_cli.assert_called_once_with(["ps"])
+        mock_passthru_compose.assert_called_once_with(["ps"], project="my_proj")
