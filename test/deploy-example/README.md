@@ -4,7 +4,7 @@
 
 ## 동작
 
-S3 key(`COMPMAN_S3_PATH_<ENV>` 값) 유형에 따라 처리해 **cwd**에 원자적 교체합니다.
+S3 경로(`compman.yml: deploy` 또는 `--path`) 유형에 따라 처리해 **cwd**에 원자적 교체합니다.
 
 - **prefix 경로** — key 아래 모든 객체를 구조 보존 다운로드
   ```
@@ -19,21 +19,46 @@ S3 key(`COMPMAN_S3_PATH_<ENV>` 값) 유형에 따라 처리해 **cwd**에 원자
 
 교체는 fetch된 항목만 덮어씁니다 (cwd의 사용자 파일 `compman.yml`, `docker-compose.yml` 등은 보존).
 
-`compman.yml`은 읽지 않습니다. 실행 중인 컨테이너는 건드리지 않습니다.
+**빈 디렉토리 자동 scaffold**: `compman.yml`/`docker-compose.yml`이 없으면 deploy가 자동 생성합니다.
+```yaml
+# compman.yml
+compman:
+  name: <cwd dirname>
+  deploy: s3://<사용한 경로>     # 다음 deploy는 --path 없이 동작
+  compose:
+    - docker-compose.yml
+```
+```yaml
+# docker-compose.yml
+services:
+  app:
+    image: <--tag 또는 dirname>  # --build 시 빌드된 이미지와 일치
+    restart: unless-stopped
+```
+기존 파일은 덮어쓰지 않습니다. 빈 디렉토리에서 `compman deploy --build` → 바로 `compman stack up` 가능.
+실행 중인 컨테이너는 건드리지 않습니다.
 
 ## 설정
 
-- S3 경로: `compman/deploy.py`의 `S3_PATHS` 또는 env override
-  - `COMPMAN_S3_PATH_<ENV>` (예: `COMPMAN_S3_PATH_DEV=s3://my-bucket/prod`)
-- 엔드포인트: `COMPMAN_S3_ENDPOINT` — 미설정 시 실제 AWS, 설정 시 해당 엔드포인트로 (로컬 ministack 테스트용)
+- S3 경로: `compman.yml`의 `deploy` 키 또는 CLI `--path` override
+  ```yaml
+  compman:
+    deploy: s3://my-bucket/app
+  ```
+  ```bash
+  compman deploy --path s3://my-bucket/other
+  ```
+- 엔드포인트: `COMPMAN_S3_ENDPOINT` — 미설정 시 실제 AWS, 설정 시 해당 엔드포인트로 (로컬 ministack 테스트용, root `docker-compose.yaml` 기동 시 `http://localhost:4567`)
 - 인증: 표준 `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` env vars
 - boto3 사용 (aws CLI 불필요)
 
 ## 사용법
 
 ```bash
-compman deploy [dev|prod]                     # S3에서 소스 fetch (prefix or 아카이브)
-compman deploy dev --build --tag myapp        # fetch 후 docker build -t myapp .
+compman init                        # 심플 compman.yml 생성 (name = cwd dirname, 풀 옵션은 주석)
+compman deploy                     # compman.yml의 deploy 경로에서 fetch
+compman deploy --path s3://...     # 경로 override
+compman deploy --build --tag myapp # fetch 후 docker build -t myapp .
 ```
 
 `--build` 시 태그 미지정이면 cwd 디렉토리명이 기본 태그가 됩니다.

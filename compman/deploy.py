@@ -11,22 +11,23 @@ from urllib.parse import urlparse
 import boto3
 import click
 
+from compman.config import ConfigError, load_config
 from compman.docker import detect_runtime
 
-
-S3_PATHS = {
-    "dev": "",  # TODO: fill dev S3 path
-    "prod": "",  # TODO: fill prod S3 path
-}
 
 _ARCHIVE_SUFFIXES = (".tar.gz", ".tgz", ".zip")
 
 
-def deploy(env: str, build: bool = False, tag: str | None = None) -> None:
-    s3_path = os.environ.get(f"COMPMAN_S3_PATH_{env.upper()}") or S3_PATHS.get(env)
+def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = None) -> None:
     if not s3_path:
-        click.echo(f"S3 path not configured for environment '{env}'.", err=True)
-        click.echo("Edit S3_PATHS in compman/deploy.py")
+        try:
+            s3_path = load_config().deploy
+        except ConfigError as e:
+            click.echo(f"Config error: {e}", err=True)
+            raise SystemExit(1)
+    if not s3_path:
+        click.echo("S3 path not configured.", err=True)
+        click.echo("Set 'deploy' in compman.yml or pass --path.")
         raise SystemExit(1)
 
     endpoint = os.environ.get("COMPMAN_S3_ENDPOINT")
@@ -43,13 +44,39 @@ def deploy(env: str, build: bool = False, tag: str | None = None) -> None:
     try:
         project_root = _fetch(s3, bucket, key, tmp)
         _swap(project_root, root)
+        image = tag or root.name.lower()
+        _generate_scaffold(root, s3_path, image)
         if build:
-            image = tag or root.name.lower()
             click.echo(f"Building image '{image}'...")
             detect_runtime().passthru_cli(["build", "-t", image, "."])
         click.echo("Deploy done.")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _generate_scaffold(root: Path, s3_path: str, image: str) -> None:
+    compman_yml = root / "compman.yml"
+    if not compman_yml.exists():
+        compman_yml.write_text(
+            f"compman:\n"
+            f"  name: {root.name}\n"
+            f"  deploy: {s3_path}\n"
+            f"  compose:\n"
+            f"    - docker-compose.yml\n",
+            encoding="utf-8",
+        )
+        click.echo("Created compman.yml")
+
+    compose_yml = root / "docker-compose.yml"
+    if not compose_yml.exists():
+        compose_yml.write_text(
+            f"services:\n"
+            f"  app:\n"
+            f"    image: {image}\n"
+            f"    restart: unless-stopped\n",
+            encoding="utf-8",
+        )
+        click.echo("Created docker-compose.yml")
 
 
 def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:

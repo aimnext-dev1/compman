@@ -1,0 +1,17 @@
+services:
+  ministack-compman:
+    image: ministackorg/ministack:latest
+    container_name: ministack-compman
+    ports:
+      - "4567:4566"
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: ap-northeast-2
+      GATEWAY_PORT: "4566"
+      S3_PERSIST: "0"
+      USE_SSL: "0"
+    volumes:
+      - ./docker-init/seed:/init-data/app:ro
+      - ./docker-init/seed.tar.gz:/init-data/seed.tar.gz:ro
+      - ./docker-init:/etc/localstack/init/ready.d

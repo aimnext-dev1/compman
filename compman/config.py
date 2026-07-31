@@ -23,6 +23,7 @@ class Config:
     compose_base: str | None = None
     compose_files: list[str] | None = None
     profiles: dict[str, Profile] = field(default_factory=dict)
+    deploy: str | None = None
 
     @property
     def project_dir(self) -> Path:
@@ -98,6 +99,10 @@ def load_config(config_path: str | None = None) -> Config:
             "'compose' must be a list, dict, or omitted."
         )
 
+    raw_deploy = root.get("deploy")
+    if raw_deploy is not None and not isinstance(raw_deploy, str):
+        raise ConfigError("'deploy' must be a string (e.g. 's3://bucket/app').")
+
     return Config(
         name=name,
         folder=folder,
@@ -105,27 +110,33 @@ def load_config(config_path: str | None = None) -> Config:
         compose_base=compose_base,
         compose_files=compose_files,
         profiles=profiles,
+        deploy=raw_deploy,
     )
 
 
-def dump_default_config() -> str:
-    return """compman:
-  name: my-stack
-  # folder: my-project               # optional: _project/ subdirectory
-  dirs:
-    backup: backup
-    volume: volume
+def dump_default_config(name: str) -> str:
+    return f"""compman:
+  name: {name}
   compose:
-    # base: docker-compose.yml       # optional: shared base file
-    # local: docker-compose.local.yml
-    # dev:
-    #   file: docker-compose.dev.yml
-    #   env:
-    #     DATABASE_URL: dev.example.com:5432
-    # prod:
-    #   file: docker-compose.prod.yml
-    #   env:
-    #     DATABASE_URL: prod.example.com:5432
+    - docker-compose.yml
+  # --- optional features ---
+  # folder: my-project             # _project/ subdirectory
+  # deploy: s3://bucket/app        # deploy source (--path overrides)
+  # dirs:
+  #   backup: backup
+  #   volume: volume
+  # profile mode (alternative to the compose list above):
+  # compose:
+  #   base: docker-compose.yml
+  #   local: docker-compose.local.yml
+  #   dev:
+  #     file: docker-compose.dev.yml
+  #     env:
+  #       DATABASE_URL: dev.example.com:5432
+  #   prod:
+  #     file: docker-compose.prod.yml
+  #     env:
+  #       DATABASE_URL: prod.example.com:5432
 """
 
 

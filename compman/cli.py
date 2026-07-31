@@ -33,7 +33,7 @@ def init(force: bool, config: str) -> None:
     if path.is_file() and not force:
         click.echo(f"{config} already exists. Use --force to overwrite.")
         return
-    path.write_text(dump_default_config(), encoding="utf-8")
+    path.write_text(dump_default_config(Path.cwd().name), encoding="utf-8")
     click.echo(f"{config} created. Edit it with your values.")
 
 
@@ -45,11 +45,11 @@ def clear() -> None:
 
 
 @click.command()
-@click.argument("env", default="dev")
+@click.option("--path", default=None, help="S3 경로 (기본: compman.yml의 deploy)")
 @click.option("--build", is_flag=True, help="Fetch 후 Docker 이미지 빌드")
 @click.option("--tag", default=None, help="--build 시 이미지 태그 (기본: 디렉토리명)")
-def deploy(env: str, build: bool, tag: str | None) -> None:
-    _deploy(env, build=build, tag=tag)
+def deploy(path: str | None, build: bool, tag: str | None) -> None:
+    _deploy(build=build, tag=tag, s3_path=path)
 
 
 # ---- main group ----
