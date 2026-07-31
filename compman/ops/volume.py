@@ -51,10 +51,7 @@ def backup(
                     if info:
                         mapping.append(info)
                         target = backup_dir / volume
-                        runtime.run_cli(
-                            ["cp", f"{container}:{info['destination']}", str(target)],
-                            capture=False,
-                        )
+                        runtime.copy_from_container(container, info["destination"], target)
 
             map_path = backup_dir / "volume-map.json"
             merged = _merge_mapping(mapping)
@@ -116,10 +113,7 @@ def restore(
                     typer.echo(f"Warning: data dir '{src}' not found, skipping {container}.")
                     continue
                 typer.echo(f"Restoring {container}:{dest} ...")
-                runtime.run_cli(
-                    ["cp", f"{str(src)}/.", f"{container}:{dest}"],
-                    capture=False,
-                )
+                runtime.copy_to_container(f"{src}/.", container, dest)
 
             for container, vol_info in mapping.items():
                 volume_name = vol_info["volume"]
@@ -127,7 +121,7 @@ def restore(
                 src = restore_dir / volume_name
                 if not src.is_dir():
                     continue
-                _fix_permissions(runtime, container, dest)
+                runtime.fix_permissions(container, dest)
     finally:
         shutil.rmtree(restore_dir, ignore_errors=True)
 
@@ -157,10 +151,7 @@ def pull(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
             if info:
                 mapping.append(info)
                 target = volume_dir / volume
-                runtime.run_cli(
-                    ["cp", f"{container}:{info['destination']}", str(target)],
-                    capture=False,
-                )
+                runtime.copy_from_container(container, info["destination"], target)
 
     map_path = volume_dir / "volume-map.json"
     merged = _merge_mapping(mapping)
@@ -188,18 +179,15 @@ def push(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
             typer.echo(f"Warning: '{src}' not found, skipping {container}.")
             continue
         typer.echo(f"Pushing to {container}:{dest} ...")
-        runtime.run_cli(
-            ["cp", f"{str(src)}/.", f"{container}:{dest}"],
-            capture=False,
-        )
-        _fix_permissions(runtime, container, dest)
+        runtime.copy_to_container(f"{src}/.", container, dest)
+        runtime.fix_permissions(container, dest)
     typer.echo("Volume push done.")
 
 
 def _inspect_mount(
     runtime: ContainerRuntime, container: str, volume: str
 ) -> dict[str, str] | None:
-    result = runtime.run_cli(["inspect", container], capture=True, check=False)
+    result = runtime.inspect_container(container, check=False)
     if result.returncode != 0:
         return None
     data = json.loads(result.stdout)
@@ -223,32 +211,9 @@ def _merge_mapping(mapping: list[dict[str, str]]) -> dict[str, Any]:
     return result
 
 
-def _fix_permissions(
-    runtime: ContainerRuntime, container: str, dest: str
-) -> None:
+def _fix_permissions(runtime: ContainerRuntime, container: str, dest: str) -> None:
     typer.echo(f"Fixing permissions on {container}:{dest} ...")
-    r = runtime.run_cli(
-        [
-            "exec",
-            container,
-            "stat",
-            "-c",
-            "%U %G",
-            dest,
-        ],
-        capture=True,
-        check=False,
-    )
-    if r.returncode != 0:
-        return
-    parts = r.stdout.strip().split()
-    if len(parts) >= 2:
-        user, group = parts[0], parts[1]
-        runtime.run_cli(
-            ["exec", "-u", "root", container, "chown", "-R", f"{user}:{group}", dest],
-            capture=False,
-            check=False,
-        )
+    runtime.fix_permissions(container, dest)
 
 
 def _validate_timestamp(ts: str) -> None:

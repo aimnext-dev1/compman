@@ -67,6 +67,49 @@ class ContainerRuntime:
             ]
         )
 
+    def inspect_container(self, container: str, check: bool = True) -> subprocess.CompletedProcess:
+        return self.run_cli(["inspect", container], capture=True, check=check)
+
+    def copy_from_container(self, container: str, source: str, destination: Path) -> None:
+        self.run_cli(["cp", f"{container}:{source}", str(destination)], capture=False)
+
+    def copy_to_container(self, source: Path | str, container: str, destination: str) -> None:
+        self.run_cli(["cp", f"{source}", f"{container}:{destination}"], capture=False)
+
+    def fix_permissions(self, container: str, destination: str) -> None:
+        result = self.run_cli(
+            ["exec", container, "stat", "-c", "%U %G", destination],
+            capture=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            return
+        parts = result.stdout.strip().split()
+        if len(parts) >= 2:
+            self.run_cli(
+                ["exec", "-u", "root", container, "chown", "-R", f"{parts[0]}:{parts[1]}", destination],
+                capture=False,
+                check=False,
+            )
+
+    def inspect_value(self, container: str, format_string: str) -> str:
+        result = self.run_cli(
+            ["inspect", "--format", format_string, container], capture=True
+        )
+        return result.stdout.strip()
+
+    def commit_container(self, container: str, tag: str) -> None:
+        self.run_cli(["commit", container, tag], capture=False)
+
+    def save_image(self, image: str, destination: Path) -> None:
+        self.run_cli(["save", "-o", str(destination), image], capture=False)
+
+    def remove_image(self, image: str) -> None:
+        self.run_cli(["rmi", image], capture=False, check=False)
+
+    def load_image(self, source: Path) -> None:
+        self.run_cli(["load", "-i", str(source)], capture=False)
+
     def _compose_cmd(
         self,
         project: str | None,

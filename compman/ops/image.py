@@ -50,38 +50,18 @@ def backup(
             cid = cid.strip()
             if not cid:
                 continue
-            r = runtime.run_cli(
-                ["inspect", "--format", "{{.Name}}", cid], capture=True
-            )
-            container_name = r.stdout.strip().strip("/")
+            container_name = runtime.inspect_value(cid, "{{.Name}}").strip("/")
 
             if source_mode:
-                r2 = runtime.run_cli(
-                    ["inspect", "--format", "{{.Image}}", cid], capture=True
-                )
-                image_id = r2.stdout.strip()
-                runtime.run_cli(
-                    [
-                        "save",
-                        "-o",
-                        str(backup_dir / f"{container_name}.image.backup.tar"),
-                        image_id,
-                    ],
-                    capture=False,
+                image_id = runtime.inspect_value(cid, "{{.Image}}")
+                runtime.save_image(
+                    image_id, backup_dir / f"{container_name}.image.backup.tar"
                 )
             else:
                 tag = f"{container_name}:backup"
                 backup_tags.append(tag)
-                runtime.run_cli(["commit", cid, tag], capture=False)
-                runtime.run_cli(
-                    [
-                        "save",
-                        "-o",
-                        str(backup_dir / f"{container_name}.image.backup.tar"),
-                        tag,
-                    ],
-                    capture=False,
-                )
+                runtime.commit_container(cid, tag)
+                runtime.save_image(tag, backup_dir / f"{container_name}.image.backup.tar")
 
         with tarfile.open(tarball, "w:gz") as tar:
             tar.add(backup_dir, arcname=".")
@@ -90,7 +70,7 @@ def backup(
         raise
     finally:
         for tag in backup_tags:
-            runtime.run_cli(["rmi", tag], capture=False, check=False)
+            runtime.remove_image(tag)
         shutil.rmtree(backup_dir, ignore_errors=True)
 
     typer.echo(f"Image backup done: {tarball}")
@@ -124,7 +104,7 @@ def restore(
 
     for tar_file in restore_dir.glob("*.tar"):
         typer.echo(f"Loading {tar_file.name} ...")
-        runtime.run_cli(["load", "-i", str(tar_file)], capture=False)
+        runtime.load_image(tar_file)
         tar_file.unlink()
 
     shutil.rmtree(restore_dir)
