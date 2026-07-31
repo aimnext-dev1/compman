@@ -16,14 +16,17 @@ irm https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 | ie
 ```
 
 ```cmd
-:: Windows CMD (일반 명령 프롬프트 - 즉시 PATH 적용)
-curl -fsSL https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.cmd -o %TEMP%\install.cmd && call %TEMP%\install.cmd && set PATH=%USERPROFILE%\.local\bin;%PATH%
+:: Windows CMD (일반 명령 프롬프트)
+curl -fsSL https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.cmd -o %TEMP%\install.cmd && call %TEMP%\install.cmd
 ```
 
 ```bash
 # Linux / macOS (Bash/Zsh)
 curl -fsSL https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.sh | sh
 ```
+
+> ⚠️ **설치 후 반드시 터미널을 새로 열어야** PATH가 적용됩니다.  
+> 설치 스크립트는 기존 pip/Python Scripts 경로에 남아있는 구버전 compman을 자동으로 제거하고, `~/.local/bin`을 User PATH 최상단에 배치합니다.
 
 ### 2. 패키지 관리자 직접 설치
 
@@ -89,6 +92,10 @@ compman seed -a
 # 3. 커스텀 프로젝트명 및 포트 지정
 compman seed -o my-app -p 8080 -a
 ```
+
+> 💡 **프로젝트명 자동 정규화**: 실행 디렉터리 이름이 자동으로 Docker 네이밍 규칙에 맞게 변환됩니다.  
+> 예) `Desktop` → `desktop`, `My Project` → `my-project`, `Hello World!` → `hello-world`  
+> `compman init`, `compman deploy`에도 동일하게 적용됩니다.
 
 ---
 
