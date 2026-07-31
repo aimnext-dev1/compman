@@ -1,6 +1,6 @@
 # compman Deploy & Stack E2E Full Scenario Guide
 
-`compman` CLI를 사용하여 S3 프로젝트 배포, `compman.yml` 자동 갱신, `project/` 디렉터리 소스 분리, Docker 이미지 빌드, 스택 기동 및 신규 버전 교체 배포까지 전체 시나리오를 단계별로 설명하는 가이드 문서입니다.
+`compman` CLI를 사용하여 S3 프로젝트 배포, `compman.yml` 자동 갱신, `project/` 디렉터리 소스 분리, Docker 이미지 빌드, 스택 기동 및 단독 명령어(`compman update`)를 통한 최신 버전 무중단 교체 배포까지 전체 시나리오를 단계별로 설명하는 가이드 문서입니다.
 
 ---
 
@@ -115,21 +115,23 @@ curl http://localhost:18080
 
 ---
 
-### Step 7. 신규 버전 소스 배포 & 컨테이너 무중단 교체 (`--build` & `stack up`)
-S3에 신규 버전 애플리케이션이 올라왔을 때 이미지 재빌드 및 컨테이너를 자동 재생성(Recreate)하여 교체합니다.
+### Step 7. ⭐ 단독 명령어 한 줄로 최신 버전 무중단 교체 배포 (`compman update`)
+젠킨스에서 S3로 신규 빌드 아티팩트를 올린 후, 서버에서 **단 한 번의 명령어**로 S3 최신 소스 수신 $\rightarrow$ 이미지 재빌드 $\rightarrow$ 기존 컨테이너 무중단 교체 기동(Recreate)을 모두 수행합니다.
 
 ```bash
-# 1. 신규 소스 다운로드 및 이미지 재빌드
-compman deploy --build
-
-# 2. 컨테이너 교체 기동
-compman stack up
-
-# 3. 신규 버전 응답 확인
-curl http://localhost:18080
+compman update
 ```
 
-- **결과**: `Container e2e-scenario-test-app-1 Recreate` $\rightarrow$ `Started` 및 신규 v3 페이지 응답 확인.
+- **실행 결과**:
+  ```text
+  Building image 'e2e-scenario-test' in project...
+  Deploy done.
+  Container e2e-scenario-test-app-1 Recreate
+  Container e2e-scenario-test-app-1 Recreated
+  Container e2e-scenario-test-app-1 Starting
+  Container e2e-scenario-test-app-1 Started
+  ```
+- **특징**: 아무런 인자나 플래그 없이 단 한 줄의 커맨드로 최신 버전 교체 기동 완료!
 
 ---
 
@@ -148,6 +150,7 @@ compman stack down --yes
 
 | 구 분 | 명령어 | 핵심 동작 |
 | :--- | :--- | :--- |
+| **단독 최신 업데이트 (추천 ✨)** | **`compman update`** | **인자 없이 한 줄로 S3 최신 다운로드 + 이미지 빌드 + 기존 컨테이너 무중단 교체 기동** |
 | **기본 배포** | `compman deploy --path <S3_URI>` | S3 소스를 `project/`에 다운로드 + `compman.yml`에 `deploy` 경로 자동 기록 |
 | **경로 재사용** | `compman deploy` | `compman.yml`의 최신 `deploy` 경로를 참조하여 자동 배포 |
 | **배포 + 빌드** | `compman deploy --build` | S3 다운로드 + `project/Dockerfile` 기반 Docker 이미지 자동 빌드 |

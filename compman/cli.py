@@ -52,6 +52,16 @@ def deploy(path: str | None, build: bool, tag: str | None) -> None:
     _deploy(build=build, tag=tag, s3_path=path)
 
 
+@click.command()
+@click.argument("profile", required=False)
+@click.option("--config", "-c", default=None, help="Path to compman.yml")
+def update(profile: str | None, config: str | None) -> None:
+    """Fetch latest S3, build docker image, and recreate stack container."""
+    _deploy(build=True, tag=None, s3_path=None)
+    ctx = _load(config)
+    stack.up(ctx["runtime"], ctx["config"], profile=profile)
+
+
 # ---- main group ----
 @click.group()
 def cli() -> None:
@@ -61,6 +71,7 @@ def cli() -> None:
 cli.add_command(init)
 cli.add_command(clear)
 cli.add_command(deploy)
+cli.add_command(update)
 
 
 # ---- stack ----
