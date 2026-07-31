@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import tarfile
 import tempfile
@@ -10,6 +11,7 @@ from urllib.parse import urlparse
 
 import boto3
 import click
+import yaml
 
 from compman.config import ConfigError, load_config
 from compman.docker import detect_runtime
@@ -19,20 +21,36 @@ _ARCHIVE_SUFFIXES = (".tar.gz", ".tgz", ".zip")
 
 
 def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = None) -> None:
-    if not s3_path:
+    config = None
+    if (Path.cwd() / "compman.yml").exists():
+        try:
+            config = load_config()
+        except ConfigError:
+            pass
+
+    if not s3_path and config:
+        s3_path = config.deploy
+
+    if not s3_path and not config:
         try:
             s3_path = load_config().deploy
         except ConfigError as e:
             click.echo(f"Config error: {e}", err=True)
             raise SystemExit(1)
+
     if not s3_path:
         click.echo("S3 path not configured.", err=True)
         click.echo("Set 'deploy' in compman.yml or pass --path.")
         raise SystemExit(1)
 
+    project_subfolder = config.dirs.get("project", "project") if config else "project"
+
     endpoint = os.environ.get("COMPMAN_S3_ENDPOINT")
 
     root = Path.cwd()
+    deploy_target = root / project_subfolder
+    deploy_target.mkdir(parents=True, exist_ok=True)
+
     tmp = Path(tempfile.mkdtemp(prefix=".deploy_tmp_", dir=root))
 
     parsed = urlparse(s3_path)
@@ -43,40 +61,126 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
 
     try:
         project_root = _fetch(s3, bucket, key, tmp)
-        _swap(project_root, root)
+        _swap(project_root, deploy_target)
         image = tag or root.name.lower()
-        _generate_scaffold(root, s3_path, image)
+        _generate_scaffold(root, project_subfolder, s3_path, image)
         if build:
-            click.echo(f"Building image '{image}'...")
-            detect_runtime().passthru_cli(["build", "-t", image, "."])
+            click.echo(f"Building image '{image}' in {project_subfolder}...")
+            detect_runtime().passthru_cli(["build", "-t", image, "."], cwd=deploy_target)
         click.echo("Deploy done.")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def _generate_scaffold(root: Path, s3_path: str, image: str) -> None:
+def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: str) -> None:
     compman_yml = root / "compman.yml"
     if not compman_yml.exists():
         compman_yml.write_text(
             f"compman:\n"
             f"  name: {root.name}\n"
             f"  deploy: {s3_path}\n"
+            f"  dirs:\n"
+            f"    project: {project_subfolder}\n"
             f"  compose:\n"
             f"    - docker-compose.yml\n",
             encoding="utf-8",
         )
         click.echo("Created compman.yml")
+    else:
+        _update_compman_deploy(compman_yml, s3_path)
 
-    compose_yml = root / "docker-compose.yml"
-    if not compose_yml.exists():
-        compose_yml.write_text(
+    deploy_target = root / project_subfolder
+    sub_compose = deploy_target / "docker-compose.yml"
+    root_compose = root / "docker-compose.yml"
+
+    if sub_compose.exists():
+        shutil.move(str(sub_compose), str(root_compose))
+
+    if not root_compose.exists():
+        root_compose.write_text(
             f"services:\n"
             f"  app:\n"
             f"    image: {image}\n"
+            f"    ports:\n"
+            f"      - \"18080:18080\"\n"
             f"    restart: unless-stopped\n",
             encoding="utf-8",
         )
         click.echo("Created docker-compose.yml")
+
+
+def _update_compman_deploy(compman_yml: Path, s3_path: str) -> None:
+    content = compman_yml.read_text(encoding="utf-8-sig")
+    try:
+        raw = yaml.safe_load(content)
+    except Exception:
+        raw = None
+
+    if isinstance(raw, dict) and isinstance(raw.get("compman"), dict):
+        if raw["compman"].get("deploy") == s3_path:
+            return  # Already up to date
+
+    lines = content.splitlines(keepends=True)
+    updated = False
+    new_lines = []
+    in_compman = False
+    compman_indent = 0
+
+    for line in lines:
+        stripped = line.strip()
+        if re.match(r"^compman\s*:", line):
+            in_compman = True
+            compman_indent = len(line) - len(line.lstrip())
+            new_lines.append(line)
+            continue
+
+        if in_compman:
+            current_indent = len(line) - len(line.lstrip())
+            if stripped and not stripped.startswith("#") and current_indent <= compman_indent:
+                in_compman = False
+            elif re.match(r"^\s*deploy\s*:", line):
+                indent = " " * (len(line) - len(line.lstrip()))
+                new_lines.append(f"{indent}deploy: {s3_path}\n")
+                updated = True
+                continue
+        new_lines.append(line)
+
+    if not updated:
+        final_lines = []
+        inserted = False
+        in_compman = False
+        for line in lines:
+            final_lines.append(line)
+            if not inserted and re.match(r"^compman\s*:", line):
+                in_compman = True
+                continue
+            if in_compman and not inserted:
+                if line.strip() and not line.strip().startswith("#"):
+                    indent = " " * (len(line) - len(line.lstrip()))
+                    final_lines.append(f"{indent}deploy: {s3_path}\n")
+                    inserted = True
+                    in_compman = False
+        if not inserted:
+            final_lines.append(f"  deploy: {s3_path}\n")
+        lines = final_lines
+    else:
+        lines = new_lines
+
+    new_content = "".join(lines)
+
+    try:
+        check_raw = yaml.safe_load(new_content)
+        if isinstance(check_raw, dict) and check_raw.get("compman", {}).get("deploy") == s3_path:
+            compman_yml.write_text(new_content, encoding="utf-8")
+            click.echo(f"Updated deploy in compman.yml ({s3_path})")
+            return
+    except Exception:
+        pass
+
+    if isinstance(raw, dict) and "compman" in raw and isinstance(raw["compman"], dict):
+        raw["compman"]["deploy"] = s3_path
+        compman_yml.write_text(yaml.safe_dump(raw, sort_keys=False, allow_unicode=True), encoding="utf-8")
+        click.echo(f"Updated deploy in compman.yml ({s3_path})")
 
 
 def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:

@@ -18,7 +18,7 @@ class Config:
     name: str
     folder: str | None = None
     dirs: dict[str, str] = field(
-        default_factory=lambda: {"backup": "backup", "volume": "volume"}
+        default_factory=lambda: {"backup": "backup", "volume": "volume", "project": "project"}
     )
     compose_base: str | None = None
     compose_files: list[str] | None = None
@@ -37,6 +37,10 @@ class Config:
     @property
     def volume_dir(self) -> Path:
         return Path.cwd() / self.dirs.get("volume", "volume")
+
+    @property
+    def deploy_dir(self) -> Path:
+        return Path.cwd() / self.dirs.get("project", "project")
 
     def has_profiles(self) -> bool:
         return bool(self.profiles)
@@ -67,6 +71,7 @@ def load_config(config_path: str | None = None) -> Config:
     dirs = {
         "backup": str(raw_dirs.get("backup", "backup")),
         "volume": str(raw_dirs.get("volume", "volume")),
+        "project": str(raw_dirs.get("project", "project")),
     }
 
     compose_base: str | None = None

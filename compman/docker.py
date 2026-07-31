@@ -45,8 +45,8 @@ class ContainerRuntime:
         cmd = self._compose_cmd(project, compose_files) + list(args)
         return _passthru(cmd, extra_env=env)
 
-    def passthru_cli(self, args: Sequence[str]) -> int:
-        return _passthru(self.cli + list(args))
+    def passthru_cli(self, args: Sequence[str], cwd: Path | str | None = None) -> int:
+        return _passthru(self.cli + list(args), cwd=cwd)
 
     def _compose_cmd(
         self,
@@ -191,10 +191,11 @@ def _run(
 def _passthru(
     cmd: Sequence[str],
     extra_env: dict[str, str] | None = None,
+    cwd: Path | str | None = None,
 ) -> int:
     env = _merged_env(extra_env)
     try:
-        r = subprocess.run(list(cmd), env=env, timeout=3600)
+        r = subprocess.run(list(cmd), env=env, cwd=cwd, timeout=3600)
     except FileNotFoundError:
         raise RuntimeError(f"Command not found: {cmd[0]}")
     return r.returncode
