@@ -137,6 +137,34 @@ def completion(shell: str, install: bool) -> None:
             click.echo(snippet)
 
 
+@click.command()
+@click.option("--repo", default="https://github.com/aimnext-dev1/compman.git", help="Git repository URL")
+def upgrade(repo: str) -> None:
+    """compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드합니다."""
+    click.echo(f"🚀 Upgrading compman CLI from {repo}...")
+    
+    cmd_uv = ["uv", "tool", "install", "--reinstall", f"git+{repo}"]
+    cmd_pip = ["pip", "install", "--upgrade", f"git+{repo}"]
+    
+    try:
+        res = subprocess.run(cmd_uv, capture_output=True, text=True)
+        if res.returncode == 0:
+            click.echo("✅ compman CLI upgrade complete!")
+            return
+    except FileNotFoundError:
+        pass
+
+    try:
+        res = subprocess.run(cmd_pip, capture_output=True, text=True)
+        if res.returncode == 0:
+            click.echo("✅ compman CLI upgrade complete!")
+            return
+        else:
+            click.echo(f"Error upgrading compman: {res.stderr}", err=True)
+    except FileNotFoundError:
+        click.echo("Error: Neither 'uv' nor 'pip' command found in PATH.", err=True)
+
+
 # ---- main group ----
 @click.group()
 def cli() -> None:
@@ -148,6 +176,7 @@ cli.add_command(clear)
 cli.add_command(deploy)
 cli.add_command(update)
 cli.add_command(completion)
+cli.add_command(upgrade)
 
 
 # ---- stack ----

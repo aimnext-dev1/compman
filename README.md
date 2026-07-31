@@ -106,6 +106,7 @@ compman:
 compman init [-c compman.yml]           # compman.yml 템플릿 생성
 compman update [profile]                # ⭐ S3 최신 다운로드 + 이미지 빌드 + 컨테이너 무중단 교체
 compman deploy [--path S3_URI] [--build]# S3 배포 (compman.yml 경로 자동 저장)
+compman upgrade                         # 🔄 compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드
 
 compman stack up [profile]              # compose up -d
 compman stack down --yes                # compose down (확인 필요)
