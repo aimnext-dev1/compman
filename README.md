@@ -6,20 +6,28 @@ Python CLI로 Docker/Podman Compose 스택 및 S3 기반 자동 배포를 효율
 
 ## 🛠️ Installation (설치)
 
-### 1. GitHub 원격 한 줄 설치 (권장 ✨)
+### 1. 원격 원스톱 자동 설치 (자동 PATH 등록 ✨)
 
-`uv` 또는 `pipx`가 설치된 임의의 컴퓨터에서 git clone 없이 단 한 줄로 설치하여 사용할 수 있습니다.
+복잡한 PATH 설정이나 git clone 없이 터미널에서 아래 명령어 한 줄만 실행하면 **자동 설치 및 PATH 환경변수 등록**까지 일괄 처리됩니다.
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 | iex
+```
+
+```bash
+# Linux / macOS (Bash/Zsh)
+curl -fsSL https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.sh | sh
+```
+
+### 2. 패키지 관리자 직접 설치
 
 ```bash
 # uv 사용 시 (가장 빠르고 권장)
 uv tool install git+https://github.com/aimnext-dev1/compman.git
-uv tool update-shell   # 최초 1회 PATH 등록 (이후 어느 터미널에서나 바로 compman 사용 가능)
 
 # pipx 사용 시 (자동으로 PATH 등록됨)
 pipx install git+https://github.com/aimnext-dev1/compman.git
-
-# pip 사용 시
-pip install git+https://github.com/aimnext-dev1/compman.git
 ```
 
 ### 2. 로컬 소스에서 설치
