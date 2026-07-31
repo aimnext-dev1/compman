@@ -230,12 +230,13 @@ def resolve_compose_files(
         raise ConfigError(f"Unknown profile: {profile}. Known: {known}")
 
     project_dir = config.project_dir
-    compose_file = project_dir / prof.file
+    file_name = prof.file or config.compose_base or "docker-compose.yml"
+    compose_file = project_dir / file_name
     if not compose_file.is_file():
         raise ConfigError(f"Compose file not found: {compose_file}")
 
     files = [compose_file]
-    if config.compose_base:
+    if config.compose_base and prof.file:
         base = project_dir / config.compose_base
         if not base.is_file():
             raise ConfigError(f"Base compose file not found: {base}")

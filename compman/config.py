@@ -9,7 +9,7 @@ import yaml
 
 @dataclass
 class Profile:
-    file: str
+    file: str | None = None
     env: dict[str, str] = field(default_factory=dict)
 
 
@@ -85,10 +85,8 @@ def load_config(config_path: str | None = None) -> Config:
                 profiles[key] = Profile(file=str(val))
             elif isinstance(val, dict):
                 f = val.get("file")
-                if not f:
-                    raise ConfigError(f"'compose.{key}.file' is required.")
                 profiles[key] = Profile(
-                    file=str(f),
+                    file=str(f) if f else None,
                     env={str(k): str(v) for k, v in val.get("env", {}).items()},
                 )
             else:
