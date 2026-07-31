@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -9,7 +8,6 @@ from urllib.parse import urlparse
 
 import boto3
 import typer
-import yaml
 from botocore.exceptions import (
     ClientError,
     EndpointConnectionError,
@@ -22,6 +20,8 @@ from compman.docker import detect_runtime
 from compman.s3_source import fetch as _fetch
 from compman.s3_source import download as _download
 from compman.s3_source import download_recursive as _download_recursive
+from compman.scaffold import generate as _generate_scaffold
+from compman.scaffold import update_deploy as _update_compman_deploy
 
 
 def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = None) -> None:
@@ -87,122 +87,6 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
         _handle_s3_error(e, s3_path)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-
-
-def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: str) -> None:
-    compman_yml = root / "compman.yml"
-    if not compman_yml.exists():
-        content = (
-            f"compman:\n"
-            f"  name: {sanitize_project_name(root.name)}\n"
-            f"  deploy: {s3_path}\n"
-            f"  dirs:\n"
-            f"    project: {project_subfolder}\n"
-            f"  compose:\n"
-            f"    - docker-compose.yml\n"
-        )
-        compman_yml.write_text(content, encoding="utf-8")
-        typer.echo("Created compman.yml:")
-        typer.echo(f"----------------------------------------\n{content.strip()}\n----------------------------------------")
-    else:
-        _update_compman_deploy(compman_yml, s3_path)
-
-    deploy_target = root / project_subfolder
-    sub_compose = deploy_target / "docker-compose.yml"
-    root_compose = root / "docker-compose.yml"
-
-    if sub_compose.exists():
-        shutil.move(str(sub_compose), str(root_compose))
-
-    if not root_compose.exists():
-        compose_content = (
-            f"services:\n"
-            f"  app:\n"
-            f"    image: {image}\n"
-            f"    ports:\n"
-            f"      - \"127.0.0.1:18080:18080\"\n"
-            f"    restart: unless-stopped\n"
-        )
-        root_compose.write_text(compose_content, encoding="utf-8")
-        typer.echo("Created docker-compose.yml:")
-        typer.echo(f"----------------------------------------\n{compose_content.strip()}\n----------------------------------------")
-
-
-def _update_compman_deploy(compman_yml: Path, s3_path: str) -> None:
-    content = compman_yml.read_text(encoding="utf-8-sig")
-    try:
-        raw = yaml.safe_load(content)
-    except Exception:
-        raw = None
-
-    if isinstance(raw, dict) and isinstance(raw.get("compman"), dict):
-        if raw["compman"].get("deploy") == s3_path:
-            return  # Already up to date
-
-    lines = content.splitlines(keepends=True)
-    updated = False
-    new_lines = []
-    in_compman = False
-    compman_indent = 0
-
-    for line in lines:
-        stripped = line.strip()
-        if re.match(r"^compman\s*:", line):
-            in_compman = True
-            compman_indent = len(line) - len(line.lstrip())
-            new_lines.append(line)
-            continue
-
-        if in_compman:
-            current_indent = len(line) - len(line.lstrip())
-            if stripped and not stripped.startswith("#") and current_indent <= compman_indent:
-                in_compman = False
-            elif re.match(r"^\s*deploy\s*:", line):
-                indent = " " * (len(line) - len(line.lstrip()))
-                new_lines.append(f"{indent}deploy: {s3_path}\n")
-                updated = True
-                continue
-        new_lines.append(line)
-
-    if not updated:
-        final_lines = []
-        inserted = False
-        in_compman = False
-        for line in lines:
-            final_lines.append(line)
-            if not inserted and re.match(r"^compman\s*:", line):
-                in_compman = True
-                continue
-            if in_compman and not inserted:
-                if line.strip() and not line.strip().startswith("#"):
-                    indent = " " * (len(line) - len(line.lstrip()))
-                    final_lines.append(f"{indent}deploy: {s3_path}\n")
-                    inserted = True
-                    in_compman = False
-        if not inserted:
-            final_lines.append(f"  deploy: {s3_path}\n")
-        lines = final_lines
-    else:
-        lines = new_lines
-
-    new_content = "".join(lines)
-
-    try:
-        check_raw = yaml.safe_load(new_content)
-        if isinstance(check_raw, dict) and check_raw.get("compman", {}).get("deploy") == s3_path:
-            compman_yml.write_text(new_content, encoding="utf-8")
-            typer.echo(f"Updated deploy in compman.yml ({s3_path}):")
-            typer.echo(f"----------------------------------------\n{new_content.strip()}\n----------------------------------------")
-            return
-    except Exception:
-        pass
-
-    if isinstance(raw, dict) and "compman" in raw and isinstance(raw["compman"], dict):
-        raw["compman"]["deploy"] = s3_path
-        dumped = yaml.safe_dump(raw, sort_keys=False, allow_unicode=True)
-        compman_yml.write_text(dumped, encoding="utf-8")
-        typer.echo(f"Updated deploy in compman.yml ({s3_path}):")
-        typer.echo(f"----------------------------------------\n{dumped.strip()}\n----------------------------------------")
 
 
 def _swap(src: Path, root: Path) -> None:
