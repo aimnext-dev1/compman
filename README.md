@@ -11,8 +11,13 @@ Python CLI로 Docker/Podman Compose 스택 및 S3 기반 자동 배포를 효율
 복잡한 PATH 설정이나 git clone 없이 터미널에서 아래 명령어 한 줄만 실행하면 **자동 설치 및 PATH 환경변수 등록**까지 일괄 처리됩니다.
 
 ```powershell
-# Windows (PowerShell)
+# Windows PowerShell
 irm https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 | iex
+```
+
+```cmd
+:: Windows CMD (일반 명령 프롬프트)
+powershell -Command "irm https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 | iex"
 ```
 
 ```bash
