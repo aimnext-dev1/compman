@@ -57,14 +57,26 @@ compman upgrade
 
 `compman`은 **영어(English)**와 **한국어(Korean)** 도움말 및 가이드 메시지를 모두 지원합니다.
 
-### 1. CLI 옵션 사용 (`--lang` / `-l`)
+### 1. 언어 조회 및 설정 명령어 (`compman lang`)
+```bash
+# 현재 언어 설정 및 환경변수 가이드 조회
+compman lang
+
+# 세션 언어를 한국어로 설정
+compman lang ko
+
+# 세션 언어를 영어로 설정
+compman lang en
+```
+
+### 2. CLI 옵션 사용 (`--lang` / `-l`)
 ```bash
 compman --lang ko --help
 compman -l ko service --help
 compman -l ko stack up
 ```
 
-### 2. 환경 변수 설정 (`COMPMAN_LANG`)
+### 3. 환경 변수 설정 (`COMPMAN_LANG`)
 ```bash
 # Windows PowerShell
 $env:COMPMAN_LANG="ko"

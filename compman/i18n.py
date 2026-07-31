@@ -24,6 +24,38 @@ def set_lang(lang: str | None) -> None:
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
     # Command descriptions
+    "cmd.root": {
+        "en": (
+            "Docker Compose Stack Manager CLI.\n\n"
+            "Language Options:\n"
+            "  • Use --lang / -l <en|ko> option for a one-time language switch.\n"
+            "  • Set COMPMAN_LANG=ko environment variable for a permanent setting.\n"
+            "  • Run 'compman lang' to view current language or see environment setup guides."
+        ),
+        "ko": (
+            "Docker Compose 스택 및 배포 관리 CLI.\n\n"
+            "언어 설정 방법:\n"
+            "  • --lang / -l <en|ko> 옵션으로 1회성 언어 전환 가능.\n"
+            "  • COMPMAN_LANG=ko 환경 변수를 설정하여 영구 언어 지정 가능.\n"
+            "  • 'compman lang' 명령어로 현재 언어 상태 및 설정 방법 확인 가능."
+        ),
+    },
+    "cmd.lang": {
+        "en": (
+            "Display current language or switch CLI language.\n\n"
+            "Examples:\n"
+            "  compman lang\n"
+            "  compman lang ko\n"
+            "  compman lang en"
+        ),
+        "ko": (
+            "현재 CLI 언어 상태를 표시하거나 언어를 변경합니다.\n\n"
+            "사용 예시:\n"
+            "  compman lang\n"
+            "  compman lang ko\n"
+            "  compman lang en"
+        ),
+    },
     "cmd.init": {
         "en": (
             "Initialize project config, fetch S3 package, or generate seed project.\n\n"

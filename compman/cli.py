@@ -52,9 +52,6 @@ app = typer.Typer(
     invoke_without_command=True,
 )
 
-app_lang = typer.Typer(name="lang", help="Language management (internal only)")
-app.add_typer(app_lang, hidden=True)
-
 def _load(config_path: str | None = None):
     try:
         cfg = load_config(config_path)
@@ -315,6 +312,32 @@ def upgrade_cmd(
 
 
 
+
+
+# ---- lang ----
+@app.command("lang", help=t("cmd.lang"))
+def lang_cmd(
+    language: Annotated[Optional[str], typer.Argument(help="Language code (en or ko)")] = None,
+) -> None:
+    if language:
+        if language.lower() in ("en", "ko"):
+            set_lang(language.lower())
+            typer.echo(f"Current session language set to: {language.lower()}")
+        else:
+            typer.echo(f"Unsupported language code: '{language}'. Use 'en' or 'ko'.", err=True)
+            raise SystemExit(1)
+
+    curr = get_lang()
+    env_val = os.environ.get("COMPMAN_LANG", "<not set>")
+
+    typer.echo("🌐 compman CLI Language Info:")
+    typer.echo(f"  • Active Language : {curr.upper()}")
+    typer.echo(f"  • COMPMAN_LANG Env: {env_val}")
+    typer.echo("")
+    typer.echo("💡 To set language permanently via environment variable:")
+    typer.echo("  PowerShell : $env:COMPMAN_LANG=\"ko\"")
+    typer.echo("  CMD        : set COMPMAN_LANG=ko")
+    typer.echo("  Bash/Zsh   : export COMPMAN_LANG=ko")
 
 
 # ---- version ----
