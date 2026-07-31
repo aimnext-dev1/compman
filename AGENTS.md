@@ -26,7 +26,7 @@ test/                  # runnable examples and E2E guides (not pytest tests)
 - `compman init` provides an interactive 3-mode menu (1. Skeleton compman.yml, 2. S3 URL deploy, 3. Test seed project). Direct flags `--skeleton`, `--s3 <url>`, and `--seed` are also supported.
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
 - Python >=3.10; runtime deps: typer, PyYAML, boto3, botocore.
-- Quality gates: 183 pytest tests, 100% statement/branch coverage, Ruff, mypy.
+- Quality gates: 218 pytest tests, 100% statement/branch coverage, Ruff, mypy.
 - CI tests Python 3.10-3.13 on Linux/macOS/Windows and has packaging and Docker/Ministack integration jobs.
 
 ## Config: `compman.yml`

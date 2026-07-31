@@ -186,6 +186,8 @@ compman:
 compman init [--skeleton | --s3 URI | --seed]
 compman deploy [--path S3_URI] [--build] [--tag TAG]
 compman update [PROFILE]
+compman doctor [--profile PROFILE] [--json]
+compman status [--profile PROFILE] [--json]
 compman upgrade
 compman version
 compman lang [ko|en]
@@ -223,6 +225,20 @@ compman clear
 - `volume backup/restore`: 기본적으로 작업 중 스택을 내렸다가 복구합니다. `--no-stop`은 정합성 위험을 이해한 경우에만 사용하세요.
 - `image backup`: 기본값은 실행 중 컨테이너 상태를 commit한 뒤 저장합니다. 원본 이미지를 저장하려면 `--source-image`를 사용합니다.
 - `clear`: 선택한 런타임 전체에 `image prune -af`를 실행하므로 현재 프로젝트 밖의 미사용 이미지도 삭제할 수 있습니다.
+
+## 진단과 상태 확인
+
+```bash
+compman doctor
+compman doctor --json
+compman status
+compman status --profile PROFILE
+compman status --json
+```
+
+`doctor`는 설정, Compose 파일, 컨테이너 런타임과 연결, 관리 디렉터리, AWS 자격 증명을 점검합니다. `status`는 실행 중인 스택의 서비스 상태를 표시합니다. `--json`은 자동화에 사용할 수 있는 구조화된 JSON을 출력합니다.
+
+필수 `doctor` 검사에 실패하거나 `status` 대상 스택이 실행 중이지 않은 경우 종료 코드 `1`을 반환합니다. AWS 환경 변수(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)가 없다는 결과는 비실패 경고이므로, 다른 필수 검사가 통과하면 `doctor`는 종료 코드 `0`을 반환합니다.
 
 ## 백업과 복원
 
