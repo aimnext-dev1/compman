@@ -52,11 +52,7 @@ def log(
         typer.echo(t("msg.container_not_found", service=service), err=True)
         return
 
-    cmd = ["logs"]
-    if follow:
-        cmd.append("-f")
-    cmd.extend(["-n", str(tail), cid])
-    runtime.passthru_cli(cmd)
+    runtime.logs(cid, follow=follow, tail=tail)
 
 
 def connect(
@@ -70,14 +66,7 @@ def connect(
     if not cid:
         typer.echo(t("msg.container_not_found", service=service), err=True)
         return
-    runtime.passthru_cli([
-        "exec",
-        "-it",
-        cid,
-        "sh",
-        "-c",
-        "if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi",
-    ])
+    runtime.exec_shell(cid)
 
 
 def _passthru_with_services(

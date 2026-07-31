@@ -48,6 +48,25 @@ class ContainerRuntime:
     def passthru_cli(self, args: Sequence[str], cwd: Path | str | None = None) -> int:
         return _passthru(self.cli + list(args), cwd=cwd)
 
+    def logs(self, container: str, follow: bool = False, tail: int = 50) -> int:
+        args = ["logs"]
+        if follow:
+            args.append("-f")
+        args.extend(["-n", str(tail), container])
+        return self.passthru_cli(args)
+
+    def exec_shell(self, container: str) -> int:
+        return self.passthru_cli(
+            [
+                "exec",
+                "-it",
+                container,
+                "sh",
+                "-c",
+                "if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi",
+            ]
+        )
+
     def _compose_cmd(
         self,
         project: str | None,
