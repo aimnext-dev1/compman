@@ -5,6 +5,7 @@ import json
 import pathlib
 import runpy
 import subprocess
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -307,14 +308,18 @@ def test_common_remaining_branches(temp_dir):
         with patch("compman.ops.common.get_key", side_effect=["other", "enter"]):
             assert common.prompt_select("x", ["a"]) == 0
 
-    with patch("sys.platform", "win32"), patch("msvcrt.getch", return_value=b"x"):
-        assert common.get_key() == "other"
     with patch("sys.platform", "linux"), patch.dict("sys.modules", {"termios": MagicMock(), "tty": MagicMock(), "select": MagicMock()}):
         import compman.ops.common as ops_common
         with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch.object(ops_common.sys.stdin, "read", side_effect=["\x1b", "x"]), patch("select.select", return_value=([True], [], [])):
             assert ops_common.get_key() == "esc"
         with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch.object(ops_common.sys.stdin, "read", side_effect=["\x1b", "[", "x"]), patch("select.select", return_value=([True], [], [])):
             assert ops_common.get_key() == "esc"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only test")
+def test_common_win32_branch():
+    with patch("msvcrt.getch", return_value=b"x"):
+        assert common.get_key() == "other"
 
 
 def test_image_remaining_branches(dummy_runtime, temp_dir):

@@ -87,6 +87,7 @@ def test_get_key_posix():
                 assert common.get_key() == "esc"
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only test")
 def test_get_key_win32():
     with patch("sys.platform", "win32"), patch("msvcrt.getch", side_effect=[b"\r"]):
         assert common.get_key() == "enter"
