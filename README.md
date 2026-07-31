@@ -35,14 +35,14 @@ uv tool install git+https://github.com/aimnext-dev1/compman.git
 pipx install git+https://github.com/aimnext-dev1/compman.git
 ```
 
-### 2. 로컬 소스에서 설치
+### 3. 로컬 소스에서 설치
 
 ```bash
 uv tool install .
 # 또는 개발 연결 설치: pip install -e .
 ```
 
-### 3. 최신 기능 버전 업데이트
+### 4. 최신 기능 버전 업데이트
 
 ```bash
 uv tool upgrade compman
