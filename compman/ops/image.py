@@ -7,6 +7,7 @@ from pathlib import Path
 
 import typer
 
+from compman.archive import extract_tar
 from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_context
 from compman.i18n import t
@@ -119,7 +120,7 @@ def restore(
     restore_dir = config.backup_dir / backup_name
     restore_dir.mkdir(parents=True)
     with tarfile.open(tarball, "r:gz") as tar:
-        tar.extractall(restore_dir)
+        extract_tar(tar, restore_dir)
 
     for tar_file in restore_dir.glob("*.tar"):
         typer.echo(f"Loading {tar_file.name} ...")

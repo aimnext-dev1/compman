@@ -9,6 +9,7 @@ from typing import Any
 
 import typer
 
+from compman.archive import extract_tar
 from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_context
 from compman.i18n import t
@@ -113,7 +114,7 @@ def restore(
     stopped = False
     try:
         with tarfile.open(tarball, "r:gz") as tar:
-            tar.extractall(restore_dir, filter="data")
+            extract_tar(tar, restore_dir)
 
         map_path = restore_dir / "volume-map.json"
         if not map_path.is_file():

@@ -7,7 +7,6 @@ import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
-from pathlib import PurePosixPath, PureWindowsPath
 from urllib.parse import urlparse
 
 import boto3
@@ -22,6 +21,7 @@ from botocore.exceptions import (
 
 from compman.config import ConfigError, load_config, sanitize_project_name
 from compman.docker import detect_runtime
+from compman.archive import extract_tar, extract_zip
 
 
 _ARCHIVE_SUFFIXES = (".tar.gz", ".tgz", ".zip")
@@ -216,16 +216,10 @@ def _fetch(s3, bucket: str, key: str, tmp: Path) -> Path:
         extract_dir.mkdir()
         if key.endswith(".zip"):
             with zipfile.ZipFile(archive) as zf:
-                for member in zf.infolist():
-                    _validate_archive_path(extract_dir, member.filename)
-                    zf.extract(member, extract_dir)
+                extract_zip(zf, extract_dir)
         else:
             with tarfile.open(archive) as tf:
-                for member in tf.getmembers():
-                    _validate_archive_path(extract_dir, member.name)
-                    if member.issym() or member.islnk():
-                        raise ValueError(f"Archive links are not allowed: {member.name}")
-                tf.extractall(extract_dir, filter="data")
+                extract_tar(tf, extract_dir)
         contents = [p for p in extract_dir.iterdir() if p.name != ".gitkeep"]
         if len(contents) == 1 and contents[0].is_dir():
             return contents[0]
@@ -265,14 +259,6 @@ def _swap(src: Path, root: Path) -> None:
         raise
     finally:
         shutil.rmtree(backup, ignore_errors=True)
-
-
-def _validate_archive_path(root: Path, name: str) -> None:
-    if not name or PurePosixPath(name).is_absolute() or PureWindowsPath(name).is_absolute():
-        raise ValueError(f"Unsafe archive path: {name}")
-    target = (root / name).resolve()
-    if target != root.resolve() and root.resolve() not in target.parents:
-        raise ValueError(f"Unsafe archive path: {name}")
 
 
 def _handle_s3_error(e: Exception, s3_path: str) -> None:
@@ -338,5 +324,7 @@ def _download_recursive(s3, bucket: str, key_prefix: str, dst_dir: Path) -> None
             key = obj["Key"]
             rel = key[len(key_prefix) :].lstrip("/")
             dest = dst_dir / rel
+            if dst_dir.resolve() not in dest.resolve().parents:
+                raise ValueError(f"Unsafe S3 object path: {key}")
             dest.parent.mkdir(parents=True, exist_ok=True)
             _download(s3, bucket, key, dest)

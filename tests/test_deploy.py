@@ -137,6 +137,15 @@ def test_deploy_prefix_download(dummy_runtime, temp_dir: pathlib.Path):
         assert (temp_dir / "project" / "file1.txt").exists()
 
 
+def test_deploy_prefix_rejects_path_traversal(temp_dir: pathlib.Path):
+    mock_s3 = MagicMock()
+    mock_s3.get_paginator.return_value.paginate.return_value = [
+        {"Contents": [{"Key": "my-prefix/../outside.txt"}]}
+    ]
+    with pytest.raises(ValueError, match="Unsafe S3 object path"):
+        deploy._download_recursive(mock_s3, "bucket", "my-prefix", temp_dir / "project")
+
+
 def test_deploy_swap_existing(dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "project").mkdir(exist_ok=True)
     (temp_dir / "project" / "old_file.txt").write_text("old", encoding="utf-8")
