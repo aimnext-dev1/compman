@@ -25,108 +25,108 @@ def set_lang(lang: str | None) -> None:
 TRANSLATIONS: dict[str, dict[str, str]] = {
     # Command descriptions
     "cmd.init": {
-        "en": "Initialize default compman.yml config file in current directory.",
-        "ko": "현재 디렉터리에 기본 compman.yml 설정 파일을 생성합니다.",
+        "en": "Initialize default compman.yml config file in current directory (--force, -c/--config).",
+        "ko": "현재 디렉터리에 기본 compman.yml 설정 파일을 생성합니다 (--force, -c/--config).",
     },
     "cmd.clear": {
         "en": "Prune unused Docker images and build cache.",
         "ko": "사용하지 않는 Docker 이미지 및 빌드 캐시를 정리합니다.",
     },
     "cmd.deploy": {
-        "en": "Fetch application package from S3 and generate scaffold if needed.",
-        "ko": "S3에서 애플리케이션 패키지를 다운로드하고 필요시 기본 파일을 자동 생성합니다.",
+        "en": "Fetch application package from S3 and generate scaffold (--path, --build, --tag).",
+        "ko": "S3에서 애플리케이션 패키지를 다운로드하고 필요시 스캐폴드를 자동 생성합니다 (--path, --build, --tag).",
     },
     "cmd.update": {
-        "en": "Fetch latest S3 package, build Docker image, and recreate stack container.",
-        "ko": "최신 S3 패키지를 수신하고 Docker 이미지를 빌드하여 스택 컨테이너를 무중단 갱신합니다.",
+        "en": "Fetch S3 package (if configured), build image, and update stack ([profile], -c/--config).",
+        "ko": "S3 패키지 수신(설정 시) 및 스택 컨테이너를 재빌드/업데이트합니다 ([profile], -c/--config).",
     },
     "cmd.completion": {
-        "en": "Output or install shell auto-completion script.",
-        "ko": "Shell 자동완성(Tab-completion) 스크립트를 출력하거나 자동 등록합니다.",
+        "en": "Output or install shell auto-completion script ([shell], --install).",
+        "ko": "Shell 자동완성(Tab-completion) 스크립트를 출력하거나 자동 등록합니다 ([shell], --install).",
     },
     "cmd.upgrade": {
-        "en": "Self-upgrade compman CLI to the latest version from GitHub.",
-        "ko": "compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드합니다.",
+        "en": "Self-upgrade compman CLI to the latest version from GitHub (--repo).",
+        "ko": "compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드합니다 (--repo).",
     },
     "cmd.stack": {
         "en": "Manage Docker Compose stack lifecycles.",
         "ko": "Docker Compose 스택 라이프사이클(up, down, update)을 관리합니다.",
     },
     "cmd.stack.up": {
-        "en": "Start stack containers in detached mode.",
-        "ko": "스택 컨테이너를 백그라운드 모드로 기동합니다.",
+        "en": "Start stack containers in detached mode ([profile], -c/--config).",
+        "ko": "스택 컨테이너를 백그라운드 모드로 기동합니다 ([profile], -c/--config).",
     },
     "cmd.stack.down": {
-        "en": "Stop and remove stack containers and networks.",
-        "ko": "스택 컨테이너 및 네트워크를 정지하고 삭제합니다.",
+        "en": "Stop and remove stack containers and networks (--yes, -c/--config).",
+        "ko": "스택 컨테이너 및 네트워크를 정지하고 삭제합니다 (--yes, -c/--config).",
     },
     "cmd.stack.update": {
-        "en": "Rebuild images and recreate stack containers.",
-        "ko": "이미지를 재빌드하고 스택 컨테이너를 재생성합니다.",
+        "en": "Rebuild images and recreate stack containers ([profile], -c/--config).",
+        "ko": "이미지를 재빌드하고 스택 컨테이너를 재생성합니다 ([profile], -c/--config).",
     },
     "cmd.service": {
         "en": "Manage individual services within a stack.",
         "ko": "스택 내 개별 서비스(start, stop, log, connect, status)를 관리합니다.",
     },
     "cmd.service.start": {
-        "en": "Start specific or all services in the stack.",
-        "ko": "스택 내 특정 또는 전체 서비스를 시작합니다.",
+        "en": "Start specific or all services in the stack ([services...], -c/--config).",
+        "ko": "스택 내 특정 또는 전체 서비스를 시작합니다 ([services...], -c/--config).",
     },
     "cmd.service.stop": {
-        "en": "Stop specific or all services in the stack.",
-        "ko": "스택 내 특정 또는 전체 서비스를 정지합니다.",
+        "en": "Stop specific or all services in the stack ([services...], -c/--config).",
+        "ko": "스택 내 특정 또는 전체 서비스를 정지합니다 ([services...], -c/--config).",
     },
     "cmd.service.restart": {
-        "en": "Restart specific or all services in the stack.",
-        "ko": "스택 내 특정 또는 전체 서비스를 재시작합니다.",
+        "en": "Restart specific or all services in the stack ([services...], -c/--config).",
+        "ko": "스택 내 특정 또는 전체 서비스를 재시작합니다 ([services...], -c/--config).",
     },
     "cmd.service.status": {
-        "en": "Display current status of all stack containers.",
-        "ko": "스택 내 모든 컨테이너의 현재 상태를 표시합니다.",
+        "en": "Display current status of all stack containers (-c/--config).",
+        "ko": "스택 내 모든 컨테이너의 현재 상태를 표시합니다 (-c/--config).",
     },
     "cmd.service.log": {
-        "en": "Display or stream logs for a service container (-f/--follow, -n/--tail).",
-        "ko": "서비스 컨테이너의 로그를 조회하거나 실시간 스트리밍합니다 (-f/--follow, -n/--tail).",
+        "en": "Display or stream logs for a service container ([name], -f/--follow, -n/--tail, -c/--config).",
+        "ko": "서비스 컨테이너의 로그를 조회하거나 실시간 스트리밍합니다 ([name], -f/--follow, -n/--tail, -c/--config).",
     },
     "cmd.service.connect": {
-        "en": "Open an interactive shell inside a service container.",
-        "ko": "서비스 컨테이너 내부로 대화형 쉘(bash/sh) 접속을 수행합니다.",
+        "en": "Open an interactive shell inside a service container ([name], -c/--config).",
+        "ko": "서비스 컨테이너 내부로 대화형 쉘(bash/sh) 접속을 수행합니다 ([name], -c/--config).",
     },
     "cmd.volume": {
         "en": "Backup, restore, pull, or push Docker persistent volumes.",
         "ko": "Docker 파시스턴트 볼륨 백업, 복원, 풀, 푸시를 관리합니다.",
     },
     "cmd.volume.backup": {
-        "en": "Create a compressed backup archive of stack volumes.",
-        "ko": "스택 볼륨의 압축 백업 아카이브를 생성합니다.",
+        "en": "Create a compressed backup archive of stack volumes (--no-stop, -c/--config).",
+        "ko": "스택 볼륨의 압축 백업 아카이브를 생성합니다 (--no-stop, -c/--config).",
     },
     "cmd.volume.restore": {
-        "en": "Restore stack volumes from a backup archive timestamp.",
-        "ko": "백업 아카이브 타임스탬프로부터 스택 볼륨을 복원합니다.",
+        "en": "Restore stack volumes from a backup archive timestamp (<timestamp>, --no-stop, -c/--config).",
+        "ko": "백업 아카이브 타임스탬프로부터 스택 볼륨을 복원합니다 (<timestamp>, --no-stop, -c/--config).",
     },
     "cmd.volume.pull": {
-        "en": "Extract volume data from containers into local directory.",
-        "ko": "컨테이너 볼륨 데이터를 로컬 디렉터리로 추출합니다.",
+        "en": "Extract volume data from containers into local directory (-c/--config).",
+        "ko": "컨테이너 볼륨 데이터를 로컬 디렉터리로 추출합니다 (-c/--config).",
     },
     "cmd.volume.push": {
-        "en": "Upload local volume directory data into containers.",
-        "ko": "로컬 디렉터리 볼륨 데이터를 컨테이너로 업로드합니다.",
+        "en": "Upload local volume directory data into containers (-c/--config).",
+        "ko": "로컬 디렉터리 볼륨 데이터를 컨테이너로 업로드합니다 (-c/--config).",
     },
     "cmd.image": {
         "en": "Backup or restore Docker container images.",
         "ko": "Docker 컨테이너 이미지를 백업하거나 복원합니다.",
     },
     "cmd.image.backup": {
-        "en": "Commit and export stack container images to tar.gz archive.",
-        "ko": "스택 컨테이너 이미지를 커밋하고 tar.gz 아카이브로 내보냅니다.",
+        "en": "Commit and export stack container images to tar.gz archive (--source-image, -c/--config).",
+        "ko": "스택 컨테이너 이미지를 커밋하고 tar.gz 아카이브로 내보냅니다 (--source-image, -c/--config).",
     },
     "cmd.image.restore": {
-        "en": "Import container images from a backup archive timestamp.",
-        "ko": "백업 아카이브 타임스탬프로부터 컨테이너 이미지를 불러옵니다.",
+        "en": "Import container images from a backup archive timestamp (<timestamp>, -c/--config).",
+        "ko": "백업 아카이브 타임스탬프로부터 컨테이너 이미지를 불러옵니다 (<timestamp>, -c/--config).",
     },
     "cmd.seed": {
-        "en": "Generate a sample seed project (app.py, Dockerfile, compose) for testing.",
-        "ko": "배포 테스트용 샘플 시드 프로젝트(app.py, Dockerfile, compose)를 생성합니다.",
+        "en": "Generate a sample seed project (app.py, Dockerfile, compose) (-o/--output, -a/--archive, -p/--port, --force).",
+        "ko": "배포 테스트용 샘플 시드 프로젝트(app.py, Dockerfile, compose)를 생성합니다 (-o, -a, -p, --force).",
     },
     "cmd.version": {
         "en": "Display the current compman CLI version.",
