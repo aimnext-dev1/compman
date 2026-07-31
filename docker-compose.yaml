@@ -3,7 +3,7 @@ services:
     image: ministackorg/ministack:latest
     container_name: ministack-compman
     ports:
-      - "4567:4566"
+      - "4566:4566"
     environment:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test

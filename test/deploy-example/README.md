@@ -48,7 +48,7 @@ services:
   ```bash
   compman deploy --path s3://my-bucket/other
   ```
-- 엔드포인트: `AWS_ENDPOINT_URL_S3` 또는 `AWS_ENDPOINT_URL` — 미설정 시 실제 AWS, 설정 시 해당 엔드포인트로 (로컬 ministack 테스트용, root `docker-compose.yaml` 기동 시 `http://localhost:4567`)
+- 엔드포인트: `AWS_ENDPOINT_URL_S3` 또는 `AWS_ENDPOINT_URL` — 미설정 시 실제 AWS, 설정 시 해당 엔드포인트로 (로컬 ministack 테스트용, root `docker-compose.yaml` 기동 시 `http://localhost:4566`)
 - 인증: 표준 `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` env vars
 - boto3 사용 (aws CLI 불필요)
 

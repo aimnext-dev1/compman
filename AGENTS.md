@@ -69,7 +69,7 @@ Two modes:
 - `volume backup/restore` optional `--no-stop` flag skips stack teardown.
 - `service log` displays last 50 lines by default (`docker logs -n 50`), supports `-f`/`--follow` to stream and `-n`/`--tail N` for line count.
 - `service connect` runs `docker exec -it` with bash fallback to sh.
-- `deploy` uses boto3 (no AWS CLI needed). S3 source path comes from `compman.yml: deploy` (single value, no per-profile) or `--path` override. `AWS_ENDPOINT_URL_S3` or `AWS_ENDPOINT_URL` env redirects the S3 client (e.g. local ministack at `http://localhost:4567`). Creds via standard `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_DEFAULT_REGION` env vars.
+- `deploy` uses boto3 (no AWS CLI needed). S3 source path comes from `compman.yml: deploy` (single value, no per-profile) or `--path` override. `AWS_ENDPOINT_URL_S3` or `AWS_ENDPOINT_URL` env redirects the S3 client (e.g. local ministack at `http://localhost:4566`). Creds via standard `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_DEFAULT_REGION` env vars.
 - Deploy accepts an S3 **prefix** or `.tar.gz`/`.tgz`/`.zip` archive. Archives reject absolute/traversal paths and links; a single top-level directory is flattened.
 - The fetched tree replaces the contents of the managed `dirs.project` directory, preserving `.git` and `.gitkeep`. Root `compman.yml` and `docker-compose.yml` are scaffolded or updated separately.
 - File swap rollback is atomic at the managed-tree step, but the full fetch → scaffold → build operation is not transactional: a later scaffold/build failure leaves the new source tree in place.

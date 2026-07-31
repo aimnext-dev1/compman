@@ -258,7 +258,7 @@ AWS SDK 표준 환경 변수를 사용합니다.
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 export AWS_DEFAULT_REGION=ap-northeast-2
-export AWS_ENDPOINT_URL_S3=http://localhost:4567   # Ministack/LocalStack 등에서 선택
+export AWS_ENDPOINT_URL_S3=http://localhost:4566   # Ministack/LocalStack 기본 포트
 ```
 
 `AWS_ENDPOINT_URL_S3`이 없으면 `AWS_ENDPOINT_URL`도 사용할 수 있습니다.

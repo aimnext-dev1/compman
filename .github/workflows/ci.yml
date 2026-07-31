@@ -62,7 +62,7 @@ jobs:
         run: |
           ready=0
           for attempt in {1..30}; do
-            if curl --silent --fail http://localhost:4567/deploy-test/Dockerfile >/dev/null; then
+            if curl --silent --fail http://localhost:4566/deploy-test/Dockerfile >/dev/null; then
               ready=1
               break
             fi
@@ -74,7 +74,7 @@ jobs:
           AWS_ACCESS_KEY_ID: test
           AWS_SECRET_ACCESS_KEY: test
           AWS_DEFAULT_REGION: ap-northeast-2
-          AWS_ENDPOINT_URL_S3: http://localhost:4567
+          AWS_ENDPOINT_URL_S3: http://localhost:4566
         run: |
           target="$RUNNER_TEMP/compman-e2e"
           mkdir -p "$target"
