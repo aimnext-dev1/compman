@@ -35,6 +35,7 @@ def _load(config_path: str | None = None) -> dict:
 @click.option("--force", is_flag=True, help="Overwrite existing compman.yml")
 @click.option("--config", "-c", default="compman.yml", help="Config file path")
 def init(force: bool, config: str) -> None:
+    """Initialize default compman.yml config file in current directory."""
     from pathlib import Path
 
     path = Path(config)
@@ -48,6 +49,7 @@ def init(force: bool, config: str) -> None:
 
 @click.command()
 def clear() -> None:
+    """Prune unused Docker images and build cache."""
     click.echo("Pruning unused Docker images...")
     runtime = detect_runtime()
     runtime.passthru_cli(["image", "prune", "-af"])
@@ -58,6 +60,7 @@ def clear() -> None:
 @click.option("--build", is_flag=True, help="Build Docker image after fetching")
 @click.option("--tag", default=None, help="Image tag when building (default: directory name)")
 def deploy(path: str | None, build: bool, tag: str | None) -> None:
+    """Fetch application package from S3 and generate scaffold if needed."""
     _deploy(build=build, tag=tag, s3_path=path)
 
 
@@ -65,7 +68,7 @@ def deploy(path: str | None, build: bool, tag: str | None) -> None:
 @click.argument("profile", required=False)
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def update(profile: str | None, config: str | None) -> None:
-    """Fetch latest S3, build docker image, and recreate stack container."""
+    """Fetch latest S3 package, build Docker image, and recreate stack container."""
     _deploy(build=True, tag=None, s3_path=None)
     ctx = _load(config)
     stack.up(ctx["runtime"], ctx["config"], profile=profile)
@@ -241,8 +244,9 @@ cli.add_command(upgrade)
 
 
 # ---- stack ----
-@cli.group()
+@cli.group("stack")
 def stack_cmd() -> None:
+    """Manage Docker Compose stack lifecycles."""
     pass
 
 
@@ -250,6 +254,7 @@ def stack_cmd() -> None:
 @click.argument("profile", required=False)
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def up(profile: str | None, config: str | None) -> None:
+    """Start stack containers in detached mode."""
     ctx = _load(config)
     stack.up(ctx["runtime"], ctx["config"], profile)
 
@@ -258,6 +263,7 @@ def up(profile: str | None, config: str | None) -> None:
 @click.confirmation_option(prompt="Remove the entire stack?")
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def down(config: str | None) -> None:
+    """Stop and remove stack containers and networks."""
     ctx = _load(config)
     stack.down(ctx["runtime"], ctx["config"])
 
@@ -266,13 +272,15 @@ def down(config: str | None) -> None:
 @click.argument("profile", required=False)
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def update(profile: str | None, config: str | None) -> None:
+    """Rebuild images and recreate stack containers."""
     ctx = _load(config)
     stack.update(ctx["runtime"], ctx["config"], profile)
 
 
 # ---- service ----
-@cli.group()
+@cli.group("service")
 def service_cmd() -> None:
+    """Manage individual services within a stack."""
     pass
 
 
@@ -280,6 +288,7 @@ def service_cmd() -> None:
 @click.argument("services", nargs=-1)
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def start(services: tuple[str, ...], config: str | None) -> None:
+    """Start specific or all services in the stack."""
     ctx = _load(config)
     service.start(ctx["runtime"], ctx["config"], services)
 
@@ -288,6 +297,7 @@ def start(services: tuple[str, ...], config: str | None) -> None:
 @click.argument("services", nargs=-1)
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def stop(services: tuple[str, ...], config: str | None) -> None:
+    """Stop specific or all services in the stack."""
     ctx = _load(config)
     service.stop(ctx["runtime"], ctx["config"], services)
 
@@ -296,6 +306,7 @@ def stop(services: tuple[str, ...], config: str | None) -> None:
 @click.argument("services", nargs=-1)
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def restart(services: tuple[str, ...], config: str | None) -> None:
+    """Restart specific or all services in the stack."""
     ctx = _load(config)
     service.restart(ctx["runtime"], ctx["config"], services)
 
@@ -303,6 +314,7 @@ def restart(services: tuple[str, ...], config: str | None) -> None:
 @service_cmd.command()
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def status(config: str | None) -> None:
+    """Display current status of all stack containers."""
     ctx = _load(config)
     service.status(ctx["runtime"], ctx["config"])
 
@@ -311,6 +323,7 @@ def status(config: str | None) -> None:
 @click.argument("name", required=False)
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def log(name: str | None, config: str | None) -> None:
+    """Stream logs for a service or container (last 10k lines)."""
     ctx = _load(config)
     service.log(ctx["runtime"], ctx["config"], name)
 
@@ -319,13 +332,15 @@ def log(name: str | None, config: str | None) -> None:
 @click.argument("name", required=False)
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def connect(name: str | None, config: str | None) -> None:
+    """Open an interactive shell inside a service container."""
     ctx = _load(config)
     service.connect(ctx["runtime"], ctx["config"], name)
 
 
 # ---- volume ----
-@cli.group()
+@cli.group("volume")
 def volume_cmd() -> None:
+    """Backup, restore, pull, or push Docker persistent volumes."""
     pass
 
 
@@ -333,6 +348,7 @@ def volume_cmd() -> None:
 @click.option("--no-stop", is_flag=True, help="Don't stop stack during backup")
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def backup(no_stop: bool, config: str | None) -> None:
+    """Create a compressed backup archive of stack volumes."""
     ctx = _load(config)
     volume.backup(ctx["runtime"], ctx["config"], no_stop=no_stop)
 
@@ -342,6 +358,7 @@ def backup(no_stop: bool, config: str | None) -> None:
 @click.option("--no-stop", is_flag=True, help="Don't stop stack during restore")
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def restore(timestamp: str, no_stop: bool, config: str | None) -> None:
+    """Restore stack volumes from a backup archive timestamp."""
     ctx = _load(config)
     volume.restore(ctx["runtime"], ctx["config"], timestamp, no_stop=no_stop)
 
@@ -349,6 +366,7 @@ def restore(timestamp: str, no_stop: bool, config: str | None) -> None:
 @volume_cmd.command()
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def pull(config: str | None) -> None:
+    """Extract volume data from containers into local directory."""
     ctx = _load(config)
     volume.pull(ctx["runtime"], ctx["config"])
 
@@ -356,13 +374,15 @@ def pull(config: str | None) -> None:
 @volume_cmd.command()
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def push(config: str | None) -> None:
+    """Upload local volume directory data into containers."""
     ctx = _load(config)
     volume.push(ctx["runtime"], ctx["config"])
 
 
 # ---- image ----
-@cli.group()
+@cli.group("image")
 def image_cmd() -> None:
+    """Backup or restore Docker container images."""
     pass
 
 
@@ -370,6 +390,7 @@ def image_cmd() -> None:
 @click.option("--source-image", is_flag=True, help="Backup original image instead of committing runtime state")
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def img_backup(source_image: bool, config: str | None) -> None:
+    """Commit and export stack container images to tar.gz archive."""
     ctx = _load(config)
     image.backup(ctx["runtime"], ctx["config"], source_mode=source_image)
 
@@ -378,6 +399,7 @@ def img_backup(source_image: bool, config: str | None) -> None:
 @click.argument("timestamp")
 @click.option("--config", "-c", default=None, help="Path to compman.yml")
 def img_restore(timestamp: str, config: str | None) -> None:
+    """Import container images from a backup archive timestamp."""
     ctx = _load(config)
     image.restore(ctx["runtime"], ctx["config"], timestamp)
 
