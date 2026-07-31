@@ -25,108 +25,356 @@ def set_lang(lang: str | None) -> None:
 TRANSLATIONS: dict[str, dict[str, str]] = {
     # Command descriptions
     "cmd.init": {
-        "en": "Initialize default compman.yml config file in current directory (--force, -c/--config).",
-        "ko": "현재 디렉터리에 기본 compman.yml 설정 파일을 생성합니다 (--force, -c/--config).",
+        "en": (
+            "Initialize default compman.yml configuration file.\n\n"
+            "Creates a compman.yml template in the current working directory.\n\n"
+            "Examples:\n"
+            "  compman init\n"
+            "  compman init --force\n"
+            "  compman init -c custom-compman.yml"
+        ),
+        "ko": (
+            "현재 디렉터리에 기본 compman.yml 설정 파일을 생성합니다.\n\n"
+            "템플릿 설정 파일을 새로 생성하거나 덮어씁니다.\n\n"
+            "사용 예시:\n"
+            "  compman init\n"
+            "  compman init --force\n"
+            "  compman init -c custom-compman.yml"
+        ),
     },
     "cmd.clear": {
-        "en": "Prune unused Docker images and build cache.",
-        "ko": "사용하지 않는 Docker 이미지 및 빌드 캐시를 정리합니다.",
+        "en": (
+            "Prune unused Docker images and build cache.\n\n"
+            "Frees disk space by removing dangling and unused container images.\n\n"
+            "Examples:\n"
+            "  compman clear"
+        ),
+        "ko": (
+            "사용하지 않는 Docker 이미지 및 빌드 캐시를 정리합니다.\n\n"
+            "dangling 및 미사용 이미지를 정리하여 디스크 공간을 확보합니다.\n\n"
+            "사용 예시:\n"
+            "  compman clear"
+        ),
     },
     "cmd.deploy": {
-        "en": "Fetch application package from S3 and generate scaffold (--path, --build, --tag).",
-        "ko": "S3에서 애플리케이션 패키지를 다운로드하고 필요시 스캐폴드를 자동 생성합니다 (--path, --build, --tag).",
+        "en": (
+            "Fetch application package from S3 and generate scaffold.\n\n"
+            "Downloads a project directory or archive (.tar.gz/.zip) from S3, extracts it, and optionally builds the image.\n\n"
+            "Examples:\n"
+            "  compman deploy --path s3://my-bucket/app\n"
+            "  compman deploy --path s3://my-bucket/app.tar.gz --build"
+        ),
+        "ko": (
+            "S3에서 애플리케이션 패키지를 다운로드하고 스캐폴드를 생성합니다.\n\n"
+            "S3 경로 또는 아카이브(.tar.gz/.zip)를 다운로드하여 해제하고, 필요시 이미지를 빌드합니다.\n\n"
+            "사용 예시:\n"
+            "  compman deploy --path s3://my-bucket/app\n"
+            "  compman deploy --path s3://my-bucket/app.tar.gz --build"
+        ),
     },
     "cmd.update": {
-        "en": "Fetch S3 package (if configured), build image, and update stack ([profile], -c/--config).",
-        "ko": "S3 패키지 수신(설정 시) 및 스택 컨테이너를 재빌드/업데이트합니다 ([profile], -c/--config).",
+        "en": (
+            "Fetch S3 package (if configured), build image, and update stack.\n\n"
+            "If S3 deploy path is set in compman.yml, fetches latest package first. Otherwise, rebuilds local image and updates stack.\n\n"
+            "Examples:\n"
+            "  compman update\n"
+            "  compman update dev"
+        ),
+        "ko": (
+            "최신 S3 패키지를 수신(설정 시)하고 이미지 빌드 및 스택을 갱신합니다.\n\n"
+            "compman.yml에 S3 경로가 설정된 경우 최신 패키지를 먼저 수신하며, 설정이 없으면 로컬 빌드로 갱신합니다.\n\n"
+            "사용 예시:\n"
+            "  compman update\n"
+            "  compman update dev"
+        ),
     },
     "cmd.completion": {
-        "en": "Output or install shell auto-completion script ([shell], --install).",
-        "ko": "Shell 자동완성(Tab-completion) 스크립트를 출력하거나 자동 등록합니다 ([shell], --install).",
+        "en": (
+            "Output or install shell auto-completion script.\n\n"
+            "Supports powershell, bash, zsh, and fish shells.\n\n"
+            "Examples:\n"
+            "  compman completion powershell\n"
+            "  compman completion bash --install"
+        ),
+        "ko": (
+            "Shell 자동완성(Tab-completion) 스크립트를 출력하거나 자동 등록합니다.\n\n"
+            "powershell, bash, zsh, fish 쉘을 지원합니다.\n\n"
+            "사용 예시:\n"
+            "  compman completion powershell\n"
+            "  compman completion bash --install"
+        ),
     },
     "cmd.upgrade": {
-        "en": "Self-upgrade compman CLI to the latest version from GitHub (--repo).",
-        "ko": "compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드합니다 (--repo).",
+        "en": (
+            "Self-upgrade compman CLI to the latest version from GitHub.\n\n"
+            "Reinstalls compman from the specified repository using uv or pip.\n\n"
+            "Examples:\n"
+            "  compman upgrade"
+        ),
+        "ko": (
+            "compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드합니다.\n\n"
+            "uv 또는 pip를 통해 원격 리포지토리의 최신 버전으로 자동 재설치합니다.\n\n"
+            "사용 예시:\n"
+            "  compman upgrade"
+        ),
     },
     "cmd.stack": {
         "en": "Manage Docker Compose stack lifecycles.",
         "ko": "Docker Compose 스택 라이프사이클(up, down, update)을 관리합니다.",
     },
     "cmd.stack.up": {
-        "en": "Start stack containers in detached mode ([profile], -c/--config).",
-        "ko": "스택 컨테이너를 백그라운드 모드로 기동합니다 ([profile], -c/--config).",
+        "en": (
+            "Start stack containers in detached mode.\n\n"
+            "Brings up containers defined in compose files.\n\n"
+            "Examples:\n"
+            "  compman stack up\n"
+            "  compman stack up dev"
+        ),
+        "ko": (
+            "스택 컨테이너를 백그라운드(detached) 모드로 기동합니다.\n\n"
+            "compose 파일에 정의된 서비스 컨테이너를 생성 및 실행합니다.\n\n"
+            "사용 예시:\n"
+            "  compman stack up\n"
+            "  compman stack up dev"
+        ),
     },
     "cmd.stack.down": {
-        "en": "Stop and remove stack containers and networks (--yes, -c/--config).",
-        "ko": "스택 컨테이너 및 네트워크를 정지하고 삭제합니다 (--yes, -c/--config).",
+        "en": (
+            "Stop and remove stack containers and networks.\n\n"
+            "Stops running containers and removes networks. Requires --yes confirmation or interactive prompt.\n\n"
+            "Examples:\n"
+            "  compman stack down\n"
+            "  compman stack down --yes"
+        ),
+        "ko": (
+            "스택 컨테이너 및 네트워크를 정지하고 삭제합니다.\n\n"
+            "기동 중인 스택 전체를 정지하고 제거합니다. 대화형 확인 또는 --yes 옵션이 필요합니다.\n\n"
+            "사용 예시:\n"
+            "  compman stack down\n"
+            "  compman stack down --yes"
+        ),
     },
     "cmd.stack.update": {
-        "en": "Rebuild images and recreate stack containers ([profile], -c/--config).",
-        "ko": "이미지를 재빌드하고 스택 컨테이너를 재생성합니다 ([profile], -c/--config).",
+        "en": (
+            "Rebuild images and recreate stack containers.\n\n"
+            "Forces rebuild of container images and recreates updated stack containers.\n\n"
+            "Examples:\n"
+            "  compman stack update\n"
+            "  compman stack update prod"
+        ),
+        "ko": (
+            "이미지를 재빌드하고 스택 컨테이너를 무중단 재생성합니다.\n\n"
+            "컨테이너 이미지를 강제 재빌드하고 변경된 컨테이너를 다시 기동합니다.\n\n"
+            "사용 예시:\n"
+            "  compman stack update\n"
+            "  compman stack update prod"
+        ),
     },
     "cmd.service": {
         "en": "Manage individual services within a stack.",
         "ko": "스택 내 개별 서비스(start, stop, log, connect, status)를 관리합니다.",
     },
     "cmd.service.start": {
-        "en": "Start specific or all services in the stack ([services...], -c/--config).",
-        "ko": "스택 내 특정 또는 전체 서비스를 시작합니다 ([services...], -c/--config).",
+        "en": (
+            "Start specific or all services in the stack.\n\n"
+            "Examples:\n"
+            "  compman service start\n"
+            "  compman service start app db"
+        ),
+        "ko": (
+            "스택 내 특정 또는 전체 서비스를 시작합니다.\n\n"
+            "사용 예시:\n"
+            "  compman service start\n"
+            "  compman service start app db"
+        ),
     },
     "cmd.service.stop": {
-        "en": "Stop specific or all services in the stack ([services...], -c/--config).",
-        "ko": "스택 내 특정 또는 전체 서비스를 정지합니다 ([services...], -c/--config).",
+        "en": (
+            "Stop specific or all services in the stack.\n\n"
+            "Examples:\n"
+            "  compman service stop\n"
+            "  compman service stop app"
+        ),
+        "ko": (
+            "스택 내 특정 또는 전체 서비스를 정지합니다.\n\n"
+            "사용 예시:\n"
+            "  compman service stop\n"
+            "  compman service stop app"
+        ),
     },
     "cmd.service.restart": {
-        "en": "Restart specific or all services in the stack ([services...], -c/--config).",
-        "ko": "스택 내 특정 또는 전체 서비스를 재시작합니다 ([services...], -c/--config).",
+        "en": (
+            "Restart specific or all services in the stack.\n\n"
+            "Examples:\n"
+            "  compman service restart\n"
+            "  compman service restart app"
+        ),
+        "ko": (
+            "스택 내 특정 또는 전체 서비스를 재시작합니다.\n\n"
+            "사용 예시:\n"
+            "  compman service restart\n"
+            "  compman service restart app"
+        ),
     },
     "cmd.service.status": {
-        "en": "Display current status of all stack containers (-c/--config).",
-        "ko": "스택 내 모든 컨테이너의 현재 상태를 표시합니다 (-c/--config).",
+        "en": (
+            "Display current status of all stack containers.\n\n"
+            "Examples:\n"
+            "  compman service status"
+        ),
+        "ko": (
+            "스택 내 모든 컨테이너의 현재 상태를 표시합니다.\n\n"
+            "사용 예시:\n"
+            "  compman service status"
+        ),
     },
     "cmd.service.log": {
-        "en": "Display or stream logs for a service container ([name], -f/--follow, -n/--tail, -c/--config).",
-        "ko": "서비스 컨테이너의 로그를 조회하거나 실시간 스트리밍합니다 ([name], -f/--follow, -n/--tail, -c/--config).",
+        "en": (
+            "Display or stream logs for a service container.\n\n"
+            "Supports streaming logs (-f/--follow) and limiting line count (-n/--tail).\n\n"
+            "Examples:\n"
+            "  compman service log\n"
+            "  compman service log app -f\n"
+            "  compman service log app -n 100"
+        ),
+        "ko": (
+            "서비스 컨테이너의 로그를 조회하거나 실시간 스트리밍합니다.\n\n"
+            "실시간 로그 스트리밍(-f/--follow) 및 출력 줄 수 지정(-n/--tail)을 지원합니다.\n\n"
+            "사용 예시:\n"
+            "  compman service log\n"
+            "  compman service log app -f\n"
+            "  compman service log app -n 100"
+        ),
     },
     "cmd.service.connect": {
-        "en": "Open an interactive shell inside a service container ([name], -c/--config).",
-        "ko": "서비스 컨테이너 내부로 대화형 쉘(bash/sh) 접속을 수행합니다 ([name], -c/--config).",
+        "en": (
+            "Open an interactive shell inside a service container.\n\n"
+            "Executes an interactive terminal inside the target container (bash with sh fallback).\n\n"
+            "Examples:\n"
+            "  compman service connect\n"
+            "  compman service connect app"
+        ),
+        "ko": (
+            "서비스 컨테이너 내부로 대화형 쉘(bash/sh) 접속을 수행합니다.\n\n"
+            "대상 컨테이너 내부 터미널로 대화형 쉘 접속을 실행합니다.\n\n"
+            "사용 예시:\n"
+            "  compman service connect\n"
+            "  compman service connect app"
+        ),
     },
     "cmd.volume": {
         "en": "Backup, restore, pull, or push Docker persistent volumes.",
         "ko": "Docker 파시스턴트 볼륨 백업, 복원, 풀, 푸시를 관리합니다.",
     },
     "cmd.volume.backup": {
-        "en": "Create a compressed backup archive of stack volumes (--no-stop, -c/--config).",
-        "ko": "스택 볼륨의 압축 백업 아카이브를 생성합니다 (--no-stop, -c/--config).",
+        "en": (
+            "Create a compressed backup archive of stack volumes.\n\n"
+            "Copies volume data from running containers and archives them into a timestamped .tar.gz file.\n\n"
+            "Examples:\n"
+            "  compman volume backup\n"
+            "  compman volume backup --no-stop"
+        ),
+        "ko": (
+            "스택 볼륨의 압축 백업 아카이브를 생성합니다.\n\n"
+            "컨테이너의 파시스턴트 볼륨 데이터를 추출하고 타임스탬프 .tar.gz 아카이브 파일로 백업합니다.\n\n"
+            "사용 예시:\n"
+            "  compman volume backup\n"
+            "  compman volume backup --no-stop"
+        ),
     },
     "cmd.volume.restore": {
-        "en": "Restore stack volumes from a backup archive timestamp (<timestamp>, --no-stop, -c/--config).",
-        "ko": "백업 아카이브 타임스탬프로부터 스택 볼륨을 복원합니다 (<timestamp>, --no-stop, -c/--config).",
+        "en": (
+            "Restore stack volumes from a backup archive timestamp.\n\n"
+            "Restores volume data from a specified timestamp archive back into container volumes.\n\n"
+            "Examples:\n"
+            "  compman volume restore 20260731_1732\n"
+            "  compman volume restore 20260731_1732 --no-stop"
+        ),
+        "ko": (
+            "백업 아카이브 타임스탬프로부터 스택 볼륨을 복원합니다.\n\n"
+            "지정한 타임스탬프의 아카이브 데이터로부터 컨테이너 볼륨으로 데이터를 복원합니다.\n\n"
+            "사용 예시:\n"
+            "  compman volume restore 20260731_1732\n"
+            "  compman volume restore 20260731_1732 --no-stop"
+        ),
     },
     "cmd.volume.pull": {
-        "en": "Extract volume data from containers into local directory (-c/--config).",
-        "ko": "컨테이너 볼륨 데이터를 로컬 디렉터리로 추출합니다 (-c/--config).",
+        "en": (
+            "Extract volume data from containers into local directory.\n\n"
+            "Copies volume files from containers into local ./volume directory.\n\n"
+            "Examples:\n"
+            "  compman volume pull"
+        ),
+        "ko": (
+            "컨테이너 볼륨 데이터를 로컬 디렉터리로 추출합니다.\n\n"
+            "컨테이너 내부의 볼륨 파일들을 로컬 ./volume 디렉터리로 복사합니다.\n\n"
+            "사용 예시:\n"
+            "  compman volume pull"
+        ),
     },
     "cmd.volume.push": {
-        "en": "Upload local volume directory data into containers (-c/--config).",
-        "ko": "로컬 디렉터리 볼륨 데이터를 컨테이너로 업로드합니다 (-c/--config).",
+        "en": (
+            "Upload local volume directory data into containers.\n\n"
+            "Uploads files from local ./volume directory into container volumes.\n\n"
+            "Examples:\n"
+            "  compman volume push"
+        ),
+        "ko": (
+            "로컬 디렉터리 볼륨 데이터를 컨테이너로 업로드합니다.\n\n"
+            "로컬 ./volume 디렉터리의 파일들을 컨테이너 볼륨으로 업로드합니다.\n\n"
+            "사용 예시:\n"
+            "  compman volume push"
+        ),
     },
     "cmd.image": {
         "en": "Backup or restore Docker container images.",
         "ko": "Docker 컨테이너 이미지를 백업하거나 복원합니다.",
     },
     "cmd.image.backup": {
-        "en": "Commit and export stack container images to tar.gz archive (--source-image, -c/--config).",
-        "ko": "스택 컨테이너 이미지를 커밋하고 tar.gz 아카이브로 내보냅니다 (--source-image, -c/--config).",
+        "en": (
+            "Commit and export stack container images to tar.gz archive.\n\n"
+            "Saves runtime container state (or original image via --source-image) to a timestamped backup archive.\n\n"
+            "Examples:\n"
+            "  compman image backup\n"
+            "  compman image backup --source-image"
+        ),
+        "ko": (
+            "스택 컨테이너 이미지를 커밋하고 tar.gz 아카이브로 내보냅니다.\n\n"
+            "현재 실행 상태 컨테이너(또는 --source-image 지정 시 원본 이미지)를 타임스탬프 백업 아카이브로 저장합니다.\n\n"
+            "사용 예시:\n"
+            "  compman image backup\n"
+            "  compman image backup --source-image"
+        ),
     },
     "cmd.image.restore": {
-        "en": "Import container images from a backup archive timestamp (<timestamp>, -c/--config).",
-        "ko": "백업 아카이브 타임스탬프로부터 컨테이너 이미지를 불러옵니다 (<timestamp>, -c/--config).",
+        "en": (
+            "Import container images from a backup archive timestamp.\n\n"
+            "Loads a container image from a timestamped backup archive.\n\n"
+            "Examples:\n"
+            "  compman image restore 20260731_1732"
+        ),
+        "ko": (
+            "백업 아카이브 타임스탬프로부터 컨테이너 이미지를 불러옵니다.\n\n"
+            "타임스탬프 백업 아카이브 파일로부터 컨테이너 이미지를 로드합니다.\n\n"
+            "사용 예시:\n"
+            "  compman image restore 20260731_1732"
+        ),
     },
     "cmd.seed": {
-        "en": "Generate a sample seed project (app.py, Dockerfile, compose) (-o/--output, -a/--archive, -p/--port, --force).",
-        "ko": "배포 테스트용 샘플 시드 프로젝트(app.py, Dockerfile, compose)를 생성합니다 (-o, -a, -p, --force).",
+        "en": (
+            "Generate a sample seed project (app.py, Dockerfile, compose).\n\n"
+            "Creates a runnable sample project directory and optionally compresses it into a .tar.gz archive.\n\n"
+            "Examples:\n"
+            "  compman seed\n"
+            "  compman seed -o project -p 8080 -a"
+        ),
+        "ko": (
+            "배포 테스트용 샘플 시드 프로젝트(app.py, Dockerfile, compose)를 생성합니다.\n\n"
+            "실행 가능한 샘플 웹 앱 프로젝트를 생성하며 선택적으로 .tar.gz 아카이브로 압축합니다.\n\n"
+            "사용 예시:\n"
+            "  compman seed\n"
+            "  compman seed -o project -p 8080 -a"
+        ),
     },
     "cmd.version": {
         "en": "Display the current compman CLI version.",
