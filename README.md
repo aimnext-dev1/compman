@@ -238,7 +238,7 @@ compman status --json
 
 `doctor`는 설정, Compose 파일, 컨테이너 런타임과 연결, 관리 디렉터리, AWS 자격 증명을 점검합니다. `status`는 실행 중인 스택의 서비스 상태를 표시합니다. `--json`은 자동화에 사용할 수 있는 구조화된 JSON을 출력합니다.
 
-필수 `doctor` 검사에 실패하거나 `status` 대상 스택이 실행 중이지 않은 경우 종료 코드 `1`을 반환합니다. AWS 환경 변수(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)가 없다는 결과는 비실패 경고이므로, 다른 필수 검사가 통과하면 `doctor`는 종료 코드 `0`을 반환합니다.
+필수 `doctor` 검사에 실패하거나 `status`가 오류를 보고하는 경우(대상 스택이 실행 중이지 않은 경우 포함) 종료 코드 `1`을 반환합니다. AWS 환경 변수(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)가 없다는 결과는 비실패 경고이므로, 다른 필수 검사가 통과하면 `doctor`는 종료 코드 `0`을 반환합니다.
 
 ## 백업과 복원
 
