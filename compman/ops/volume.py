@@ -27,7 +27,7 @@ def backup(
         raise CommandError(t("msg.stack_not_running", name=config.name))
     volumes = runtime.list_volumes(config.name)
     if not volumes:
-        typer.echo("💡 No volumes found to back up.")
+        typer.echo(t("msg.no_volumes"))
         return
     containers = runtime.list_containers(config.name, context.files, context.env)
 
@@ -62,7 +62,7 @@ def backup(
     finally:
         shutil.rmtree(backup_dir, ignore_errors=True)
 
-    typer.echo(f"Volume backup done: {tarball}")
+    typer.echo(t("msg.backup_done", kind="Volume", path=tarball))
 
 
 def restore(
@@ -104,9 +104,9 @@ def restore(
                 dest = vol_info["destination"]
                 src = restore_dir / volume_name
                 if not src.is_dir():
-                    typer.echo(f"Warning: data dir '{src}' not found, skipping {container}.")
+                    typer.echo(t("msg.warning_missing_data", path=src, container=container))
                     continue
-                typer.echo(f"Restoring {container}:{dest} ...")
+                typer.echo(t("msg.restoring_data", container=container, destination=dest))
                 runtime.copy_to_container(f"{src}/.", container, dest)
 
             for container, vol_info in mapping.items():
@@ -119,7 +119,7 @@ def restore(
     finally:
         shutil.rmtree(restore_dir, ignore_errors=True)
 
-    typer.echo("Volume restore done.")
+    typer.echo(t("msg.restore_done", kind="Volume"))
 
 
 def pull(runtime: ContainerRuntime, config: Config, profile: str | None = None) -> None:
@@ -128,7 +128,7 @@ def pull(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
         raise CommandError(t("msg.stack_not_running", name=config.name))
     volumes = runtime.list_volumes(config.name)
     if not volumes:
-        typer.echo("💡 No volumes found to pull.")
+        typer.echo(t("msg.no_volumes"))
         return
     containers = runtime.list_containers(config.name, context.files, context.env)
 
@@ -149,7 +149,7 @@ def pull(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
     map_path = volume_dir / "volume-map.json"
     merged = _merge_mapping(mapping)
     map_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
-    typer.echo("Volume pull done.")
+    typer.echo(t("msg.restore_done", kind="Volume pull"))
 
 
 def push(runtime: ContainerRuntime, config: Config, profile: str | None = None) -> None:
@@ -167,12 +167,12 @@ def push(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
         dest = vol_info["destination"]
         src = volume_dir / volume_name
         if not src.is_dir():
-            typer.echo(f"Warning: '{src}' not found, skipping {container}.")
+            typer.echo(t("msg.warning_missing_source", path=src, container=container))
             continue
-        typer.echo(f"Pushing to {container}:{dest} ...")
+        typer.echo(t("msg.pushing_data", container=container, destination=dest))
         runtime.copy_to_container(f"{src}/.", container, dest)
         runtime.fix_permissions(container, dest)
-    typer.echo("Volume push done.")
+    typer.echo(t("msg.restore_done", kind="Volume push"))
 
 
 def _inspect_mount(
@@ -203,7 +203,7 @@ def _merge_mapping(mapping: list[dict[str, str]]) -> dict[str, Any]:
 
 
 def _fix_permissions(runtime: ContainerRuntime, container: str, dest: str) -> None:
-    typer.echo(f"Fixing permissions on {container}:{dest} ...")
+    typer.echo(t("msg.fixing_permissions", container=container, destination=dest))
     runtime.fix_permissions(container, dest)
 
 
@@ -225,7 +225,7 @@ def _valid_timestamp(value: str, fmt: str) -> bool:
 
 def _list_backups(config: Config, kind: str) -> None:
     pattern = f"{config.name}.{kind}."
-    typer.echo(f"Available {kind} backups:")
+    typer.echo(t("msg.available_backups", kind=kind))
     for f in sorted(config.backup_dir.glob(f"{pattern}*.tar.gz")):
         name = f.name
         ts = name.replace(pattern, "").replace(".tar.gz", "")

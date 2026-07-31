@@ -609,6 +609,50 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Error: port must be between 1 and 65535 (got {port}).",
         "ko": "오류: 포트는 1에서 65535 사이여야 합니다 ({port}).",
     },
+    "msg.no_volumes": {
+        "en": "💡 No volumes found to back up.",
+        "ko": "💡 백업할 볼륨이 없습니다.",
+    },
+    "msg.backup_done": {
+        "en": "{kind} backup done: {path}",
+        "ko": "{kind} 백업 완료: {path}",
+    },
+    "msg.restore_done": {
+        "en": "{kind} restore done.",
+        "ko": "{kind} 복원 완료.",
+    },
+    "msg.loading_image": {
+        "en": "Loading {name} ...",
+        "ko": "{name} 로드 중 ...",
+    },
+    "msg.image_restore_hint": {
+        "en": "Update docker-compose.yml image tags and run 'compman stack up'.",
+        "ko": "docker-compose.yml 이미지 tag를 갱신하고 'compman stack up'을 실행하세요.",
+    },
+    "msg.available_backups": {
+        "en": "Available {kind} backups:",
+        "ko": "사용 가능한 {kind} 백업:",
+    },
+    "msg.warning_missing_data": {
+        "en": "Warning: data dir '{path}' not found, skipping {container}.",
+        "ko": "경고: 데이터 디렉터리 '{path}'가 없어 {container}을(를) 건너뜁니다.",
+    },
+    "msg.restoring_data": {
+        "en": "Restoring {container}:{destination} ...",
+        "ko": "{container}:{destination} 복원 중 ...",
+    },
+    "msg.warning_missing_source": {
+        "en": "Warning: '{path}' not found, skipping {container}.",
+        "ko": "경고: '{path}'가 없어 {container}을(를) 건너뜁니다.",
+    },
+    "msg.pushing_data": {
+        "en": "Pushing to {container}:{destination} ...",
+        "ko": "{container}:{destination}로 전송 중 ...",
+    },
+    "msg.fixing_permissions": {
+        "en": "Fixing permissions on {container}:{destination} ...",
+        "ko": "{container}:{destination} 권한 수정 중 ...",
+    },
 }
 
 

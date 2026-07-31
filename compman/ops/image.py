@@ -73,7 +73,7 @@ def backup(
             runtime.remove_image(tag)
         shutil.rmtree(backup_dir, ignore_errors=True)
 
-    typer.echo(f"Image backup done: {tarball}")
+    typer.echo(t("msg.backup_done", kind="Image", path=tarball))
 
 
 def restore(
@@ -99,12 +99,12 @@ def restore(
         extract_tar(tar, restore_dir)
 
     for tar_file in restore_dir.glob("*.tar"):
-        typer.echo(f"Loading {tar_file.name} ...")
+        typer.echo(t("msg.loading_image", name=tar_file.name))
         runtime.load_image(tar_file)
         tar_file.unlink()
 
     shutil.rmtree(restore_dir)
-    typer.echo("Image restore done. Update docker-compose.yml image tags and run 'compman stack up'.")
+    typer.echo(t("msg.restore_done", kind="Image") + " " + t("msg.image_restore_hint"))
 
 
 def _validate_timestamp(ts: str) -> None:
@@ -124,7 +124,7 @@ def _valid_timestamp(value: str, fmt: str) -> bool:
 
 
 def _list_backups(config: Config) -> None:
-    typer.echo("Available image backups:")
+    typer.echo(t("msg.available_backups", kind="image"))
     for f in sorted(config.backup_dir.glob(f"{config.name}.image.*.tar.gz")):
         ts = f.name.replace(f"{config.name}.image.", "").replace(".tar.gz", "")
         typer.echo(f"  {ts}")
