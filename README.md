@@ -1,43 +1,81 @@
-# compman — Docker Compose Stack Manager
+# compman — Docker Compose Stack Manager CLI
 
-Python CLI로 Docker/Podman Compose 스택을 관리합니다.
+Python CLI로 Docker/Podman Compose 스택 및 S3 기반 자동 배포를 효율적으로 관리합니다.
 
-## 설치
+---
+
+## 🛠️ Installation (설치)
+
+### 1. GitHub 원격 한 줄 설치 (권장 ✨)
+
+`uv` 또는 `pipx`가 설치된 임의의 컴퓨터에서 git clone 없이 단 한 줄로 설치하여 사용할 수 있습니다.
+
+```bash
+# uv 사용 시 (가장 빠르고 권장)
+uv tool install git+https://github.com/aimnext-dev1/compman.git
+
+# pipx 사용 시
+pipx install git+https://github.com/aimnext-dev1/compman.git
+
+# pip 사용 시
+pip install git+https://github.com/aimnext-dev1/compman.git
+```
+
+### 2. 로컬 소스에서 설치
 
 ```bash
 uv tool install .
-compman --help
+# 또는 개발 연결 설치: pip install -e .
 ```
 
-## 설정 (`compman.yml`)
+### 3. 최신 기능 버전 업데이트
+
+```bash
+uv tool upgrade compman
+```
+
+---
+
+## 🚀 S3 배포 & 단독 업데이트 (`deploy` & `update`)
+
+```bash
+# 1. S3 경로 지정 첫 배포 (compman.yml에 deploy 경로 자동 저장 & project/ 소스 분리)
+compman deploy --path s3://my-bucket/app.tar.gz
+
+# 2. S3 소스 수신 + Docker 이미지 자동 빌드
+compman deploy --build
+
+# 3. ⭐ 단 한 줄로 S3 최신 수신 + Docker 이미지 빌드 + 무중단 컨테이너 교체 기동
+compman update
+```
+
+---
+
+## ⚙️ 설정 (`compman.yml`)
 
 ```yaml
 compman:
   name: my-stack
-  # folder: my-project               # 선택: _project/ 디렉토리 사용시
+  deploy: s3://my-bucket/app.tar.gz   # compman deploy --path 실행 시 자동 기록/갱신
   dirs:
-    backup: backup                    # 선택, 기본값: backup
-    volume: volume                    # 선택, 기본값: volume
+    project: project                   # S3 소스 다운로드 디렉터리 (기본값: project)
+    backup: backup                     # 기본값: backup
+    volume: volume                     # 기본값: volume
   compose:
-    # base: docker-compose.yml       # 선택: 모든 profile에 공통 적용
-    # local: docker-compose.local.yml
-    # dev:
-    #   file: docker-compose.dev.yml
-    #   env:
-    #     DATABASE_URL: dev.example.com:5432
-    # prod:
-    #   file: docker-compose.prod.yml
-    #   env:
-    #     DATABASE_URL: prod.example.com:5432
+    - docker-compose.yml              # 기본값: docker-compose.yml
 ```
 
-`compose` 생략 시 기본값 `docker-compose.yml`. 리스트로 지정하면 단순 모드, dict로 지정하면 profile 모드.
-`folder` 설정 시 compose 파일은 `_project/` 아래에서 찾습니다. `base` 설정 시 profile 파일 앞에 `-f`로 추가됩니다.
+- `compman.yml` 및 `docker-compose.yml`은 루트 디렉터리에 위치하며, S3 다운로드 프로젝트 소스는 `project/` 디렉터리에 분리 관리됩니다.
 
-## 사용법
+---
+
+## 📋 주요 명령어 (Commands)
 
 ```text
 compman init [-c compman.yml]           # compman.yml 템플릿 생성
+compman update [profile]                # ⭐ S3 최신 다운로드 + 이미지 빌드 + 컨테이너 무중단 교체
+compman deploy [--path S3_URI] [--build]# S3 배포 (compman.yml 경로 자동 저장)
+
 compman stack up [profile]              # compose up -d
 compman stack down --yes                # compose down (확인 필요)
 compman stack update [profile]          # compose up -d --build
@@ -58,32 +96,29 @@ compman image backup [--source-image]   # 이미지 백업 (기본: running cont
 compman image restore <YYYYMMDD_HHMM>   # 이미지 복원
 
 compman clear                           # docker image prune -af
-compman deploy [dev|prod]               # S3 배포 (deploy.py 설정 필요)
 ```
 
-모든 명령어에 `-c <path>` 옵션으로 compman.yml 경로 지정 가능.
+---
 
-## Runtime
+## 🔍 Runtime & 프로젝트 구조
 
-- 자동 감지 순서: `docker compose` → `podman compose` → `podman-compose` → `docker-compose`
-- `CONTAINER_RUNTIME=podman` 환경변수로 Podman 강제 지정
+- **자동 감지 순서**: `docker compose` $\rightarrow$ `podman compose` $\rightarrow$ `podman-compose` $\rightarrow$ `docker-compose`
+- **Podman 강제 지정**: `CONTAINER_RUNTIME=podman`
 
-## 프로젝트 구조
-
-```
+```text
 compman/               # Python CLI 모듈
-  cli.py               # click entrypoint
-  config.py            # compman.yml loader
+  cli.py               # click entrypoint (init, deploy, update, clear 등)
+  config.py            # compman.yml loader (dirs.project, deploy)
   docker.py            # ContainerRuntime 추상화
-  deploy.py            # S3 배포
-  ops/                 # 비즈니스 로직
-    stack.py, service.py, volume.py, image.py
-test/                  # 예제 config (테스트 아님)
+  deploy.py            # S3 배포 및 _update_compman_deploy
+  ops/                 # 비즈니스 로직 (stack, service, volume, image)
+test/                  # 테스트 및 가이드 문서 (FULL_SCENARIO_GUIDE.md)
 ```
 
-## 백업 파일명 규칙
+---
+
+## 📦 백업 파일명 규칙
 
 백업은 `backup/` 폴더에 저장됩니다.
-
 - 이미지: `<스택명>.image.<YYYYMMDD_HHMM>.tar.gz`
 - 볼륨: `<스택명>.volume.<YYYYMMDD_HHMM>.tar.gz`
