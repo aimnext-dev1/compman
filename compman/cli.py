@@ -45,6 +45,7 @@ for _idx, _arg in enumerate(sys.argv):
 app = typer.Typer(
     name="compman",
     help=t("cmd.root"),
+    no_args_is_help=True,
     invoke_without_command=True,
 )
 
@@ -70,13 +71,16 @@ def _load(config_path: str | None = None):
 
 
 # ---- Root callback ----
-@app.callback()
+@app.callback(invoke_without_command=True)
 def root(
+    ctx: typer.Context,
     lang: Annotated[Optional[str], typer.Option("--lang", "-l", help="Language (en/ko)")] = None,
     version: Annotated[bool, typer.Option("--version", callback=_version_callback, is_eager=True)] = False,
 ) -> None:
     if lang:
         set_lang(lang)
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
 
 
 
