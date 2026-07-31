@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -128,6 +129,63 @@ def test_unwritable_managed_directory_parent_is_a_failed_required_check(tmp_path
     assert report.ok is False
 
 
+def test_nested_missing_managed_directories_use_nearest_existing_ancestor(
+    tmp_path, monkeypatch, dummy_runtime
+):
+    write_simple_project(tmp_path)
+    existing = tmp_path / "writable"
+    existing.mkdir()
+    config_path = tmp_path / "compman.yml"
+    config_path.write_text(
+        "compman:\n"
+        "  name: test-app\n"
+        "  compose:\n"
+        "    - docker-compose.yml\n"
+        "  dirs:\n"
+        "    backup: writable/missing/backup\n"
+        "    volume: writable/missing/volume\n"
+        "    project: writable/missing/project\n",
+        encoding="utf-8",
+    )
+    accessed = []
+
+    def record_access(path, mode):
+        accessed.append((Path(path), mode))
+        return True
+
+    monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
+    monkeypatch.setattr("compman.diagnostics.os.access", record_access)
+
+    report = collect_doctor(str(config_path))
+
+    managed_dirs = next(check for check in report.checks if check.id == "managed_dirs")
+    assert managed_dirs.ok is True
+    assert accessed == [(existing, os.W_OK | os.X_OK)] * 3
+    assert not (existing / "missing").exists()
+
+
+def test_existing_managed_directory_checks_the_target_itself(tmp_path, monkeypatch, dummy_runtime):
+    write_simple_project(tmp_path)
+    backup = tmp_path / "backup"
+    backup.mkdir()
+    accessed = []
+
+    def deny_backup(path, mode):
+        candidate = Path(path)
+        accessed.append((candidate, mode))
+        return candidate != backup
+
+    monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
+    monkeypatch.setattr("compman.diagnostics.os.access", deny_backup)
+
+    report = collect_doctor(str(tmp_path / "compman.yml"))
+
+    managed_dirs = next(check for check in report.checks if check.id == "managed_dirs")
+    assert managed_dirs.ok is False
+    assert str(backup) in managed_dirs.message
+    assert (backup, os.W_OK | os.X_OK) in accessed
+
+
 def test_runtime_info_exception_is_a_failed_required_check(tmp_path, monkeypatch, dummy_runtime):
     write_simple_project(tmp_path)
     monkeypatch.chdir(tmp_path)
@@ -154,6 +212,32 @@ def test_managed_directory_access_exception_is_a_failed_required_check(tmp_path,
     assert report.ok is False
 
 
+@pytest.mark.parametrize(
+    "stage",
+    ["config", "compose_files", "runtime", "runtime_connection", "managed_dirs"],
+)
+def test_collect_doctor_propagates_programming_errors(stage, tmp_path, monkeypatch, dummy_runtime):
+    write_simple_project(tmp_path)
+    monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
+
+    def programming_error(*args, **kwargs):
+        raise AssertionError(stage)
+
+    if stage == "config":
+        monkeypatch.setattr("compman.diagnostics.load_config", programming_error)
+    elif stage == "compose_files":
+        monkeypatch.setattr("compman.diagnostics.resolve_compose_context", programming_error)
+    elif stage == "runtime":
+        monkeypatch.setattr("compman.diagnostics.detect_runtime", programming_error)
+    elif stage == "runtime_connection":
+        monkeypatch.setattr(dummy_runtime, "run_cli", programming_error)
+    else:
+        monkeypatch.setattr("compman.diagnostics.os.access", programming_error)
+
+    with pytest.raises(AssertionError, match=stage):
+        collect_doctor(str(tmp_path / "compman.yml"))
+
+
 def test_aws_credentials_are_reported_as_available(tmp_path, monkeypatch, dummy_runtime):
     write_simple_project(tmp_path)
     monkeypatch.chdir(tmp_path)
@@ -174,7 +258,7 @@ def test_collect_status_reports_profile_and_services(tmp_path, dummy_runtime, mo
     dummy_runtime.service_status = lambda *args: [
         {
             "service": "web",
-            "name": "app-web-1",
+            "container": "app-web-1",
             "state": "running",
             "status": "Up",
             "health": "healthy",
@@ -262,6 +346,29 @@ def test_collect_status_reports_failed_service_query(tmp_path, dummy_runtime, mo
 
     assert report.ok is False
     assert report.error == "offline"
+
+
+@pytest.mark.parametrize("stage", ["config", "compose_files", "runtime", "stack", "services"])
+def test_collect_status_propagates_programming_errors(stage, tmp_path, dummy_runtime, monkeypatch):
+    write_simple_project(tmp_path)
+    monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
+
+    def programming_error(*args, **kwargs):
+        raise TypeError(stage)
+
+    if stage == "config":
+        monkeypatch.setattr("compman.diagnostics.load_config", programming_error)
+    elif stage == "compose_files":
+        monkeypatch.setattr("compman.diagnostics.resolve_compose_context", programming_error)
+    elif stage == "runtime":
+        monkeypatch.setattr("compman.diagnostics.detect_runtime", programming_error)
+    elif stage == "stack":
+        monkeypatch.setattr(dummy_runtime, "stack_exists", programming_error)
+    else:
+        monkeypatch.setattr(dummy_runtime, "service_status", programming_error)
+
+    with pytest.raises(TypeError, match=stage):
+        collect_status(str(tmp_path / "compman.yml"))
 
 
 def test_collect_status_allows_empty_service_list(tmp_path, dummy_runtime, monkeypatch):

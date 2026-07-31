@@ -179,6 +179,7 @@ def test_container_runtime_methods():
     ):
         mock_compose.return_value = MagicMock(returncode=0, stdout="container1\n")
         mock_cli.side_effect = [
+            MagicMock(returncode=0, stdout="container1\n"),
             MagicMock(returncode=0, stdout="vol1\n"),
             MagicMock(returncode=0, stdout="cid123\n"),
         ]
@@ -192,6 +193,47 @@ def test_container_runtime_methods():
         rt.passthru_compose(["ps"], project="my_proj")
         mock_passthru_cli.assert_called_once_with(["ps"])
         mock_passthru_compose.assert_called_once_with(["ps"], project="my_proj")
+
+
+@pytest.mark.parametrize(
+    ("runtime_name", "cli", "compose"),
+    [
+        ("docker", ["docker"], ["docker", "compose"]),
+        ("podman", ["podman"], ["podman", "compose"]),
+        ("podman", ["podman"], ["podman-compose"]),
+    ],
+)
+def test_stack_exists_uses_provider_independent_engine_query(runtime_name, cli, compose):
+    runtime = ContainerRuntime(runtime_name, cli, compose)
+    result = subprocess.CompletedProcess(cli + ["ps"], 0, "app-web-1\n", "")
+
+    with (
+        patch.object(runtime, "run_cli", return_value=result) as run_cli,
+        patch.object(runtime, "run_compose") as run_compose,
+    ):
+        assert runtime.stack_exists("app", [pathlib.Path("compose.yml")], {"MODE": "test"})
+
+    run_compose.assert_not_called()
+    run_cli.assert_called_once_with(
+        [
+            "ps",
+            "-a",
+            "--filter",
+            "label=com.docker.compose.project=app",
+            "--format",
+            "{{.Names}}",
+        ],
+        check=False,
+    )
+
+
+def test_stack_exists_rejects_failed_engine_query():
+    runtime = ContainerRuntime("podman", ["podman"], ["podman-compose"])
+    result = subprocess.CompletedProcess(["podman", "ps"], 125, "", "offline")
+
+    with patch.object(runtime, "run_cli", return_value=result):
+        with pytest.raises(RuntimeError, match="Command failed"):
+            runtime.stack_exists("app")
 
 
 def test_service_status_reads_compose_json(monkeypatch):
@@ -215,6 +257,62 @@ def test_service_status_reads_compose_json(monkeypatch):
     )
 
 
+def test_service_status_normalizes_real_docker_compose_schema():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    payload = (
+        '[{"Command":"nginx","ExitCode":0,"Health":"healthy",'
+        '"Name":"app-web-1","Service":"web","State":"running"}]'
+    )
+    with patch.object(
+        runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, payload, "")
+    ):
+        rows = runtime.service_status("app", [], {})
+
+    assert rows == [
+        {
+            "service": "web",
+            "container": "app-web-1",
+            "state": "running",
+            "status": "running (exit 0)",
+            "health": "healthy",
+        }
+    ]
+
+
+def test_service_status_normalizes_real_podman_schema():
+    runtime = ContainerRuntime("podman", ["podman"], ["podman-compose"])
+    payload = (
+        '[{"ExitCode":0,"Labels":{"com.docker.compose.project":"app",'
+        '"com.docker.compose.service":"worker"},"Names":["app-worker-1"],'
+        '"State":"running","Status":"Up 5 minutes"}]'
+    )
+    with patch.object(
+        runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, payload, "")
+    ):
+        rows = runtime.service_status("app", [], {})
+
+    assert rows == [
+        {
+            "service": "worker",
+            "container": "app-worker-1",
+            "state": "running",
+            "status": "Up 5 minutes",
+            "health": None,
+        }
+    ]
+
+
+def test_service_status_uses_exit_code_when_state_is_missing():
+    runtime = ContainerRuntime("podman", ["podman"], ["podman-compose"])
+    payload = '[{"ExitCode":125,"Names":["app-worker-1"]}]'
+    with patch.object(
+        runtime, "run_compose", return_value=subprocess.CompletedProcess([], 0, payload, "")
+    ):
+        rows = runtime.service_status("app", [], {})
+
+    assert rows[0]["status"] == "exit 125"
+
+
 def test_service_status_reads_newline_delimited_json():
     runtime = ContainerRuntime("podman", ["podman"], ["podman", "compose"])
     payload = '{"Service":"web","Name":"app-web-1"}\n{"Service":"db","Name":"app-db-1"}'
@@ -223,8 +321,8 @@ def test_service_status_reads_newline_delimited_json():
         rows = runtime.service_status("app", [], {})
 
     assert rows == [
-        {"service": "web", "name": "app-web-1"},
-        {"service": "db", "name": "app-db-1"},
+        {"service": "web", "container": "app-web-1", "state": "", "status": "", "health": None},
+        {"service": "db", "container": "app-db-1", "state": "", "status": "", "health": None},
     ]
 
 
@@ -235,7 +333,7 @@ def test_service_status_reads_single_json_object():
     ):
         rows = runtime.service_status("app", [], {})
 
-    assert rows == [{"service": "web"}]
+    assert rows == [{"service": "web", "container": "", "state": "", "status": "", "health": None}]
 
 
 def test_service_status_returns_empty_for_blank_output():

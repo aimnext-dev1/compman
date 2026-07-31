@@ -131,13 +131,7 @@ class ContainerRuntime:
         compose_files: Sequence[Path] | None = None,
         env: dict[str, str] | None = None,
     ) -> bool:
-        result = self.run_compose(
-            ["ls", "-a"], compose_files=compose_files, env=env, capture=True, check=False
-        )
-        _raise_probe_failure(result)
-        if any(line.split(maxsplit=1)[0] == name for line in result.stdout.splitlines() if line.strip()):
-            return True
-        r = self.run_cli(
+        result = self.run_cli(
             [
                 "ps",
                 "-a",
@@ -148,7 +142,8 @@ class ContainerRuntime:
             ],
             check=False,
         )
-        return bool(r.stdout.strip())
+        _raise_probe_failure(result)
+        return bool(result.stdout.strip())
 
     def list_containers(
         self,
@@ -341,7 +336,40 @@ def _parse_service_status(payload: str) -> list[dict[str, object]]:
         parsed = [parsed]
     if not isinstance(parsed, list) or not all(isinstance(row, dict) for row in parsed):
         raise RuntimeError("Invalid service status JSON")
-    return [{str(key).lower(): value for key, value in row.items()} for row in parsed]
+    normalized: list[dict[str, object]] = []
+    for row in parsed:
+        labels = row.get("Labels")
+        service = row.get("Service")
+        if not service and isinstance(labels, dict):
+            service = labels.get("com.docker.compose.service")
+
+        container = row.get("Name")
+        names = row.get("Names")
+        if not container and isinstance(names, list) and names:
+            container = names[0]
+
+        state = str(row.get("State") or "")
+        status = row.get("Status")
+        if not status:
+            exit_code = row.get("ExitCode")
+            if exit_code is None or exit_code == "":
+                status = state
+            elif state:
+                status = f"{state} (exit {exit_code})"
+            else:
+                status = f"exit {exit_code}"
+
+        health = row.get("Health")
+        normalized.append(
+            {
+                "service": str(service or ""),
+                "container": str(container or ""),
+                "state": state,
+                "status": str(status or ""),
+                "health": str(health) if health else None,
+            }
+        )
+    return normalized
 
 
 def resolve_compose_files(

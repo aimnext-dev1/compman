@@ -186,8 +186,8 @@ compman:
 compman init [--skeleton | --s3 URI | --seed]
 compman deploy [--path S3_URI] [--build] [--tag TAG]
 compman update [PROFILE]
-compman doctor [--profile PROFILE] [--json]
-compman status [--profile PROFILE] [--json]
+compman doctor [--profile PROFILE] [-c|--config PATH] [--json]
+compman status [--profile PROFILE] [-c|--config PATH] [--json]
 compman upgrade
 compman version
 compman lang [ko|en]
@@ -231,14 +231,18 @@ compman clear
 ```bash
 compman doctor
 compman doctor --json
+compman doctor --config /path/to/compman.yml
+compman doctor -c /path/to/compman.yml
 compman status
 compman status --profile PROFILE
 compman status --json
+compman status --config /path/to/compman.yml
+compman status -c /path/to/compman.yml
 ```
 
 `doctor`는 설정, Compose 파일, 컨테이너 런타임과 연결, 관리 디렉터리, AWS 자격 증명을 점검합니다. `status`는 실행 중인 스택의 서비스 상태를 표시합니다. `--json`은 자동화에 사용할 수 있는 구조화된 JSON을 출력합니다.
 
-필수 `doctor` 검사에 실패하거나 `status`가 오류를 보고하는 경우(대상 스택이 실행 중이지 않은 경우 포함) 종료 코드 `1`을 반환합니다. AWS 환경 변수(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)가 없다는 결과는 비실패 경고이므로, 다른 필수 검사가 통과하면 `doctor`는 종료 코드 `0`을 반환합니다.
+필수 `doctor` 검사에 실패하면 종료 코드 `1`을 반환합니다. `status`는 대상 스택이 존재하지 않거나 상태 조회 자체가 실패하면 종료 코드 `1`을 반환합니다. 스택이 존재하고 조회에 성공했다면 모든 서비스가 stopped/exited 상태여도 종료 코드 `0`을 반환합니다. AWS 환경 변수(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)가 없다는 결과는 비실패 경고이므로, 다른 필수 검사가 통과하면 `doctor`는 종료 코드 `0`을 반환합니다.
 
 ## 백업과 복원
 

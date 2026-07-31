@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from dataclasses import dataclass
 from typing import Literal
 
-from compman.config import Config, load_config
+from compman.config import Config, ConfigError, load_config
 from compman.docker import ContainerRuntime, detect_runtime, resolve_compose_context
 
 
@@ -93,7 +94,7 @@ def collect_doctor(config_path: str | None, profile: str | None = None) -> Docto
 def collect_status(config_path: str | None, profile: str | None = None) -> StatusReport:
     try:
         config = load_config(config_path)
-    except Exception as exc:
+    except (ConfigError, OSError) as exc:
         return StatusReport(False, None, None, None, (), (), str(exc))
 
     effective_profile = profile
@@ -101,13 +102,13 @@ def collect_status(config_path: str | None, profile: str | None = None) -> Statu
         effective_profile = next(iter(config.profiles))
     try:
         context = resolve_compose_context(config, effective_profile)
-    except Exception as exc:
+    except (ConfigError, OSError) as exc:
         return StatusReport(False, None, config.name, effective_profile, (), (), str(exc))
 
     compose_files = tuple(str(path) for path in context.files)
     try:
         runtime = detect_runtime()
-    except Exception as exc:
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
         return StatusReport(False, None, context.project, effective_profile, compose_files, (), str(exc))
 
     try:
@@ -122,7 +123,7 @@ def collect_status(config_path: str | None, profile: str | None = None) -> Statu
                 f"Stack '{context.project}' is not running.",
             )
         rows = runtime.service_status(context.project, context.files, context.env)
-    except Exception as exc:
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
         return StatusReport(
             False, runtime.name, context.project, effective_profile, compose_files, (), str(exc)
         )
@@ -130,7 +131,7 @@ def collect_status(config_path: str | None, profile: str | None = None) -> Statu
     services = tuple(
         ServiceStatus(
             service=str(row.get("service", "")),
-            container=str(row.get("name", "")),
+            container=str(row.get("container", "")),
             state=str(row.get("state", "")),
             status=str(row.get("status", "")),
             health=str(row["health"]) if row.get("health") else None,
@@ -143,7 +144,7 @@ def collect_status(config_path: str | None, profile: str | None = None) -> Statu
 def _collect_config(config_path: str | None, checks: list[CheckResult]) -> Config | None:
     try:
         config = load_config(config_path)
-    except Exception as exc:
+    except (ConfigError, OSError) as exc:
         checks.append(CheckResult("config", "required", False, str(exc)))
         return None
     checks.append(CheckResult("config", "required", True, f"Loaded configuration for {config.name}."))
@@ -153,7 +154,7 @@ def _collect_config(config_path: str | None, checks: list[CheckResult]) -> Confi
 def _collect_compose_files(config: Config, profile: str | None, checks: list[CheckResult]) -> None:
     try:
         context = resolve_compose_context(config, profile)
-    except Exception as exc:
+    except (ConfigError, OSError) as exc:
         checks.append(CheckResult("compose_files", "required", False, str(exc)))
         return
     checks.append(
@@ -169,7 +170,7 @@ def _collect_compose_files(config: Config, profile: str | None, checks: list[Che
 def _collect_runtime(checks: list[CheckResult]) -> ContainerRuntime | None:
     try:
         runtime = detect_runtime()
-    except Exception as exc:
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
         checks.append(CheckResult("runtime", "required", False, str(exc)))
         return None
     checks.append(CheckResult("runtime", "required", True, f"Detected {runtime.name} runtime."))
@@ -179,7 +180,7 @@ def _collect_runtime(checks: list[CheckResult]) -> ContainerRuntime | None:
 def _collect_runtime_connection(runtime: ContainerRuntime, checks: list[CheckResult]) -> None:
     try:
         result = runtime.run_cli(["info"], check=False)
-    except Exception as exc:
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
         checks.append(CheckResult("runtime_connection", "required", False, str(exc)))
         return
     if result.returncode != 0:
@@ -193,16 +194,29 @@ def _collect_runtime_connection(runtime: ContainerRuntime, checks: list[CheckRes
 def _collect_managed_dirs(config: Config, checks: list[CheckResult]) -> None:
     try:
         directories = (config.backup_dir, config.volume_dir, config.deploy_dir)
-        unwritable = [directory.parent for directory in directories if not os.access(directory.parent, os.W_OK)]
-    except Exception as exc:
+        unwritable = []
+        for directory in directories:
+            probe = directory
+            while not probe.exists() and probe.parent != probe:
+                probe = probe.parent
+            if not os.access(probe, os.W_OK | os.X_OK):
+                unwritable.append(probe)
+    except (ConfigError, OSError) as exc:
         checks.append(CheckResult("managed_dirs", "required", False, str(exc)))
         return
     if unwritable:
         checks.append(
-            CheckResult("managed_dirs", "required", False, f"Managed directory parent is not writable: {unwritable[0]}")
+            CheckResult(
+                "managed_dirs",
+                "required",
+                False,
+                f"Managed directory location is not writable/searchable: {unwritable[0]}",
+            )
         )
         return
-    checks.append(CheckResult("managed_dirs", "required", True, "Managed directory parents are writable."))
+    checks.append(
+        CheckResult("managed_dirs", "required", True, "Managed directory locations are writable/searchable.")
+    )
 
 
 def _collect_aws(checks: list[CheckResult]) -> None:
