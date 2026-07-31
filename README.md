@@ -17,7 +17,7 @@ irm https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 | ie
 
 ```cmd
 :: Windows CMD (일반 명령 프롬프트 - 즉시 PATH 적용)
-curl -fsSL https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.cmd -o %TEMP%\install.cmd && call %TEMP%\install.cmd
+curl -fsSL https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.cmd -o %TEMP%\install.cmd && call %TEMP%\install.cmd && set PATH=%USERPROFILE%\.local\bin;%PATH%
 ```
 
 ```bash
