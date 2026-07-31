@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import shutil
 import tarfile
 from datetime import datetime
@@ -10,6 +9,7 @@ import typer
 
 from compman.config import Config
 from compman.docker import ContainerRuntime
+from compman.i18n import t
 
 
 def backup(
@@ -18,14 +18,20 @@ def backup(
     source_mode: bool = False,
 ) -> None:
     if not runtime.stack_exists(config.name):
-        typer.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
+        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+    now = datetime.now()
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
     backup_name = f"{config.name}.image.{timestamp}"
     backup_dir = config.backup_dir / backup_name
-    backup_dir.mkdir(parents=True)
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
+    if backup_dir.exists() or tarball.exists():
+        timestamp = now.strftime("%Y%m%d_%H%M%S_%f")
+        backup_name = f"{config.name}.image.{timestamp}"
+        backup_dir = config.backup_dir / backup_name
+        tarball = config.backup_dir / f"{backup_name}.tar.gz"
+    backup_dir.mkdir(parents=True)
     backup_tags: list[str] = []
 
     try:
@@ -34,7 +40,7 @@ def backup(
         )
         container_ids = result.stdout.strip().splitlines()
         if not container_ids:
-            typer.echo("💡 No running containers found in this stack to back up.")
+            typer.echo(t("msg.no_running_containers"))
             return
 
         for cid in container_ids:
@@ -101,7 +107,7 @@ def restore(
     backup_name = f"{config.name}.image.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
     if not tarball.is_file():
-        typer.echo(f"Backup not found: {tarball}", err=True)
+        typer.echo(t("msg.backup_not_found", tarball=tarball), err=True)
         _list_backups(config)
         raise SystemExit(1)
 
@@ -120,17 +126,25 @@ def restore(
 
 
 def _validate_timestamp(ts: str) -> None:
-    try:
-        datetime.strptime(ts, "%Y%m%d_%H%M")
-    except ValueError:
+    if not any(
+        _valid_timestamp(ts, fmt)
+        for fmt in ("%Y%m%d_%H%M", "%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S_%f")
+    ):
         typer.echo(
-            f"Invalid timestamp: {ts} (expected YYYYMMDD_HHMM)", err=True
+            f"Invalid timestamp: {ts} (expected YYYYMMDD_HHMM[SS])", err=True
         )
         raise SystemExit(1)
 
 
+def _valid_timestamp(value: str, fmt: str) -> bool:
+    try:
+        datetime.strptime(value, fmt)
+        return True
+    except ValueError:
+        return False
+
+
 def _list_backups(config: Config) -> None:
-    pattern = re.escape(config.name) + r"\.image\.\d{8}_\d{4}\.tar\.gz"
     typer.echo("Available image backups:")
     for f in sorted(config.backup_dir.glob(f"{config.name}.image.*.tar.gz")):
         ts = f.name.replace(f"{config.name}.image.", "").replace(".tar.gz", "")

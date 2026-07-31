@@ -11,6 +11,7 @@ import typer
 
 from compman.config import Config
 from compman.docker import ContainerRuntime
+from compman.i18n import t
 
 
 def backup(
@@ -19,7 +20,7 @@ def backup(
     no_stop: bool = False,
 ) -> None:
     if not runtime.stack_exists(config.name):
-        typer.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
+        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
     volumes = runtime.list_volumes(config.name)
     if not volumes:
@@ -27,11 +28,17 @@ def backup(
         return
     containers = runtime.list_containers(config.name)
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+    now = datetime.now()
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
     backup_name = f"{config.name}.volume.{timestamp}"
     backup_dir = config.backup_dir / backup_name
-    backup_dir.mkdir(parents=True, exist_ok=True)
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
+    if backup_dir.exists() or tarball.exists():
+        timestamp = now.strftime("%Y%m%d_%H%M%S_%f")
+        backup_name = f"{config.name}.volume.{timestamp}"
+        backup_dir = config.backup_dir / backup_name
+        tarball = config.backup_dir / f"{backup_name}.tar.gz"
+    backup_dir.mkdir(parents=True, exist_ok=True)
     stopped = False
 
     try:
@@ -85,12 +92,12 @@ def restore(
     backup_name = f"{config.name}.volume.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
     if not tarball.is_file():
-        typer.echo(f"💡 Backup not found: {tarball}", err=True)
+        typer.echo(t("msg.backup_not_found", tarball=tarball), err=True)
         _list_backups(config, "volume")
         raise SystemExit(1)
 
     if not runtime.stack_exists(config.name):
-        typer.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
+        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
 
     restore_dir = config.backup_dir / backup_name
@@ -102,7 +109,7 @@ def restore(
 
         map_path = restore_dir / "volume-map.json"
         if not map_path.is_file():
-            typer.echo(f"volume-map.json not found in backup.", err=True)
+            typer.echo(t("msg.volume_map_not_found", path=map_path), err=True)
             raise SystemExit(1)
 
         mapping = json.loads(map_path.read_text(encoding="utf-8"))
@@ -145,7 +152,7 @@ def restore(
 
 def pull(runtime: ContainerRuntime, config: Config) -> None:
     if not runtime.stack_exists(config.name):
-        typer.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
+        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
     volumes = runtime.list_volumes(config.name)
     if not volumes:
@@ -180,10 +187,10 @@ def push(runtime: ContainerRuntime, config: Config) -> None:
     volume_dir = config.volume_dir
     map_path = volume_dir / "volume-map.json"
     if not map_path.is_file():
-        typer.echo(f"💡 volume-map.json not found at {map_path}. Run 'compman volume pull' first.", err=True)
+        typer.echo(t("msg.volume_map_not_found", path=map_path), err=True)
         raise SystemExit(1)
     if not runtime.stack_exists(config.name):
-        typer.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
+        typer.echo(t("msg.stack_not_running", name=config.name), err=True)
         raise SystemExit(1)
 
     mapping = json.loads(map_path.read_text(encoding="utf-8"))
@@ -259,13 +266,22 @@ def _fix_permissions(
 
 
 def _validate_timestamp(ts: str) -> None:
-    try:
-        datetime.strptime(ts, "%Y%m%d_%H%M")
-    except ValueError:
+    if not any(
+        _valid_timestamp(ts, fmt)
+        for fmt in ("%Y%m%d_%H%M", "%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S_%f")
+    ):
         typer.echo(
-            f"Invalid timestamp format: {ts} (expected YYYYMMDD_HHMM)", err=True
+            f"Invalid timestamp format: {ts} (expected YYYYMMDD_HHMM[SS])", err=True
         )
         raise SystemExit(1)
+
+
+def _valid_timestamp(value: str, fmt: str) -> bool:
+    try:
+        datetime.strptime(value, fmt)
+        return True
+    except ValueError:
+        return False
 
 
 def _list_backups(config: Config, kind: str) -> None:

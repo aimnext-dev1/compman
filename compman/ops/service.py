@@ -46,13 +46,13 @@ def log(
             return
         if len(containers) == 1:
             service = containers[0]
-            typer.echo(f"Auto-selected: {service}")
+            typer.echo(t("msg.auto_selected", name=service))
         else:
-            typer.echo("Available containers:")
+            typer.echo(t("msg.available_containers"))
             for c in containers:
                 typer.echo(f"  {c}")
             return
-    cid = runtime.get_container_id(service)
+    cid = runtime.get_container_id(service, config.name)
     if not cid:
         typer.echo(t("msg.container_not_found", service=service), err=True)
         return
@@ -72,13 +72,13 @@ def connect(runtime: ContainerRuntime, config: Config, service: str | None) -> N
             return
         if len(containers) == 1:
             service = containers[0]
-            typer.echo(f"Auto-selected: {service}")
+            typer.echo(t("msg.auto_selected", name=service))
         else:
-            typer.echo("Specify a container name:")
+            typer.echo(t("msg.specify_container"))
             for c in containers:
                 typer.echo(f"  {c}")
             return
-    cid = runtime.get_container_id(service)
+    cid = runtime.get_container_id(service, config.name)
     if not cid:
         typer.echo(t("msg.container_not_found", service=service), err=True)
         return

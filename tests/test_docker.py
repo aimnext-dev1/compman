@@ -181,7 +181,7 @@ def test_container_runtime_methods():
         assert rt.stack_exists("container1")
         assert rt.list_containers("my_proj") == ["container1"]
         assert rt.list_volumes("my_proj") == ["vol1"]
-        assert rt.get_container_id("my_proj") == "cid123"
+        assert rt.get_container_id("my_proj", "my_stack") == "cid123"
 
         rt.passthru_cli(["ps"])
         rt.passthru_compose(["ps"], project="my_proj")

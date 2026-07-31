@@ -477,6 +477,34 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Error: Unknown command '{command}'.",
         "ko": "오류: 알 수 없는 명령어입니다: '{command}'",
     },
+    "msg.operation_cancelled": {
+        "en": "Operation cancelled.",
+        "ko": "작업이 취소되었습니다.",
+    },
+    "msg.backup_dir_not_found": {
+        "en": "💡 Backup directory not found at {path}.",
+        "ko": "💡 백업 디렉터리를 찾을 수 없습니다: {path}",
+    },
+    "msg.no_backups": {
+        "en": "💡 No {kind} backup files found in {path}.",
+        "ko": "💡 {path}에 {kind} 백업 파일이 없습니다.",
+    },
+    "msg.selected_backup": {
+        "en": "Selected backup: {name}",
+        "ko": "선택된 백업: {name}",
+    },
+    "msg.auto_selected": {
+        "en": "Auto-selected: {name}",
+        "ko": "자동 선택됨: {name}",
+    },
+    "msg.available_containers": {
+        "en": "Available containers:",
+        "ko": "사용 가능한 컨테이너:",
+    },
+    "msg.specify_container": {
+        "en": "Specify a container name:",
+        "ko": "컨테이너 이름을 지정하세요:",
+    },
     "msg.start_guide": {
         "en": "Start by running one of the following commands:",
         "ko": "다음 명령어로 기본 설정 파일을 생성하거나 첫 배포를 진행해보세요:",

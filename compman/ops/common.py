@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 
 from compman.config import Config
+from compman.i18n import t
 
 
 def get_key() -> str:
@@ -92,7 +93,7 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
             elif key == "enter":
                 break
             elif key == "esc":
-                typer.echo("Operation cancelled.")
+                typer.echo(t("msg.operation_cancelled"))
                 raise SystemExit(0)
         except KeyboardInterrupt:
             typer.echo("")
@@ -104,12 +105,12 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
 def select_backup_timestamp(config: Config, kind: str) -> str:
     pattern = f"{config.name}.{kind}."
     if not config.backup_dir.is_dir():
-        typer.echo(f"💡 Backup directory not found at {config.backup_dir}.", err=True)
+        typer.echo(t("msg.backup_dir_not_found", path=config.backup_dir), err=True)
         raise SystemExit(1)
 
     files = sorted(config.backup_dir.glob(f"{pattern}*.tar.gz"))
     if not files:
-        typer.echo(f"💡 No {kind} backup files found in {config.backup_dir}.", err=True)
+        typer.echo(t("msg.no_backups", kind=kind, path=config.backup_dir), err=True)
         raise SystemExit(1)
 
     timestamps = [f.name.replace(pattern, "").replace(".tar.gz", "") for f in files]
@@ -120,5 +121,5 @@ def select_backup_timestamp(config: Config, kind: str) -> str:
         default_index=len(timestamps) - 1,
     )
     selected = timestamps[idx]
-    typer.echo(f"Selected backup: {selected}")
+    typer.echo(t("msg.selected_backup", name=selected))
     return selected

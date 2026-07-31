@@ -64,7 +64,7 @@ class ContainerRuntime:
 
     def stack_exists(self, name: str) -> bool:
         result = self.run_compose(["ls", "-a"], capture=True, check=False)
-        if name in result.stdout:
+        if any(line.split(maxsplit=1)[0] == name for line in result.stdout.splitlines() if line.strip()):
             return True
         r = self.run_cli(
             [
@@ -101,13 +101,15 @@ class ContainerRuntime:
         )
         return [v for v in result.stdout.strip().splitlines() if v]
 
-    def get_container_id(self, name: str) -> str:
+    def get_container_id(self, name: str, project: str | None = None) -> str:
+        filters = [f"name=^{name}$"]
+        if project:
+            filters.append(f"label=com.docker.compose.project={project}")
         result = self.run_cli(
             [
                 "ps",
                 "-a",
-                "--filter",
-                f"name=^{name}$",
+                *sum((["--filter", value] for value in filters), []),
                 "--format",
                 "{{.ID}}",
             ],

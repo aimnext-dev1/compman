@@ -84,7 +84,7 @@ class DummyRuntime(ContainerRuntime):
     def list_containers(self, project: str) -> list[str]:
         return ["container1"]
 
-    def get_container_id(self, name: str) -> str:
+    def get_container_id(self, name: str, project: str | None = None) -> str:
         return "cid123"
 
 
