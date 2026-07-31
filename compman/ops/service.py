@@ -35,7 +35,7 @@ def log(runtime: ContainerRuntime, config: Config, service: str | None) -> None:
     if not service:
         containers = runtime.list_containers(config.name)
         if len(containers) == 0:
-            click.echo("No containers found.")
+            click.echo("💡 No running containers found in this stack. Run 'compman stack up' first.", err=True)
             return
         if len(containers) == 1:
             service = containers[0]
@@ -47,7 +47,7 @@ def log(runtime: ContainerRuntime, config: Config, service: str | None) -> None:
             return
     cid = runtime.get_container_id(service)
     if not cid:
-        click.echo(f"Container '{service}' not found.", err=True)
+        click.echo(f"💡 Container '{service}' not found. Run 'compman service status' to check running containers.", err=True)
         return
     runtime.passthru_cli(["logs", "-f", "-n", "10000", cid])
 
@@ -56,7 +56,7 @@ def connect(runtime: ContainerRuntime, config: Config, service: str | None) -> N
     if not service:
         containers = runtime.list_containers(config.name)
         if len(containers) == 0:
-            click.echo("No containers found.")
+            click.echo("💡 No running containers found in this stack. Run 'compman stack up' first.", err=True)
             return
         if len(containers) == 1:
             service = containers[0]
@@ -68,7 +68,7 @@ def connect(runtime: ContainerRuntime, config: Config, service: str | None) -> N
             return
     cid = runtime.get_container_id(service)
     if not cid:
-        click.echo(f"Container '{service}' not found.", err=True)
+        click.echo(f"💡 Container '{service}' not found. Run 'compman service status' to check running containers.", err=True)
         return
     runtime.passthru_cli([
         "exec",

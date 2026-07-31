@@ -24,7 +24,7 @@ def up(runtime: ContainerRuntime, config: Config, profile: str | None = None) ->
 
 def down(runtime: ContainerRuntime, config: Config) -> None:
     if not runtime.stack_exists(config.name):
-        click.echo(f"Stack '{config.name}' not found.", err=True)
+        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' to start it.", err=True)
         return
     runtime.passthru_compose(["down"], project=config.name)
 
@@ -33,7 +33,7 @@ def update(
     runtime: ContainerRuntime, config: Config, profile: str | None = None
 ) -> None:
     if not runtime.stack_exists(config.name):
-        click.echo(f"Stack '{config.name}' not found.", err=True)
+        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' to start it.", err=True)
         return
     if config.has_profiles():
         if not profile:

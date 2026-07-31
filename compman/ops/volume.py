@@ -19,11 +19,11 @@ def backup(
     no_stop: bool = False,
 ) -> None:
     if not runtime.stack_exists(config.name):
-        click.echo(f"Stack '{config.name}' not found.", err=True)
+        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
         raise SystemExit(1)
     volumes = runtime.list_volumes(config.name)
     if not volumes:
-        click.echo("No volumes to back up.")
+        click.echo("💡 No volumes found to back up.")
         return
     containers = runtime.list_containers(config.name)
 
@@ -74,12 +74,12 @@ def restore(
     backup_name = f"{config.name}.volume.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
     if not tarball.is_file():
-        click.echo(f"Backup not found: {tarball}", err=True)
+        click.echo(f"💡 Backup not found: {tarball}", err=True)
         _list_backups(config, "volume")
         raise SystemExit(1)
 
     if not runtime.stack_exists(config.name):
-        click.echo(f"Stack '{config.name}' not found.", err=True)
+        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
         raise SystemExit(1)
 
     restore_dir = config.backup_dir / backup_name
@@ -130,11 +130,11 @@ def restore(
 
 def pull(runtime: ContainerRuntime, config: Config) -> None:
     if not runtime.stack_exists(config.name):
-        click.echo(f"Stack '{config.name}' not found.", err=True)
+        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
         raise SystemExit(1)
     volumes = runtime.list_volumes(config.name)
     if not volumes:
-        click.echo("No volumes to pull.")
+        click.echo("💡 No volumes found to pull.")
         return
     containers = runtime.list_containers(config.name)
 
@@ -165,10 +165,10 @@ def push(runtime: ContainerRuntime, config: Config) -> None:
     volume_dir = config.volume_dir
     map_path = volume_dir / "volume-map.json"
     if not map_path.is_file():
-        click.echo(f"volume-map.json not found at {map_path}. Pull first.", err=True)
+        click.echo(f"💡 volume-map.json not found at {map_path}. Run 'compman volume pull' first.", err=True)
         raise SystemExit(1)
     if not runtime.stack_exists(config.name):
-        click.echo(f"Stack '{config.name}' not found.", err=True)
+        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
         raise SystemExit(1)
 
     mapping = json.loads(map_path.read_text(encoding="utf-8"))

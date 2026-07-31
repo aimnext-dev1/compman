@@ -18,7 +18,7 @@ def backup(
     source_mode: bool = False,
 ) -> None:
     if not runtime.stack_exists(config.name):
-        click.echo(f"Stack '{config.name}' not found.", err=True)
+        click.echo(f"💡 Stack '{config.name}' is not currently running. Run 'compman stack up' first.", err=True)
         raise SystemExit(1)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
@@ -31,7 +31,7 @@ def backup(
     )
     container_ids = result.stdout.strip().splitlines()
     if not container_ids:
-        click.echo("No running containers found.")
+        click.echo("💡 No running containers found in this stack to back up.")
         shutil.rmtree(backup_dir)
         return
 
