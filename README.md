@@ -25,15 +25,22 @@ compman:
     #   file: docker-compose.dev.yml
     #   env:
     #     DATABASE_URL: dev.example.com:5432
+    # prod:
+    #   file: docker-compose.prod.yml
+    #   env:
+    #     DATABASE_URL: prod.example.com:5432
 ```
+
+`compose` 생략 시 기본값 `docker-compose.yml`. 리스트로 지정하면 단순 모드, dict로 지정하면 profile 모드.
+`folder` 설정 시 compose 파일은 `_project/` 아래에서 찾습니다. `base` 설정 시 profile 파일 앞에 `-f`로 추가됩니다.
 
 ## 사용법
 
 ```text
-compman init                    # compman.yml 템플릿 생성
-compman stack up [profile]      # compose up -d
-compman stack down              # compose down (confirm)
-compman stack update [profile]  # compose up -d --build
+compman init [-c compman.yml]           # compman.yml 템플릿 생성
+compman stack up [profile]              # compose up -d
+compman stack down --yes                # compose down (확인 필요)
+compman stack update [profile]          # compose up -d --build
 
 compman service start [name...]         # compose start
 compman service stop [name...]          # compose stop
@@ -47,69 +54,36 @@ compman volume restore <YYYYMMDD_HHMM>  # 볼륨 복원
 compman volume pull                     # 볼륨을 volume/ 로 복사
 compman volume push                     # volume/ 를 컨테이너로 복사
 
-compman image backup [--source-image]   # 이미지 백업
+compman image backup [--source-image]   # 이미지 백업 (기본: running container commit)
 compman image restore <YYYYMMDD_HHMM>   # 이미지 복원
 
 compman clear                           # docker image prune -af
-compman deploy [dev|prod]               # S3 배포
+compman deploy [dev|prod]               # S3 배포 (deploy.py 설정 필요)
 ```
 
-`CONTAINER_RUNTIME=podman` 환경변수로 Podman 사용 가능.
+모든 명령어에 `-c <path>` 옵션으로 compman.yml 경로 지정 가능.
 
----
+## Runtime
 
-# dtx-docker-manager (legacy)
+- 자동 감지 순서: `docker compose` → `podman compose` → `podman-compose` → `docker-compose`
+- `CONTAINER_RUNTIME=podman` 환경변수로 Podman 강제 지정
 
-Shell scripts (`_script/`)와 `Makefile`로 관리하는 기존 방식. `compman`과 병행 사용 가능.
+## 프로젝트 구조
 
-## 📁 프로젝트 구조
-
-```text
-.
-├── backup/                # 볼륨 및 이미지 백업 파일 저장 (compman)
-├── volume/                # 볼륨 pull/push (compman)
-├── _backup/               # 볼륨 및 이미지 백업 (shell scripts)
-├── _volume/               # 볼륨 pull/push (shell scripts)
-├── _project/              # 실제 프로젝트 리소스 (folder 설정시)
-│   └── compose/           # docker-compose 파일
-├── _script/               # shell 관리 스크립트
-│   ├── common.sh
-│   ├── stack-*.sh
-│   ├── service-*.sh
-│   ├── volume-*.sh
-│   └── image-*.sh
-├── compman/               # Python CLI 모듈
-├── deploy.sh              # S3 배포 스크립트
-├── Makefile               # shell scripts 진입점
-├── stack.env.example      # shell scripts 설정 예시
-├── compman.yml            # compman 설정
-└── README.md
 ```
-
-## 초기 설정 (shell scripts)
-
-```bash
-make init          # stack.env.example → stack.env
-vi stack.env        # 값 입력
+compman/               # Python CLI 모듈
+  cli.py               # click entrypoint
+  config.py            # compman.yml loader
+  docker.py            # ContainerRuntime 추상화
+  deploy.py            # S3 배포
+  ops/                 # 비즈니스 로직
+    stack.py, service.py, volume.py, image.py
+test/                  # 예제 config (테스트 아님)
 ```
-
-## 기본 사용법 (shell scripts)
-
-```bash
-make up [local|dev|prod]    # 스택 생성
-make down                   # 스택 제거
-make status                 # 상태 조회
-make volume-backup          # 볼륨 백업
-make image-backup           # 이미지 백업
-```
-
-자세한 내용은 `Makefile` 참고.
-
----
 
 ## 백업 파일명 규칙
 
-백업은 `backup/`(compman) 또는 `_backup/`(scripts) 폴더에 자동 저장됩니다.
+백업은 `backup/` 폴더에 저장됩니다.
 
 - 이미지: `<스택명>.image.<YYYYMMDD_HHMM>.tar.gz`
 - 볼륨: `<스택명>.volume.<YYYYMMDD_HHMM>.tar.gz`
