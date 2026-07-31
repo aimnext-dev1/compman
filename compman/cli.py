@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 import pathlib
+import shutil
 import subprocess
 import click
 
@@ -169,43 +171,59 @@ def completion(shell: str, install: bool) -> None:
             click.echo(snippet)
 
 
+def _find_uv() -> str:
+    path = shutil.which("uv") or shutil.which("uv.exe")
+    if path:
+        return path
+
+    home = pathlib.Path.home()
+    local_app_data = pathlib.Path(os.environ.get("LOCALAPPDATA", str(home / "AppData" / "Local")))
+
+    candidates = [
+        home / "AppData" / "Roaming" / "Python" / "Scripts" / "uv.exe",
+        home / ".local" / "bin" / "uv.exe",
+        home / ".local" / "bin" / "uv",
+        home / ".cargo" / "bin" / "uv.exe",
+        home / ".cargo" / "bin" / "uv",
+        local_app_data / "Programs" / "uv" / "uv.exe",
+    ]
+    for c in candidates:
+        if c.is_file():
+            return str(c)
+    return "uv"
+
+
 @click.command()
 @click.option("--repo", default="https://github.com/aimnext-dev1/compman.git", help="Git repository URL")
 def upgrade(repo: str) -> None:
     """Self-upgrade compman CLI to the latest version from GitHub."""
-    import shutil
     import sys
 
     click.echo(f"🚀 Upgrading compman CLI from {repo}...")
 
-    uv_path = shutil.which("uv")
-    if not uv_path:
-        possible_uv = [
-            pathlib.Path.home() / ".local" / "bin" / "uv.exe",
-            pathlib.Path.home() / ".local" / "bin" / "uv",
-            pathlib.Path.home() / ".cargo" / "bin" / "uv.exe",
-            pathlib.Path.home() / ".cargo" / "bin" / "uv",
-        ]
-        for p in possible_uv:
-            if p.is_file():
-                uv_path = str(p)
-                break
+    uv_cmd = _find_uv()
+    cmd = [uv_cmd, "tool", "install", "--reinstall", f"git+{repo}"]
 
-    if uv_path:
-        cmd = [uv_path, "tool", "install", "--reinstall", f"git+{repo}"]
+    try:
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode == 0:
-            click.echo("✅ compman CLI upgraded successfully via uv!")
+            click.echo("✅ compman CLI upgraded successfully!")
             return
-
-    pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{repo}"]
-    res = subprocess.run(pip_cmd, capture_output=True, text=True)
-    if res.returncode == 0:
-        click.echo("✅ compman CLI upgraded successfully via pip!")
-        return
-
-    click.echo(f"Error upgrading compman: {res.stderr or res.stdout}", err=True)
-    raise SystemExit(1)
+        else:
+            pip_res = subprocess.run([uv_cmd, "pip", "install", "--python", sys.executable, f"git+{repo}"], capture_output=True, text=True)
+            if pip_res.returncode == 0:
+                click.echo("✅ compman CLI upgraded successfully!")
+                return
+            click.echo(f"Error upgrading compman: {res.stderr or res.stdout}", err=True)
+            raise SystemExit(1)
+    except FileNotFoundError:
+        pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{repo}"]
+        res = subprocess.run(pip_cmd, capture_output=True, text=True)
+        if res.returncode == 0:
+            click.echo("✅ compman CLI upgraded successfully!")
+            return
+        click.echo(f"Error upgrading compman: {res.stderr or res.stdout}", err=True)
+        raise SystemExit(1)
 
 
 # ---- main group ----
