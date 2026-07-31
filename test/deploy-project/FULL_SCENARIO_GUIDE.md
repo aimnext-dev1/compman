@@ -1,6 +1,6 @@
 # compman Deploy & Stack E2E Full Scenario Guide
 
-`compman` CLI를 사용하여 S3 프로젝트 배포, `compman.yml` 자동 갱신, `project/` 디렉터리 소스 분리, Docker 이미지 빌드, 스택 기동 및 단독 명령어(`compman update`)를 통한 최신 버전 무중단 교체 배포까지 전체 시나리오를 단계별로 설명하는 가이드 문서입니다.
+`compman` CLI를 사용하여 S3 프로젝트 배포, `compman.yml` 자동 갱신, `project/` 디렉터리 소스 분리, Docker 이미지 빌드, 스택 기동 및 `compman update`를 통한 컨테이너 재생성까지 설명합니다.
 
 ---
 
@@ -115,8 +115,8 @@ curl http://localhost:18080
 
 ---
 
-### Step 7. ⭐ 단독 명령어 한 줄로 최신 버전 무중단 교체 배포 (`compman update`)
-젠킨스에서 S3로 신규 빌드 아티팩트를 올린 후, 서버에서 **단 한 번의 명령어**로 S3 최신 소스 수신 $\rightarrow$ 이미지 재빌드 $\rightarrow$ 기존 컨테이너 무중단 교체 기동(Recreate)을 모두 수행합니다.
+### Step 7. 단독 명령어로 최신 버전 재생성 배포 (`compman update`)
+젠킨스에서 S3로 신규 빌드 아티팩트를 올린 후, 서버에서 S3 최신 소스 수신 $\rightarrow$ 이미지 재빌드 $\rightarrow$ 기존 컨테이너 강제 재생성을 수행합니다. 단일 인스턴스에서는 중단 시간이 발생할 수 있습니다.
 
 ```bash
 compman update
@@ -150,7 +150,7 @@ compman stack down --yes
 
 | 구 분 | 명령어 | 핵심 동작 |
 | :--- | :--- | :--- |
-| **단독 최신 업데이트 (추천 ✨)** | **`compman update`** | **인자 없이 한 줄로 S3 최신 다운로드 + 이미지 빌드 + 기존 컨테이너 무중단 교체 기동** |
+| **단독 최신 업데이트** | **`compman update`** | **S3 최신 다운로드 + 이미지 빌드 + 기존 컨테이너 강제 재생성** |
 | **기본 배포** | `compman deploy --path <S3_URI>` | S3 소스를 `project/`에 다운로드 + `compman.yml`에 `deploy` 경로 자동 기록 |
 | **경로 재사용** | `compman deploy` | `compman.yml`의 최신 `deploy` 경로를 참조하여 자동 배포 |
 | **배포 + 빌드** | `compman deploy --build` | S3 다운로드 + `project/Dockerfile` 기반 Docker 이미지 자동 빌드 |

@@ -485,6 +485,86 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Error: {error}",
         "ko": "오류: {error}",
     },
+    "msg.runtime_error": {
+        "en": "Runtime error: {error}",
+        "ko": "런타임 오류: {error}",
+    },
+    "msg.config_exists": {
+        "en": "{config} already exists. Use --force to overwrite.",
+        "ko": "{config} 파일이 이미 존재합니다. 덮어쓰려면 --force를 사용하세요.",
+    },
+    "msg.config_created": {
+        "en": "{config} created:\n----------------------------------------\n{content}\n----------------------------------------",
+        "ko": "{config} 생성됨:\n----------------------------------------\n{content}\n----------------------------------------",
+    },
+    "msg.prune_images": {
+        "en": "Pruning unused Docker images...",
+        "ko": "사용하지 않는 Docker 이미지를 정리하는 중...",
+    },
+    "msg.completion_registered": {
+        "en": "Registered {shell} auto-completion script in {path}",
+        "ko": "{path}에 {shell} 자동완성 스크립트를 등록했습니다.",
+    },
+    "msg.completion_exists": {
+        "en": "{path} already has auto-completion registered.",
+        "ko": "{path}에 자동완성이 이미 등록되어 있습니다.",
+    },
+    "msg.completion_error": {
+        "en": "Error registering PowerShell completion: {error}",
+        "ko": "PowerShell 자동완성 등록 오류: {error}",
+    },
+    "msg.upgrade_start": {
+        "en": "Upgrading compman CLI from {repo}...",
+        "ko": "{repo}에서 compman CLI를 업그레이드하는 중...",
+    },
+    "msg.upgrade_success": {
+        "en": "compman CLI upgraded successfully!",
+        "ko": "compman CLI 업그레이드가 완료되었습니다!",
+    },
+    "msg.upgrade_error": {
+        "en": "Error upgrading compman: {error}",
+        "ko": "compman 업그레이드 오류: {error}",
+    },
+    "msg.lang_set": {
+        "en": "Current session language set to: {language}",
+        "ko": "현재 세션 언어를 다음으로 설정했습니다: {language}",
+    },
+    "msg.lang_unsupported": {
+        "en": "Unsupported language code: '{language}'. Use 'en' or 'ko'.",
+        "ko": "지원하지 않는 언어 코드입니다: '{language}'. 'en' 또는 'ko'를 사용하세요.",
+    },
+    "msg.lang_info": {
+        "en": "🌐 compman CLI Language Info:",
+        "ko": "🌐 compman CLI 언어 정보:",
+    },
+    "msg.lang_active": {
+        "en": "  • Active Language : {language}",
+        "ko": "  • 현재 언어 : {language}",
+    },
+    "msg.lang_env": {
+        "en": "  • COMPMAN_LANG Env: {value}",
+        "ko": "  • COMPMAN_LANG 환경 변수: {value}",
+    },
+    "msg.lang_persistent": {
+        "en": "💡 To set language permanently via environment variable:",
+        "ko": "💡 환경 변수로 언어를 영구 설정하려면:",
+    },
+    "msg.deploy_building": {
+        "en": "Building image '{image}' in {path}...",
+        "ko": "{path}에서 '{image}' 이미지를 빌드하는 중...",
+    },
+    "msg.deploy_done": {
+        "en": "Deploy done.",
+        "ko": "배포가 완료되었습니다.",
+    },
+    "msg.s3_client_error": {
+        "en": "S3 Client Error ({code}): {error}",
+        "ko": "S3 클라이언트 오류 ({code}): {error}",
+    },
+    "msg.download_error": {
+        "en": "Download Error: {error}",
+        "ko": "다운로드 오류: {error}",
+    },
     "msg.operation_cancelled": {
         "en": "Operation cancelled.",
         "ko": "작업이 취소되었습니다.",

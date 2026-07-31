@@ -14,8 +14,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --dev
@@ -24,10 +24,62 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.13"
       - run: uv sync --dev
       - run: uv run ruff check compman tests
       - run: uv run mypy compman
+
+  packaging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
+        with:
+          python-version: "3.13"
+      - run: uv build --wheel --out-dir "$RUNNER_TEMP/compman-dist"
+      - run: python -m venv "$RUNNER_TEMP/compman-venv"
+      - run: uv pip install --python "$RUNNER_TEMP/compman-venv/bin/python" "$RUNNER_TEMP/compman-dist"/*.whl
+      - run: |
+          "$RUNNER_TEMP/compman-venv/bin/compman" --help
+          "$RUNNER_TEMP/compman-venv/bin/compman" version
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
+        with:
+          python-version: "3.13"
+      - run: uv sync --dev
+      - run: docker compose up -d
+      - name: Wait for Ministack
+        run: |
+          ready=0
+          for attempt in {1..30}; do
+            if curl --silent --fail http://localhost:4567/deploy-test/Dockerfile >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" -eq 1
+      - name: Deploy and run stack
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: ap-northeast-2
+          AWS_ENDPOINT_URL_S3: http://localhost:4567
+        run: |
+          target="$RUNNER_TEMP/compman-e2e"
+          mkdir -p "$target"
+          cd "$target"
+          uv run --project "$GITHUB_WORKSPACE" compman deploy --path s3://deploy-test --build --tag compman-e2e
+          uv run --project "$GITHUB_WORKSPACE" compman stack up
+          uv run --project "$GITHUB_WORKSPACE" compman service status
+          uv run --project "$GITHUB_WORKSPACE" compman stack down --yes
+      - if: always()
+        run: docker compose down -v

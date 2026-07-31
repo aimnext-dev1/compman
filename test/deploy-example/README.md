@@ -4,20 +4,20 @@
 
 ## 동작
 
-S3 경로(`compman.yml: deploy` 또는 `--path`) 유형에 따라 처리해 **cwd**에 원자적 교체합니다.
+S3 경로(`compman.yml: deploy` 또는 `--path`) 유형에 따라 처리해 **`dirs.project` 디렉터리**의 내용을 교체합니다.
 
 - **prefix 경로** — key 아래 모든 객체를 구조 보존 다운로드
   ```
   s3://<bucket>/app/
-  ├── Dockerfile                 # → cwd/Dockerfile
-  └── script/                    # → cwd/script/
+  ├── Dockerfile                 # → project/Dockerfile
+  └── script/                    # → project/script/
   ```
 - **아카이브 파일** — `.tar.gz`/`.tgz`/`.zip` 객체를 다운로드해 추출. 최상위 폴더가 하나뿐이면 평탄화
   ```
-  s3://<bucket>/app.tar.gz (내부: app/Dockerfile, app/script/)  → cwd/Dockerfile, cwd/script/
+  s3://<bucket>/app.tar.gz (내부: app/Dockerfile, app/script/)  → project/Dockerfile, project/script/
   ```
 
-교체는 fetch된 항목만 덮어씁니다 (cwd의 사용자 파일 `compman.yml`, `docker-compose.yml` 등은 보존).
+기존 관리 디렉터리 내용은 새 트리로 교체됩니다. 루트의 `compman.yml`과 `docker-compose.yml`은 scaffold 로직이 별도로 생성 또는 갱신합니다.
 
 **빈 디렉토리 자동 scaffold**: `compman.yml`/`docker-compose.yml`이 없으면 deploy가 자동 생성합니다.
 ```yaml
@@ -65,7 +65,7 @@ compman deploy --build --tag myapp # fetch 후 docker build -t myapp .
 
 ## 주의
 
-deploy는 fetch된 파일을 **현재 디렉토리에** 생성합니다.
+deploy는 fetch된 파일을 기본적으로 현재 디렉터리 아래 **`project/`**에 생성합니다. 파일 swap 실패는 롤백하지만 이후 scaffold 또는 Docker build 실패 시 새 소스 트리는 유지됩니다.
 repo 루트에서 실행하면 untracked 파일이 생기므로, **스크래치/타깃 디렉토리에서 실행**하세요.
 
 실제 테스트 절차는 `test/deploy-project/` 참고.

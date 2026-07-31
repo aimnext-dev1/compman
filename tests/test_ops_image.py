@@ -59,3 +59,20 @@ def test_image_restore_missing(dummy_runtime, temp_dir: pathlib.Path):
     cfg.backup_dir.mkdir(parents=True, exist_ok=True)
     with pytest.raises(CommandError):
         image.restore(dummy_runtime, cfg, timestamp="20260731_1200")
+
+
+def test_image_restore_cleans_temp_dir_when_load_fails(dummy_runtime, temp_dir: pathlib.Path):
+    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg.backup_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = "20260731_1200"
+    backup_file = cfg.backup_dir / f"my_stack.image.{timestamp}.tar.gz"
+    image_tar = temp_dir / "broken-image.tar"
+    image_tar.touch()
+    with tarfile.open(backup_file, "w:gz") as tar:
+        tar.add(image_tar, arcname=image_tar.name)
+
+    dummy_runtime.load_image = MagicMock(side_effect=RuntimeError("load failed"))
+    with pytest.raises(RuntimeError, match="load failed"):
+        image.restore(dummy_runtime, cfg, timestamp=timestamp)
+
+    assert not (cfg.backup_dir / f"my_stack.image.{timestamp}").exists()

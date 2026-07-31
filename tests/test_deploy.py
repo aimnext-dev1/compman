@@ -137,6 +137,21 @@ def test_deploy_prefix_download(dummy_runtime, temp_dir: pathlib.Path):
         assert (temp_dir / "project" / "file1.txt").exists()
 
 
+def test_deploy_bucket_root_prefix(dummy_runtime, temp_dir: pathlib.Path):
+    mock_s3 = MagicMock()
+    mock_s3.get_paginator.return_value.paginate.return_value = [
+        {"Contents": [{"Key": "Dockerfile"}]}
+    ]
+    mock_s3.download_file.side_effect = lambda _bucket, _key, destination: pathlib.Path(destination).write_text(
+        "FROM busybox", encoding="utf-8"
+    )
+
+    with patch("boto3.client", return_value=mock_s3), patch("compman.deploy.detect_runtime", return_value=dummy_runtime):
+        deploy.deploy(s3_path="s3://my-bucket")
+
+    assert (temp_dir / "project" / "Dockerfile").exists()
+
+
 def test_deploy_prefix_rejects_path_traversal(temp_dir: pathlib.Path):
     mock_s3 = MagicMock()
     mock_s3.get_paginator.return_value.paginate.return_value = [
@@ -207,3 +222,23 @@ def test_handle_s3_errors():
 
     with pytest.raises(SystemExit):
         deploy._handle_s3_error(RuntimeError("generic error"), "s3://b/k")
+
+
+def test_deploy_reports_local_build_stage(dummy_runtime, temp_dir: pathlib.Path, capsys):
+    mock_s3 = MagicMock()
+    mock_s3.get_paginator.return_value.paginate.return_value = [
+        {"Contents": [{"Key": "Dockerfile"}]}
+    ]
+    mock_s3.download_file.side_effect = lambda _bucket, _key, destination: pathlib.Path(destination).write_text(
+        "FROM busybox", encoding="utf-8"
+    )
+    dummy_runtime.passthru_cli = MagicMock(side_effect=RuntimeError("build failed"))
+
+    with patch("boto3.client", return_value=mock_s3), patch(
+        "compman.deploy.detect_runtime", return_value=dummy_runtime
+    ), pytest.raises(SystemExit):
+        deploy.deploy(s3_path="s3://bucket", build=True)
+
+    error = capsys.readouterr().err
+    assert "building the container image" in error
+    assert "Failed to download" not in error

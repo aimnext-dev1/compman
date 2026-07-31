@@ -183,3 +183,26 @@ def test_load_config_resolves_paths_from_config_directory(tmp_path: pathlib.Path
     assert cfg.backup_dir == project / "backups"
     assert cfg.volume_dir == project / "volumes"
     assert cfg.deploy_dir == project / "source"
+
+
+@pytest.mark.parametrize(
+    ("field", "yaml_value"),
+    [
+        ("folder", "folder: ../outside"),
+        ("dirs.backup", "dirs:\n    backup: ../outside"),
+        ("dirs.volume", "dirs:\n    volume: ../outside"),
+        ("dirs.project", "dirs:\n    project: ../outside"),
+        ("dirs.volume", "dirs:\n    volume: ."),
+        ("dirs.project", "dirs:\n    project: ."),
+    ],
+)
+def test_load_config_rejects_managed_paths_outside_project(
+    tmp_path: pathlib.Path, field: str, yaml_value: str
+):
+    project = tmp_path / "project"
+    project.mkdir()
+    config_file = project / "compman.yml"
+    config_file.write_text(f"compman:\n  name: app\n  {yaml_value}\n", encoding="utf-8")
+
+    with pytest.raises(ConfigError, match=field):
+        load_config(str(config_file))

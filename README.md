@@ -114,7 +114,7 @@ compman init --seed -o project -p 8080 -a
 
 ---
 
-## 🚀 S3 배포 & 단독 무중단 업데이트 (`deploy` & `update`)
+## 🚀 S3 배포와 컨테이너 재생성 업데이트 (`deploy` & `update`)
 
 ```bash
 # 1. S3 경로 지정 첫 배포 (compman.yml에 deploy 경로 자동 저장 & project/ 소스 분리)
@@ -123,9 +123,11 @@ compman deploy --path s3://my-bucket/app.tar.gz
 # 2. S3 소스 수신 + Docker 이미지 자동 빌드
 compman deploy --build
 
-# 3. ⭐ 단 한 줄로 S3 최신 수신 + Docker 이미지 빌드 + 컨테이너 무중단 교체 기동
+# 3. S3 최신 수신 + Docker 이미지 빌드 + 컨테이너 강제 재생성
 compman update
 ```
+
+> `update`는 Compose `up -d --force-recreate`를 실행합니다. 단일 인스턴스 서비스에서는 중단 시간이 생길 수 있으며 롤링/무중단 배포를 보장하지 않습니다.
 
 > 💡 **로컬 S3 에뮬레이터 (Ministack / LocalStack) 지원**: `AWS_ENDPOINT_URL_S3` 또는 `AWS_ENDPOINT_URL` 환경변수를 설정하여 로컬 S3 엔드포인트에 접속할 수 있습니다.
 > ```bash
@@ -168,6 +170,8 @@ compman:
 
 - `compman.yml` 및 `docker-compose.yml`은 루트 디렉터리에 위치하며, S3 다운로드 프로젝트 소스는 `project/` 디렉터리에 분리 관리됩니다.
 - `compman init` 또는 `compman deploy` 시 파일이 신규 생성되면 콘솔 화면에 생성된 YAML 내용이 자동으로 출력됩니다.
+- `folder`와 `dirs.*`는 `compman.yml` 기준 상대 경로이며 프로젝트 밖으로 벗어날 수 없습니다. `backup`, `volume`, `project`는 설정 루트 자체를 지정할 수도 없습니다.
+- 배포는 `dirs.project` 내부 트리를 교체합니다. 파일 교체 단계는 실패 시 롤백하지만 이후 설정 생성이나 이미지 빌드 실패까지 포함한 전체 트랜잭션은 아닙니다.
 
 ---
 
@@ -176,7 +180,7 @@ compman:
 ```text
 compman seed [-o DIR] [-a] [-p PORT]    # 🌱 배포 테스트용 샘플 시드 프로젝트 생성 (.tar.gz 아카이브 지원)
 compman init [-c compman.yml]           # ⚙️ compman.yml 기본 템플릿 생성 (콘솔 내용 출력)
-compman update [profile]                # ⭐ S3 최신 다운로드 + 이미지 빌드 + 컨테이너 무중단 교체
+compman update [profile]                # S3 다운로드 + 이미지 빌드 + 컨테이너 강제 재생성
 compman deploy [--path S3_URI] [--build]# 🚀 S3 배포 (compman.yml 경로 자동 저장)
 compman upgrade                         # 🔄 compman CLI 자체를 GitHub 최신 버전으로 셀프 업그레이드
 
@@ -188,8 +192,8 @@ compman service start [name...]         # compose start
 compman service stop [name...]          # compose stop
 compman service restart [name...]       # compose restart
 compman service status                  # compose ps -a
-compman service log [name] [-f] [-n 50] # 컨테이너 로그 조회 (기본 50줄, -f 스트리밍, -n 라인수)
-compman service connect [name]          # docker exec -it (bash→sh 대화형 쉘 접속)
+compman service log [container] [-f] [-n 50] # 컨테이너 로그 조회 (기본 50줄)
+compman service connect [container]          # docker exec -it (bash→sh 대화형 쉘 접속)
 
 compman volume backup [--no-stop]       # 볼륨 백업
 compman volume restore <YYYYMMDD_HHMM>  # 볼륨 복원
@@ -201,6 +205,8 @@ compman image restore <YYYYMMDD_HHMM>   # 이미지 복원
 
 compman clear                           # docker image prune -af
 ```
+
+> `clear`는 현재 프로젝트만이 아니라 선택된 Docker/Podman 런타임 전체의 미사용 이미지를 확인 없이 삭제합니다. 운영 호스트에서는 실행 전에 영향을 확인하세요.
 
 ---
 
@@ -217,7 +223,8 @@ compman/               # Python CLI 패키지
   deploy.py            # S3 배포 및 스캐폴드 생성
   i18n.py              # 영문/한글 다국어 (i18n) 번역 모듈
   ops/                 # 비즈니스 로직 (stack, service, volume, image, seed)
-test/                  # 테스트 및 가이드 문서 (FULL_SCENARIO_GUIDE.md)
+tests/                 # pytest 테스트 (문장/분기 커버리지 100%)
+test/                  # 실행 예제 및 E2E 가이드
 ```
 
 ---
@@ -225,5 +232,18 @@ test/                  # 테스트 및 가이드 문서 (FULL_SCENARIO_GUIDE.md)
 ## 📦 백업 파일명 규칙
 
 백업은 `backup/` 폴더에 저장됩니다.
-- 이미지: `<스택명>.image.<YYYYMMDD_HHMM>.tar.gz`
-- 볼륨: `<스택명>.volume.<YYYYMMDD_HHMM>.tar.gz`
+- 이미지: `<스택명>.image.<YYYYMMDD_HHMMSS>[_<마이크로초>].tar.gz`
+- 볼륨: `<스택명>.volume.<YYYYMMDD_HHMMSS>[_<마이크로초>].tar.gz`
+
+볼륨 복원과 push는 대상 디렉터리에 병합 복사하며, 대상에만 존재하는 오래된 파일을 삭제하지 않습니다. 이미지 복원은 이미지를 런타임에 load하지만 Compose의 image 태그를 자동 변경하지 않습니다.
+
+## 🧪 개발 및 검증
+
+```bash
+uv sync --dev
+uv run ruff check compman tests
+uv run mypy compman
+uv run pytest --cov=compman --cov-report=term-missing
+```
+
+현재 품질 기준과 남은 개선 백로그는 [`REVIEW.md`](REVIEW.md)를 참고하세요.

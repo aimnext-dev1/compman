@@ -369,9 +369,7 @@ def resolve_compose_context(config: Config, profile: str | None = None) -> Compo
 def resolve_simple_files(config: Config) -> list[Path]:
     if not config.has_simple_files():
         raise ConfigError("No compose files configured.")
-    compose_files = config.compose_files
-    if compose_files is None:
-        raise ConfigError("No compose files configured.")
+    compose_files = config.compose_files or []
     project_dir = config.project_dir
     files: list[Path] = []
     for name in compose_files:

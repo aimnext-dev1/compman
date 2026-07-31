@@ -17,7 +17,7 @@ compman stack up
 compman service status
 compman service stop web
 compman service start web
-compman stack down
+compman stack down --yes
 ```
 
 ## 설명

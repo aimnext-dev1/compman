@@ -96,10 +96,11 @@ def restore(
         if not map_path.is_file():
             raise CommandError(t("msg.volume_map_not_found", path=map_path))
 
-        mapping = json.loads(map_path.read_text(encoding="utf-8"))
+        mapping = _load_mapping(map_path)
 
         with stack_paused(runtime, context, enabled=not no_stop):
-            for container, vol_info in mapping.items():
+            for vol_info in mapping:
+                container = vol_info["container"]
                 volume_name = vol_info["volume"]
                 dest = vol_info["destination"]
                 src = restore_dir / volume_name
@@ -109,7 +110,8 @@ def restore(
                 typer.echo(t("msg.restoring_data", container=container, destination=dest))
                 runtime.copy_to_container(f"{src}/.", container, dest)
 
-            for container, vol_info in mapping.items():
+            for vol_info in mapping:
+                container = vol_info["container"]
                 volume_name = vol_info["volume"]
                 dest = vol_info["destination"]
                 src = restore_dir / volume_name
@@ -161,8 +163,9 @@ def push(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
     if not runtime.stack_exists(config.name, context.files, context.env):
         raise CommandError(t("msg.stack_not_running", name=config.name))
 
-    mapping = json.loads(map_path.read_text(encoding="utf-8"))
-    for container, vol_info in mapping.items():
+    mapping = _load_mapping(map_path)
+    for vol_info in mapping:
+        container = vol_info["container"]
         volume_name = vol_info["volume"]
         dest = vol_info["destination"]
         src = volume_dir / volume_name
@@ -194,12 +197,30 @@ def _inspect_mount(
     return None
 
 
-def _merge_mapping(mapping: list[dict[str, str]]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
-    for item in mapping:
-        c = item["container"]
-        result[c] = {"volume": item["volume"], "destination": item["destination"]}
-    return result
+def _merge_mapping(mapping: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Keep every mount; a container can legitimately have several volumes."""
+    return mapping
+
+
+def _load_mapping(path) -> list[dict[str, str]]:
+    raw: Any = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(raw, list):
+        result = raw
+    elif isinstance(raw, dict):
+        # Backward compatibility with backups produced before the mapping was
+        # changed to a list. Those archives can contain one mount per container.
+        result = [
+            {"container": str(container), **info}
+            for container, info in raw.items()
+            if isinstance(info, dict)
+        ]
+    else:
+        raise CommandError(f"Invalid volume map in {path}: expected a list or mapping")
+
+    required = {"container", "volume", "destination"}
+    if any(not isinstance(item, dict) or not required.issubset(item) for item in result):
+        raise CommandError(f"Invalid volume map in {path}: missing required fields")
+    return [{key: str(item[key]) for key in required} for item in result]
 
 
 def _fix_permissions(runtime: ContainerRuntime, container: str, dest: str) -> None:

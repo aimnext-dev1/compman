@@ -23,6 +23,7 @@ docker-init/                    # ministack 시딩 소스 (repo root)
 
 - docker (compose) 사용 가능
 - ministack은 컨테이너 안에서 시딩하므로 호스트 aws CLI 불필요
+- seed Dockerfile은 Windows checkout에서 `app.sh`가 CRLF여도 이미지 빌드 중 LF로 정규화합니다.
 
 ## 테스트
 

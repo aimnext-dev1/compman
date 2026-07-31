@@ -28,7 +28,7 @@ compman stack up prod
 compman service status
 
 # 스택 제거
-compman stack down
+compman stack down --yes
 ```
 
 ## 설명
@@ -37,7 +37,7 @@ compman stack down
 `string` 값은 compose 파일만 지정, `object` 값은 `file` + `env`를 함께 지정합니다.
 
 ```yaml
-profiles:
+compose:
   local: docker-compose.local.yml                   # 파일만
   dev:
     file: docker-compose.dev.yml

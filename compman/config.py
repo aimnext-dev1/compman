@@ -44,19 +44,28 @@ class Config:
 
     @property
     def project_dir(self) -> Path:
-        return self.root_dir / self.folder if self.folder else self.root_dir
+        return self._managed_path(self.folder, "folder", allow_root=True) if self.folder else self.root_dir.resolve()
 
     @property
     def backup_dir(self) -> Path:
-        return self.root_dir / self.dirs.get("backup", "backup")
+        return self._managed_path(self.dirs.get("backup", "backup"), "dirs.backup")
 
     @property
     def volume_dir(self) -> Path:
-        return self.root_dir / self.dirs.get("volume", "volume")
+        return self._managed_path(self.dirs.get("volume", "volume"), "dirs.volume")
 
     @property
     def deploy_dir(self) -> Path:
-        return self.root_dir / self.dirs.get("project", "project")
+        return self._managed_path(self.dirs.get("project", "project"), "dirs.project")
+
+    def _managed_path(self, value: str, field_name: str, allow_root: bool = False) -> Path:
+        root = self.root_dir.resolve()
+        target = (root / value).resolve()
+        if (target == root and not allow_root) or (target != root and root not in target.parents):
+            raise ConfigError(
+                f"'{field_name}' must be a child directory inside the config directory: {value}"
+            )
+        return target
 
     def has_profiles(self) -> bool:
         return bool(self.profiles)
@@ -133,7 +142,7 @@ def load_config(config_path: str | None = None) -> Config:
     if raw_deploy is not None and not isinstance(raw_deploy, str):
         raise ConfigError("'deploy' must be a string (e.g. 's3://bucket/app').")
 
-    return Config(
+    config = Config(
         name=name,
         root_dir=path.parent,
         source_path=path,
@@ -144,6 +153,13 @@ def load_config(config_path: str | None = None) -> Config:
         profiles=profiles,
         deploy=raw_deploy,
     )
+    # Resolve all paths while loading so unsafe configuration fails before a
+    # command can create, replace, or recursively delete anything.
+    config.project_dir
+    config.backup_dir
+    config.volume_dir
+    config.deploy_dir
+    return config
 
 
 def dump_default_config(name: str) -> str:

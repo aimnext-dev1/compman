@@ -95,15 +95,15 @@ def restore(
 
     restore_dir = config.backup_dir / backup_name
     restore_dir.mkdir(parents=True)
-    with tarfile.open(tarball, "r:gz") as tar:
-        extract_tar(tar, restore_dir)
+    try:
+        with tarfile.open(tarball, "r:gz") as tar:
+            extract_tar(tar, restore_dir)
 
-    for tar_file in restore_dir.glob("*.tar"):
-        typer.echo(t("msg.loading_image", name=tar_file.name))
-        runtime.load_image(tar_file)
-        tar_file.unlink()
-
-    shutil.rmtree(restore_dir)
+        for tar_file in restore_dir.glob("*.tar"):
+            typer.echo(t("msg.loading_image", name=tar_file.name))
+            runtime.load_image(tar_file)
+    finally:
+        shutil.rmtree(restore_dir, ignore_errors=True)
     typer.echo(t("msg.restore_done", kind="Image") + " " + t("msg.image_restore_hint"))
 
 

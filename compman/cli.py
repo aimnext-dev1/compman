@@ -88,7 +88,7 @@ def _load(config_path: str | None = None):
     try:
         runtime = detect_runtime()
     except RuntimeError as e:
-        typer.echo(f"Runtime error: {e}", err=True)
+        typer.echo(t("msg.runtime_error", error=e), err=True)
         raise typer.Exit(1)
     return {"config": cfg, "runtime": runtime}
 
@@ -143,11 +143,11 @@ def init_cmd(
         # Mode 1: Skeleton compman.yml
         path = pathlib.Path(config)
         if path.is_file() and not force:
-            typer.echo(f"{config} already exists. Use --force to overwrite.")
+            typer.echo(t("msg.config_exists", config=config))
             return
         content = dump_default_config(pathlib.Path.cwd().name)
         path.write_text(content, encoding="utf-8")
-        typer.echo(f"{config} created:\n----------------------------------------\n{content.strip()}\n----------------------------------------")
+        typer.echo(t("msg.config_created", config=config, content=content.strip()))
 
     elif choice == 1:
         # Mode 2: S3 URL
@@ -166,7 +166,7 @@ def init_cmd(
 # ---- clear ----
 @app.command("clear", help=t("cmd.clear"))
 def clear_cmd() -> None:
-    typer.echo("Pruning unused Docker images...")
+    typer.echo(t("msg.prune_images"))
     runtime = detect_runtime()
     runtime.passthru_cli(["image", "prune", "-af"])
 
@@ -219,11 +219,11 @@ def completion_cmd(
                 if "Register-ArgumentCompleter -Native -CommandName compman" not in current_content:
                     with profile_path.open("w", encoding="utf-8") as f:
                         f.write(current_content.strip() + "\n" + snippet)
-                    typer.echo(f"Registered PowerShell auto-completion script in {profile_path}")
+                    typer.echo(t("msg.completion_registered", shell="PowerShell", path=profile_path))
                 else:
-                    typer.echo("PowerShell profile already has auto-completion registered.")
+                    typer.echo(t("msg.completion_exists", path="PowerShell profile"))
             except Exception as e:
-                typer.echo(f"Error registering PowerShell completion: {e}", err=True)
+                typer.echo(t("msg.completion_error", error=e), err=True)
         else:
             typer.echo(snippet.strip())
     elif shell == "bash":
@@ -234,9 +234,9 @@ def completion_cmd(
             if "_COMPMAN_COMPLETE" not in current_content:
                 with rc_path.open("a", encoding="utf-8") as f:
                     f.write(f"\n{snippet}\n")
-                typer.echo(f"Registered Bash auto-completion script in {rc_path}")
+                typer.echo(t("msg.completion_registered", shell="Bash", path=rc_path))
             else:
-                typer.echo(".bashrc already has auto-completion registered.")
+                typer.echo(t("msg.completion_exists", path=".bashrc"))
         else:
             typer.echo(snippet)
     elif shell == "zsh":
@@ -247,9 +247,9 @@ def completion_cmd(
             if "_COMPMAN_COMPLETE" not in current_content:
                 with rc_path.open("a", encoding="utf-8") as f:
                     f.write(f"\n{snippet}\n")
-                typer.echo(f"Registered Zsh auto-completion script in {rc_path}")
+                typer.echo(t("msg.completion_registered", shell="Zsh", path=rc_path))
             else:
-                typer.echo(".zshrc already has auto-completion registered.")
+                typer.echo(t("msg.completion_exists", path=".zshrc"))
         else:
             typer.echo(snippet)
     elif shell == "fish":
@@ -261,9 +261,9 @@ def completion_cmd(
             if "_COMPMAN_COMPLETE" not in current_content:
                 with fish_config.open("a", encoding="utf-8") as f:
                     f.write(f"\n{snippet}\n")
-                typer.echo(f"Registered Fish auto-completion script in {fish_config}")
+                typer.echo(t("msg.completion_registered", shell="Fish", path=fish_config))
             else:
-                typer.echo("config.fish already has auto-completion registered.")
+                typer.echo(t("msg.completion_exists", path="config.fish"))
         else:
             typer.echo(snippet)
 
@@ -307,7 +307,7 @@ def upgrade_cmd(
 ) -> None:
     import sys
 
-    typer.echo(f"Upgrading compman CLI from {repo}...")
+    typer.echo(t("msg.upgrade_start", repo=repo))
 
     uv_cmd = _find_uv()
     cmd = [uv_cmd, "tool", "install", "--reinstall", f"git+{repo}"]
@@ -315,22 +315,22 @@ def upgrade_cmd(
     try:
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode == 0:
-            typer.echo("compman CLI upgraded successfully!")
+            typer.echo(t("msg.upgrade_success"))
             return
         else:
             pip_res = subprocess.run([uv_cmd, "pip", "install", "--python", sys.executable, f"git+{repo}"], capture_output=True, text=True)
             if pip_res.returncode == 0:
-                typer.echo("compman CLI upgraded successfully!")
+                typer.echo(t("msg.upgrade_success"))
                 return
-            typer.echo(f"Error upgrading compman: {res.stderr or res.stdout}", err=True)
+            typer.echo(t("msg.upgrade_error", error=res.stderr or res.stdout), err=True)
             raise SystemExit(1)
     except FileNotFoundError:
         pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{repo}"]
         res = subprocess.run(pip_cmd, capture_output=True, text=True)
         if res.returncode == 0:
-            typer.echo("compman CLI upgraded successfully!")
+            typer.echo(t("msg.upgrade_success"))
             return
-        typer.echo(f"Error upgrading compman: {res.stderr or res.stdout}", err=True)
+        typer.echo(t("msg.upgrade_error", error=res.stderr or res.stdout), err=True)
         raise SystemExit(1)
 
 
@@ -345,19 +345,19 @@ def lang_cmd(
     if language:
         if language.lower() in ("en", "ko"):
             set_lang(language.lower())
-            typer.echo(f"Current session language set to: {language.lower()}")
+            typer.echo(t("msg.lang_set", language=language.lower()))
         else:
-            typer.echo(f"Unsupported language code: '{language}'. Use 'en' or 'ko'.", err=True)
+            typer.echo(t("msg.lang_unsupported", language=language), err=True)
             raise SystemExit(1)
 
     curr = get_lang()
     env_val = os.environ.get("COMPMAN_LANG", "<not set>")
 
-    typer.echo("🌐 compman CLI Language Info:")
-    typer.echo(f"  • Active Language : {curr.upper()}")
-    typer.echo(f"  • COMPMAN_LANG Env: {env_val}")
+    typer.echo(t("msg.lang_info"))
+    typer.echo(t("msg.lang_active", language=curr.upper()))
+    typer.echo(t("msg.lang_env", value=env_val))
     typer.echo("")
-    typer.echo("💡 To set language permanently via environment variable:")
+    typer.echo(t("msg.lang_persistent"))
     typer.echo("  PowerShell : $env:COMPMAN_LANG=\"ko\"")
     typer.echo("  CMD        : set COMPMAN_LANG=ko")
     typer.echo("  Bash/Zsh   : export COMPMAN_LANG=ko")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import pathlib
 import tarfile
 from unittest.mock import MagicMock, patch
@@ -103,3 +104,26 @@ def test_volume_push_no_map(dummy_runtime, temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
     with pytest.raises(CommandError):
         volume.push(dummy_runtime, cfg)
+
+
+def test_volume_mapping_preserves_multiple_mounts_per_container(temp_dir: pathlib.Path):
+    mapping = [
+        {"container": "db", "volume": "data", "destination": "/var/lib/data"},
+        {"container": "db", "volume": "logs", "destination": "/var/log/db"},
+    ]
+    map_path = temp_dir / "volume-map.json"
+    map_path.write_text(json.dumps(volume._merge_mapping(mapping)), encoding="utf-8")
+
+    assert volume._load_mapping(map_path) == mapping
+
+
+def test_volume_mapping_reads_legacy_format(temp_dir: pathlib.Path):
+    map_path = temp_dir / "volume-map.json"
+    map_path.write_text(
+        '{"db": {"volume": "data", "destination": "/var/lib/data"}}',
+        encoding="utf-8",
+    )
+
+    assert volume._load_mapping(map_path) == [
+        {"container": "db", "volume": "data", "destination": "/var/lib/data"}
+    ]
