@@ -13,13 +13,13 @@
 $env:AWS_ACCESS_KEY_ID="test"
 $env:AWS_SECRET_ACCESS_KEY="test"
 $env:AWS_DEFAULT_REGION="ap-northeast-2"
-$env:COMPMAN_S3_ENDPOINT="http://localhost:4567"
+$env:AWS_ENDPOINT_URL_S3="http://localhost:4567"
 
 # Linux / macOS
 export AWS_ACCESS_KEY_ID="test"
 export AWS_SECRET_ACCESS_KEY="test"
 export AWS_DEFAULT_REGION="ap-northeast-2"
-export COMPMAN_S3_ENDPOINT="http://localhost:4567"
+export AWS_ENDPOINT_URL_S3="http://localhost:4567"
 ```
 
 ---

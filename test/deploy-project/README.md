@@ -39,7 +39,7 @@ cd test/deploy-project/target
 $env:AWS_ACCESS_KEY_ID="test"
 $env:AWS_SECRET_ACCESS_KEY="test"
 $env:AWS_DEFAULT_REGION="ap-northeast-2"
-$env:COMPMAN_S3_ENDPOINT="http://localhost:4567"
+$env:AWS_ENDPOINT_URL_S3="http://localhost:4567"
 uv run --project C:\path\to\compman compman deploy --build --tag deploy-e2e-app
 #    → compman.yml (name: target, deploy 기록, simple mode), docker-compose.yml (image: deploy-e2e-app) 자동 생성
 
