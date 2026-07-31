@@ -28,47 +28,44 @@ def generate_seed(
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    app_py_content = (
-        'import http.server\n'
-        'import socketserver\n'
-        'import datetime\n'
-        '\n'
-        f'PORT = {port}\n'
-        '\n'
-        'class Handler(http.server.SimpleHTTPRequestHandler):\n'
-        '    def address_string(self):\n'
-        '        # Disable reverse DNS lookup to eliminate 5-second timeout on localhost/Docker\n'
-        '        return self.client_address[0]\n'
-        '\n'
-        '    def log_message(self, format, *args):\n'
-        '        # Fast logging without reverse DNS lookup\n'
-        '        print(f"[{self.log_date_time_string()}] {self.client_address[0]} - {format % args}")\n'
-        '\n'
-        '    def do_GET(self):\n'
-        '        self.send_response(200)\n'
-        '        self.send_header("Content-type", "text/plain; charset=utf-8")\n'
-        '        self.end_headers()\n'
-        '        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")\n'
-        '        message = f"🚀 compman sample seed app running! Current time: {now}\\n"\n'
-        '        self.wfile.write(message.encode("utf-8"))\n'
-        '\n'
-        'class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):\n'
-        '    daemon_threads = True\n'
-        '    allow_reuse_address = True\n'
-        '\n'
-        'if __name__ == "__main__":\n'
-        '    print(f"Server starting on port {PORT}...")\n'
-        '    server = ThreadedHTTPServer(("", PORT), Handler)\n'
-        '    server.serve_forever()\n'
+    index_html_content = (
+        '<!DOCTYPE html>\n'
+        '<html lang="ko">\n'
+        '<head>\n'
+        '    <meta charset="UTF-8">\n'
+        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+        '    <title>compman Seed App</title>\n'
+        '    <style>\n'
+        '        body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }\n'
+        '        .card { background: #1e293b; border-radius: 1rem; padding: 2.5rem; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; max-width: 480px; width: 100%; }\n'
+        '        h1 { color: #38bdf8; margin-top: 0; font-size: 1.75rem; }\n'
+        '        .badge { background: #0284c7; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; }\n'
+        '        .time { font-size: 1.15rem; font-family: monospace; color: #a5f3fc; margin: 1.5rem 0; background: #0f172a; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid #1e293b; }\n'
+        '    </style>\n'
+        '</head>\n'
+        '<body>\n'
+        '    <div class="card">\n'
+        '        <h1>🚀 compman Seed App</h1>\n'
+        '        <p><span class="badge">Nginx Alpine High-Performance</span></p>\n'
+        '        <div class="time" id="clock">Loading time...</div>\n'
+        '        <p style="color: #94a3b8; font-size: 0.875rem;">Instant Sub-Millisecond Container Response</p>\n'
+        '    </div>\n'
+        '    <script>\n'
+        '        function updateTime() {\n'
+        '            document.getElementById("clock").innerText = new Date().toLocaleString();\n'
+        '        }\n'
+        '        setInterval(updateTime, 1000);\n'
+        '        updateTime();\n'
+        '    </script>\n'
+        '</body>\n'
+        '</html>\n'
     )
-    (target_dir / "app.py").write_text(app_py_content, encoding="utf-8")
+    (target_dir / "index.html").write_text(index_html_content, encoding="utf-8")
 
     dockerfile_content = (
-        "FROM python:3.11-slim\n"
-        "WORKDIR /app\n"
-        "COPY app.py .\n"
-        f"EXPOSE {port}\n"
-        'CMD ["python", "-u", "app.py"]\n'
+        "FROM nginx:alpine\n"
+        "COPY index.html /usr/share/nginx/html/index.html\n"
+        "EXPOSE 80\n"
     )
     (target_dir / "Dockerfile").write_text(dockerfile_content, encoding="utf-8")
 
@@ -78,7 +75,7 @@ def generate_seed(
         "  app:\n"
         f"    build: {rel_build_path}\n"
         "    ports:\n"
-        f'      - "{port}:{port}"\n'
+        f'      - "{port}:80"\n'
         "    restart: unless-stopped\n"
     )
     compose_yml.write_text(compose_content, encoding="utf-8")
