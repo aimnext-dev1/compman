@@ -408,7 +408,7 @@ def volume_backup(
 
 @volume_app.command("restore", help=t("cmd.volume.restore"))
 def volume_restore(
-    timestamp: Annotated[str, typer.Argument()],
+    timestamp: Annotated[Optional[str], typer.Argument(help="Timestamp of backup to restore (YYYYMMDD_HHMM)")] = None,
     no_stop: Annotated[bool, typer.Option("--no-stop", help=t("opt.no_stop"))] = False,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
@@ -450,7 +450,7 @@ def image_backup(
 
 @image_app.command("restore", help=t("cmd.image.restore"))
 def image_restore(
-    timestamp: Annotated[str, typer.Argument()],
+    timestamp: Annotated[Optional[str], typer.Argument(help="Timestamp of backup to restore (YYYYMMDD_HHMM)")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)

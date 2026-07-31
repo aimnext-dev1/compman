@@ -79,9 +79,46 @@ def backup(
     typer.echo(f"Image backup done: {tarball}")
 
 
+def select_backup_timestamp(config: Config, kind: str) -> str:
+    pattern = f"{config.name}.{kind}."
+    if not config.backup_dir.is_dir():
+        typer.echo(f"💡 Backup directory not found at {config.backup_dir}.", err=True)
+        raise SystemExit(1)
+
+    files = sorted(config.backup_dir.glob(f"{pattern}*.tar.gz"))
+    if not files:
+        typer.echo(f"💡 No {kind} backup files found in {config.backup_dir}.", err=True)
+        raise SystemExit(1)
+
+    timestamps = [f.name.replace(pattern, "").replace(".tar.gz", "") for f in files]
+    if len(timestamps) == 1:
+        selected = timestamps[0]
+        typer.echo(f"Selecting backup: {selected}")
+        return selected
+
+    typer.echo(f"Available {kind} backups:")
+    for idx, ts in enumerate(timestamps, 1):
+        typer.echo(f"  [{idx}] {ts}")
+
+    default_idx = len(timestamps)
+    while True:
+        choice = typer.prompt(
+            f"Select backup to restore [1-{len(timestamps)}]",
+            default=str(default_idx),
+        )
+        if choice.isdigit() and 1 <= int(choice) <= len(timestamps):
+            selected = timestamps[int(choice) - 1]
+            typer.echo(f"Selected backup: {selected}")
+            return selected
+        typer.echo(f"Invalid selection: '{choice}'. Please enter a number between 1 and {len(timestamps)}.")
+
+
 def restore(
-    runtime: ContainerRuntime, config: Config, timestamp: str
+    runtime: ContainerRuntime, config: Config, timestamp: str | None = None
 ) -> None:
+    if not timestamp:
+        timestamp = select_backup_timestamp(config, "image")
+
     _validate_timestamp(timestamp)
 
     backup_name = f"{config.name}.image.{timestamp}"

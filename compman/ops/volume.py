@@ -67,9 +67,14 @@ def backup(
 def restore(
     runtime: ContainerRuntime,
     config: Config,
-    timestamp: str,
+    timestamp: str | None = None,
     no_stop: bool = False,
 ) -> None:
+    if not timestamp:
+        from compman.ops.image import select_backup_timestamp
+
+        timestamp = select_backup_timestamp(config, "volume")
+
     _validate_timestamp(timestamp)
     backup_name = f"{config.name}.volume.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
