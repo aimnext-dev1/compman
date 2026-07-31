@@ -533,6 +533,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Start by running one of the following commands:",
         "ko": "다음 중 하나로 첫 배포 또는 설정을 시작해보세요:",
     },
+    "msg.deploy_direct_hint": {
+        "en": "  1. Deploy directly with an S3 path:",
+        "ko": "  1. S3 경로로 바로 배포:",
+    },
+    "msg.config_hint": {
+        "en": "  2. Generate a default compman.yml:",
+        "ko": "  2. 기본 compman.yml 생성:",
+    },
     "msg.deploy_path_not_configured": {
         "en": "💡 [compman deploy] S3 deployment path is not configured.",
         "ko": "💡 [compman deploy] S3 배포 경로가 지정되지 않았습니다.",
@@ -596,6 +604,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "msg.seed_exists": {
         "en": "💡 Directory '{path}' already exists and is not empty. Use --force to overwrite.",
         "ko": "💡 디렉터리 '{path}'가 이미 존재하며 비어있지 않습니다. 덮어쓰려면 --force 옵션을 사용하세요.",
+    },
+    "msg.invalid_port": {
+        "en": "Error: port must be between 1 and 65535 (got {port}).",
+        "ko": "오류: 포트는 1에서 65535 사이여야 합니다 ({port}).",
     },
 }
 

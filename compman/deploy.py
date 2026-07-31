@@ -22,6 +22,7 @@ from compman.s3_source import download as _download
 from compman.s3_source import download_recursive as _download_recursive
 from compman.scaffold import generate as _generate_scaffold
 from compman.scaffold import update_deploy as _update_compman_deploy
+from compman.i18n import t
 
 
 def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = None) -> None:
@@ -39,19 +40,19 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
         try:
             s3_path = load_config().deploy
         except ConfigError:
-            typer.echo("💡 [compman deploy] Empty directory without compman.yml config file.", err=True)
+            typer.echo(t("msg.empty_dir_deploy"), err=True)
             typer.echo("", err=True)
-            typer.echo("Start by running one of the following commands:", err=True)
-            typer.echo("  1️⃣ Deploy directly by providing S3 path:", err=True)
+            typer.echo(t("msg.empty_dir_start"), err=True)
+            typer.echo(t("msg.deploy_direct_hint"), err=True)
             typer.echo("     compman deploy --path s3://<your-bucket>/path/to/app.tar.gz", err=True)
-            typer.echo("  2️⃣ Generate default compman.yml config template:", err=True)
+            typer.echo(t("msg.config_hint"), err=True)
             typer.echo("     compman init", err=True)
             raise SystemExit(1)
 
     if not s3_path:
-        typer.echo("💡 [compman deploy] S3 deployment path is not configured.", err=True)
-        typer.echo("  • Specify 'deploy' field in compman.yml, or", err=True)
-        typer.echo("  • Pass S3 path via option: compman deploy --path s3://...", err=True)
+        typer.echo(t("msg.deploy_path_not_configured"), err=True)
+        typer.echo(t("msg.deploy_path_hint1"), err=True)
+        typer.echo(t("msg.deploy_path_hint2"), err=True)
         raise SystemExit(1)
 
     project_subfolder = config.dirs.get("project", "project") if config else "project"
@@ -121,13 +122,9 @@ def _swap(src: Path, root: Path) -> None:
 
 
 def _handle_s3_error(e: Exception, s3_path: str) -> None:
-    typer.echo(f"💡 [compman deploy] Failed to download from {s3_path}", err=True)
-    typer.echo("", err=True)
-
+    typer.echo(t("msg.s3_failed", path=s3_path), err=True)
     if isinstance(e, (NoCredentialsError, PartialCredentialsError)):
-        typer.echo("Error: AWS credentials were not found or are incomplete.", err=True)
-        typer.echo("", err=True)
-        typer.echo("Guide - Please set your AWS credentials using environment variables:", err=True)
+        typer.echo(t("msg.s3_no_creds"), err=True)
         typer.echo("  • Windows PowerShell:", err=True)
         typer.echo('      $env:AWS_ACCESS_KEY_ID="your-key-id"', err=True)
         typer.echo('      $env:AWS_SECRET_ACCESS_KEY="your-secret-key"', err=True)
@@ -142,23 +139,19 @@ def _handle_s3_error(e: Exception, s3_path: str) -> None:
         err_code = str(e.response.get("Error", {}).get("Code", ""))
         err_msg = str(e.response.get("Error", {}).get("Message", e))
         if err_code in ("403", "AccessDenied", "Forbidden"):
-            typer.echo(f"Error 403 (Access Denied): Access to '{s3_path}' was forbidden.", err=True)
-            typer.echo("", err=True)
-            typer.echo("Guide - Troubleshooting 403 Forbidden:", err=True)
+            typer.echo(t("msg.s3_403", path=s3_path), err=True)
             typer.echo("  1️⃣ Ensure AWS credentials have 's3:GetObject' and 's3:ListBucket' permissions.", err=True)
             typer.echo("  2️⃣ Verify S3 bucket name and key path are correct.", err=True)
             typer.echo("  3️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.", err=True)
         elif err_code in ("404", "NoSuchBucket", "NoSuchKey", "NotFound"):
-            typer.echo(f"Error 404 (Not Found): Bucket or file does not exist: '{s3_path}'", err=True)
-            typer.echo("", err=True)
-            typer.echo("Guide - Troubleshooting 404 Not Found:", err=True)
+            typer.echo(t("msg.s3_404", path=s3_path), err=True)
             typer.echo("  1️⃣ Verify bucket name and file/archive path on S3.", err=True)
             typer.echo("  2️⃣ Check for typos in s3://bucket/path", err=True)
         else:
             typer.echo(f"S3 Client Error ({err_code}): {err_msg}", err=True)
 
     elif isinstance(e, EndpointConnectionError):
-        typer.echo(f"Network Error: Unable to connect to S3 endpoint.", err=True)
+        typer.echo(t("msg.s3_network"), err=True)
         typer.echo("", err=True)
         typer.echo("Guide - Troubleshooting connection error:", err=True)
         typer.echo("  1️⃣ Check internet connection.", err=True)

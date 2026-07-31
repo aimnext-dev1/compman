@@ -4,6 +4,7 @@ import tarfile
 from pathlib import Path
 import typer
 from compman.config import sanitize_project_name
+from compman.errors import CommandError
 from compman.i18n import t
 
 
@@ -13,6 +14,8 @@ def generate_seed(
     port: int = 18080,
     force: bool = False,
 ) -> None:
+    if not 1 <= port <= 65535:
+        raise CommandError(t("msg.invalid_port", port=port))
     cwd = Path.cwd()
     target_dir = (cwd / output).resolve()
 
