@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --dev
-      - run: uv run pytest --cov=compman --cov-report=term-missing
+      - run: uv run pytest
 
   quality:
     runs-on: ubuntu-latest
@@ -31,6 +31,8 @@ jobs:
       - run: uv sync --dev
       - run: uv run ruff check compman tests
       - run: uv run mypy compman
+      - name: Enforce 100% coverage
+        run: uv run pytest --cov=compman --cov-report=term-missing
 
   packaging:
     runs-on: ubuntu-latest
