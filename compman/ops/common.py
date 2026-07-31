@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import typer
 
 from compman.config import Config
+from compman.docker import ComposeContext, ContainerRuntime
 from compman.i18n import t
 
 
@@ -123,3 +125,33 @@ def select_backup_timestamp(config: Config, kind: str) -> str:
     selected = timestamps[idx]
     typer.echo(t("msg.selected_backup", name=selected))
     return selected
+
+
+@contextmanager
+def stack_paused(runtime: ContainerRuntime, context: ComposeContext, enabled: bool = True):
+    stopped = False
+    if enabled:
+        typer.echo("Stopping stack for consistent operation...")
+        runtime.run_compose(
+            ["stop"], project=context.project, compose_files=context.files,
+            env=context.env, capture=False,
+        )
+        stopped = True
+    failed = False
+    try:
+        yield
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        if stopped:
+            try:
+                typer.echo("Starting stack again...")
+                runtime.run_compose(
+                    ["start"], project=context.project, compose_files=context.files,
+                    env=context.env, capture=False,
+                )
+            except Exception as error:
+                if not failed:
+                    raise
+                typer.echo(f"Warning: failed to restart stack: {error}", err=True)

@@ -42,48 +42,33 @@ def backup(
         backup_dir = config.backup_dir / backup_name
         tarball = config.backup_dir / f"{backup_name}.tar.gz"
     backup_dir.mkdir(parents=True, exist_ok=True)
-    stopped = False
-
     try:
-        if not no_stop:
-            typer.echo("Stopping stack for consistent backup...")
-            runtime.run_compose(
-                ["stop"], project=context.project, compose_files=context.files, env=context.env, capture=False
-            )
-            stopped = True
+        with stack_paused(runtime, context, enabled=not no_stop):
+            mapping: list[dict[str, str]] = []
+            for volume in volumes:
+                for container in containers:
+                    info = _inspect_mount(runtime, container, volume)
+                    if info:
+                        mapping.append(info)
+                        target = backup_dir / volume
+                        runtime.run_cli(
+                            ["cp", f"{container}:{info['destination']}", str(target)],
+                            capture=False,
+                        )
 
-        mapping: list[dict[str, str]] = []
-        for volume in volumes:
-            for container in containers:
-                info = _inspect_mount(runtime, container, volume)
-                if info:
-                    mapping.append(info)
-                    target = backup_dir / volume
-                    runtime.run_cli(
-                        ["cp", f"{container}:{info['destination']}", str(target)],
-                        capture=False,
-                    )
+            map_path = backup_dir / "volume-map.json"
+            merged = _merge_mapping(mapping)
+            map_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
 
-        map_path = backup_dir / "volume-map.json"
-        merged = _merge_mapping(mapping)
-        map_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
-
-        with tarfile.open(tarball, "w:gz") as tar:
-            tar.add(backup_dir, arcname=".")
+            with tarfile.open(tarball, "w:gz") as tar:
+                tar.add(backup_dir, arcname=".")
     finally:
-        try:
-            if stopped:
-                typer.echo("Starting stack again...")
-                runtime.run_compose(
-                    ["start"], project=context.project, compose_files=context.files, env=context.env, capture=False
-                )
-        finally:
-            shutil.rmtree(backup_dir, ignore_errors=True)
+        shutil.rmtree(backup_dir, ignore_errors=True)
 
     typer.echo(f"Volume backup done: {tarball}")
 
 
-from compman.ops.common import select_backup_timestamp
+from compman.ops.common import select_backup_timestamp, stack_paused
 
 
 def restore(
