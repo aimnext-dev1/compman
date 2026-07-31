@@ -75,7 +75,6 @@ def generate_seed(
     compman_content = (
         "compman:\n"
         f"  name: {project_name}\n"
-        f"  deploy: s3://deploy-test/archives/{output}.tar.gz\n"
         "  compose:\n"
         "    - docker-compose.yml\n"
     )
