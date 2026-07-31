@@ -19,7 +19,7 @@ from botocore.exceptions import (
     PartialCredentialsError,
 )
 
-from compman.config import ConfigError, load_config
+from compman.config import ConfigError, load_config, sanitize_project_name
 from compman.docker import detect_runtime
 
 
@@ -88,7 +88,6 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
 
 
 def _generate_scaffold(root: Path, project_subfolder: str, s3_path: str, image: str) -> None:
-    from compman.config import sanitize_project_name
     compman_yml = root / "compman.yml"
     if not compman_yml.exists():
         content = (
