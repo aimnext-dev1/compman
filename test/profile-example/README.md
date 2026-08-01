@@ -1,8 +1,8 @@
 # profile-example
 
-`compman` profile 기능 예시 — 실행환경별 compose 파일 + env vars 관리.
+`compman` profile example — manage Compose files and environment variables by environment.
 
-## 구조
+## Structure
 
 ```
 profile-example/
@@ -12,35 +12,35 @@ profile-example/
 └── docker-compose.prod.yml
 ```
 
-## 사용
+## Usage
 
 ```bash
-# local profile (profile명만, env 없음)
+# local profile (profile name only; no environment variables)
 compman stack up local
 
-# dev profile (compose 파일 + env vars 자동 주입)
+# dev profile (Compose file + automatic environment-variable injection)
 compman stack up dev
 
 # prod profile
 compman stack up prod
 
-# 상태 확인
+# Check status
 compman service status
 
-# 스택 제거
+# Remove the stack
 compman stack down --yes
 ```
 
-## 설명
+## Explanation
 
-`compman.yml`의 `compose` 아래 각 키가 profile명입니다.
-`string` 값은 compose 파일만 지정, `object` 값은 `file` + `env`를 함께 지정합니다.
+Each key under `compose` in `compman.yml` is a profile name.
+A `string` value specifies only a Compose file; an `object` value specifies `file` and `env` together.
 
 ```yaml
 compose:
-  local: docker-compose.local.yml                   # 파일만
+  local: docker-compose.local.yml                   # file only
   dev:
     file: docker-compose.dev.yml
     env:
-      DATABASE_URL: dev.db.example.com              # env vars 자동 주입
+      DATABASE_URL: dev.db.example.com              # automatic environment-variable injection
 ```

@@ -17,6 +17,10 @@ def test_generate_seed_normal(temp_dir: pathlib.Path):
     content = (proj_dir / "Dockerfile").read_text(encoding="utf-8")
     assert "nginx:alpine" in content
 
+    html = (proj_dir / "index.html").read_text(encoding="utf-8")
+    assert '<html lang="en">' in html
+    assert "<h1>compman Seed App</h1>" in html
+
     compose_content = (temp_dir / "docker-compose.yml").read_text(encoding="utf-8")
     assert "127.0.0.1:18080:80" in compose_content
 

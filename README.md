@@ -1,28 +1,28 @@
 # compman — Docker Compose Stack Manager CLI
 
-`compman`은 Docker 또는 Podman Compose 스택의 실행, 서비스 관리, 볼륨·이미지 백업과 S3 기반 배포를 하나의 CLI로 관리합니다.
+`compman` manages Docker or Podman Compose stacks—including execution, service operations, volume and image backup, and S3-based deployment—from one CLI.
 
-## 주요 기능
+## Key features
 
-- Docker Compose, Podman Compose 런타임 자동 감지
-- 단일 Compose 파일과 환경별 프로필 구성 지원
-- S3 prefix 또는 `.tar.gz`/`.tgz`/`.zip` 아카이브 배포
-- 빈 디렉터리 배포 시 `compman.yml`과 `docker-compose.yml` 자동 생성
-- 볼륨과 컨테이너 이미지의 타임스탬프 백업·복원
-- 한국어·영어 도움말 및 셸 자동완성
-- Windows, Linux, macOS 지원
+- Automatically detects Docker Compose and Podman Compose runtimes
+- Supports a single Compose file and environment-specific profile configurations
+- Deploys from an S3 prefix or a `.tar.gz`/`.tgz`/`.zip` archive
+- Automatically creates `compman.yml` and `docker-compose.yml` when deploying into an empty directory
+- Creates and restores timestamped backups of volumes and container images
+- Korean and English help, plus shell completion
+- Supports Windows, Linux, and macOS
 
-## 요구사항
+## Requirements
 
-- Python 3.10 이상
-- Docker Compose 또는 Podman Compose
-- S3 배포 사용 시 접근 가능한 S3 호환 스토리지와 AWS 자격 증명
+- Python 3.10 or later
+- Docker Compose or Podman Compose
+- For S3 deployments: accessible S3-compatible storage and AWS credentials
 
-CI에서는 Python 3.10–3.13을 Ubuntu, macOS, Windows에서 검증합니다. Python 3.14 지원 계획과 업그레이드 판단은 [REVIEW.md](REVIEW.md)의 `Python version strategy`를 참고하세요.
+CI verifies Python 3.10–3.13 on Ubuntu, macOS, and Windows. See the `Python version strategy` section of [REVIEW.md](REVIEW.md) for the Python 3.14 support plan and upgrade decision.
 
-## 설치
+## Installation
 
-### 자동 설치
+### Automatic installation
 
 ```powershell
 # Windows PowerShell
@@ -39,36 +39,36 @@ curl -fsSL https://raw.githubusercontent.com/allbegray/compman/main/install.cmd 
 curl -fsSL https://raw.githubusercontent.com/allbegray/compman/main/install.sh | sh
 ```
 
-새 터미널을 연 뒤 설치를 확인합니다.
+Open a new terminal, then verify the installation.
 
 ```bash
 compman --version
 compman --help
 ```
 
-### uv 또는 pipx로 설치
+### Install with uv or pipx
 
 ```bash
 uv tool install git+https://github.com/allbegray/compman.git
-# 또는
+# Or
 pipx install git+https://github.com/allbegray/compman.git
 ```
 
-저장소에서 개발 버전을 설치하려면 다음 명령을 사용합니다.
+To install a development version from the repository, run:
 
 ```bash
 uv tool install .
 ```
 
-설치된 CLI는 다음 명령으로 최신 `main` 버전으로 갱신할 수 있습니다.
+Update an installed CLI to the latest `main` version with:
 
 ```bash
 compman upgrade
 ```
 
-## 빠른 시작
+## Quick start
 
-### 기존 Compose 프로젝트
+### Existing Compose project
 
 ```bash
 cd my-project
@@ -78,20 +78,20 @@ compman service status
 compman stack down --yes
 ```
 
-`compman init`만 실행하면 다음 세 가지 모드를 고르는 대화형 메뉴가 표시됩니다.
+Running `compman init` without arguments displays an interactive menu with these three modes.
 
 ```bash
-compman init --skeleton                         # compman.yml 생성
+compman init --skeleton                         # Create compman.yml
 compman init --s3 s3://bucket/app.tar.gz --build
-compman init --seed -o project -p 18080         # 테스트 프로젝트 생성
-compman init --seed -o project -a               # 테스트 프로젝트와 아카이브 생성
+compman init --seed -o project -p 18080         # Create a test project
+compman init --seed -o project -a               # Create a test project and archive
 ```
 
-기존 파일 덮어쓰기는 `--force`를 명시해야 합니다.
+Overwriting existing files requires an explicit `--force`.
 
-### S3에서 새 프로젝트 배포
+### Deploy a new project from S3
 
-빈 작업 디렉터리에서 실행합니다.
+Run this from an empty working directory.
 
 ```bash
 mkdir my-app && cd my-app
@@ -99,27 +99,27 @@ compman deploy --path s3://my-bucket/releases/app.tar.gz --build --tag my-app
 compman stack up
 ```
 
-배포 성공 시 다음 파일 구조가 만들어집니다.
+A successful deployment creates this file structure.
 
 ```text
 my-app/
 ├── compman.yml
 ├── docker-compose.yml
-└── project/              # S3에서 받은 애플리케이션 소스
+└── project/              # Application source downloaded from S3
 ```
 
-S3 경로는 다음 두 형식을 지원합니다.
+S3 paths support these two formats.
 
-- Prefix: 경로 아래 객체를 재귀적으로 내려받고 디렉터리 구조를 보존합니다.
-- Archive: `.tar.gz`, `.tgz`, `.zip`을 안전하게 추출하며 단일 최상위 폴더는 자동으로 평탄화합니다.
+- Prefix: Recursively downloads objects beneath the path and preserves their directory structure.
+- Archive: Safely extracts `.tar.gz`, `.tgz`, or `.zip`; a single top-level directory is flattened automatically.
 
-동일한 이름의 배포 대상만 교체되며 다른 사용자 파일은 유지됩니다. 소스 교체 단계가 실패하면 이전 트리를 복구하지만, 이후 스캐폴드 생성이나 이미지 빌드까지 포함한 완전한 트랜잭션은 아직 보장하지 않습니다.
+Only the deployment target with the same name is replaced; other user files are retained. If the source-replacement step fails, the previous tree is restored. A full transaction covering later scaffold generation and image building is not yet guaranteed.
 
-## 설정 파일
+## Configuration file
 
-모든 설정은 `compman.yml`의 `compman` 키 아래에 둡니다.
+Put all configuration under the `compman` key in `compman.yml`.
 
-### 단일 Compose 구성
+### Single Compose configuration
 
 ```yaml
 compman:
@@ -128,9 +128,9 @@ compman:
     - docker-compose.yml
 ```
 
-`compose`를 생략하면 `docker-compose.yml`을 사용합니다. 여러 파일을 나열하면 선언 순서대로 `-f` 옵션에 전달합니다.
+When `compose` is omitted, `docker-compose.yml` is used. When multiple files are listed, they are passed as `-f` options in declaration order.
 
-### 환경별 프로필 구성
+### Environment-specific profile configuration
 
 ```yaml
 compman:
@@ -149,7 +149,7 @@ compman:
         DATABASE_URL: prod.db.example.com
 ```
 
-프로필의 `file`은 선택 사항입니다. 생략하면 `base`, `base`도 없으면 `docker-compose.yml`을 사용하므로 하나의 Compose 파일에 환경 변수만 다르게 적용할 수 있습니다.
+The profile `file` is optional. When omitted, `base` is used; if there is no `base`, `docker-compose.yml` is used. This lets one Compose file use different environment variables per environment.
 
 ```bash
 compman stack up dev
@@ -157,7 +157,7 @@ compman service status --profile dev
 compman stack down --profile dev --yes
 ```
 
-### 배포 및 관리 디렉터리
+### Deployment and managed directories
 
 ```yaml
 compman:
@@ -172,15 +172,15 @@ compman:
     - docker-compose.yml
 ```
 
-- `folder`: Compose 파일 기준 하위 디렉터리
-- `dirs.project`: S3 배포 소스를 배치할 하위 디렉터리
-- `dirs.backup`: 백업 아카이브 저장 디렉터리
-- `dirs.volume`: 호스트와 볼륨 데이터를 주고받는 디렉터리
-- `deploy`: `compman deploy`와 `compman update`에서 사용할 기본 S3 경로
+- `folder`: Relative subdirectory containing Compose files
+- `dirs.project`: Relative subdirectory for S3 deployment source
+- `dirs.backup`: Directory for backup archives
+- `dirs.volume`: Directory for transferring volume data to and from the host
+- `deploy`: Default S3 path for `compman deploy` and `compman update`
 
-관리 경로는 `compman.yml`이 있는 디렉터리 밖으로 벗어날 수 없습니다. `--path`는 설정된 `deploy` 값을 한 번만 재정의합니다.
+Managed paths cannot escape the directory containing `compman.yml`. `--path` overrides the configured `deploy` value for one invocation only.
 
-## 명령어
+## Commands
 
 ```text
 compman init [--skeleton | --s3 URI | --seed]
@@ -215,18 +215,18 @@ compman image restore [TIMESTAMP] [--profile PROFILE]
 compman clear
 ```
 
-각 명령의 전체 옵션은 `compman <명령> --help`로 확인할 수 있습니다.
+View all options for a command with `compman <command> --help`.
 
-### 동작상 주의점
+### Behavioral notes
 
-- `update`: `deploy`가 있으면 S3 수신 → 이미지 빌드 → 스택 실행을 수행하고, 없으면 로컬 Compose를 `up -d --build`로 갱신합니다.
-- `service log`: 기본 50줄을 표시하며 `-f`로 스트리밍합니다.
-- `service connect`: `bash` 접속 실패 시 `sh`를 사용합니다.
-- `volume backup/restore`: 기본적으로 작업 중 스택을 내렸다가 복구합니다. `--no-stop`은 정합성 위험을 이해한 경우에만 사용하세요.
-- `image backup`: 기본값은 실행 중 컨테이너 상태를 commit한 뒤 저장합니다. 원본 이미지를 저장하려면 `--source-image`를 사용합니다.
-- `clear`: 선택한 런타임 전체에 `image prune -af`를 실행하므로 현재 프로젝트 밖의 미사용 이미지도 삭제할 수 있습니다.
+- `update`: When `deploy` is configured, it downloads from S3, builds images, and starts the stack. Otherwise, it updates the local Compose project with `up -d --build`.
+- `service log`: Displays the last 50 lines by default and streams output with `-f`.
+- `service connect`: Falls back to `sh` if connecting with `bash` fails.
+- `volume backup/restore`: By default, brings the stack down during the operation and restores it afterward. Use `--no-stop` only when you understand the consistency risk.
+- `image backup`: By default, commits and saves the state of the running container. Use `--source-image` to save the original image.
+- `clear`: Runs `image prune -af` for the selected runtime, so it can delete unused images outside the current project.
 
-## 진단과 상태 확인
+## Diagnostics and status
 
 ```bash
 compman doctor
@@ -240,55 +240,55 @@ compman status --config /path/to/compman.yml
 compman status -c /path/to/compman.yml
 ```
 
-`doctor`는 설정, Compose 파일, 컨테이너 런타임과 연결, 관리 디렉터리, AWS 자격 증명을 점검합니다. `status`는 실행 중인 스택의 서비스 상태를 표시합니다. `--json`은 자동화에 사용할 수 있는 구조화된 JSON을 출력합니다.
+`doctor` checks configuration, Compose files, container-runtime availability and connectivity, managed directories, and AWS credentials. `status` displays the service state of the running stack. `--json` outputs structured JSON suitable for automation.
 
-필수 `doctor` 검사에 실패하면 종료 코드 `1`을 반환합니다. `status`는 대상 스택이 존재하지 않거나 상태 조회 자체가 실패하면 종료 코드 `1`을 반환합니다. 스택이 존재하고 조회에 성공했다면 모든 서비스가 stopped/exited 상태여도 종료 코드 `0`을 반환합니다. AWS 환경 변수(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)가 없다는 결과는 비실패 경고이므로, 다른 필수 검사가 통과하면 `doctor`는 종료 코드 `0`을 반환합니다.
+If a required `doctor` check fails, it returns exit code `1`. `status` returns exit code `1` when the target stack does not exist or status retrieval itself fails. If the stack exists and retrieval succeeds, it returns exit code `0` even if every service is stopped or exited. Missing AWS environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are non-failing warnings, so `doctor` returns exit code `0` if all other required checks pass.
 
-## 백업과 복원
+## Backup and restore
 
-백업 파일은 `dirs.backup`에 저장됩니다.
+Backup files are stored in `dirs.backup`.
 
 ```text
 <stack>.volume.<YYYYMMDD_HHMMSS>[_<microseconds>].tar.gz
 <stack>.image.<YYYYMMDD_HHMMSS>[_<microseconds>].tar.gz
 ```
 
-타임스탬프를 생략하고 복원을 실행하면 사용 가능한 백업을 대화형으로 선택합니다. 볼륨 복원과 `volume push`는 대상에 데이터를 병합하며 대상에만 있던 파일을 삭제하지 않습니다. 이미지 복원은 이미지를 런타임에 load하지만 Compose의 `image` 태그를 자동 변경하지 않습니다.
+When restoring without a timestamp, choose an available backup interactively. Volume restore and `volume push` merge data into the target; they do not delete files that exist only at the target. Image restore loads the image into the runtime but does not automatically change the Compose `image` tag.
 
-## 런타임 선택
+## Runtime selection
 
-자동 감지 순서는 다음과 같습니다.
+The automatic detection order is:
 
 ```text
 docker compose → podman compose → podman-compose → docker-compose
 ```
 
-Podman을 우선 사용하려면 환경 변수를 지정합니다.
+To prefer Podman, set an environment variable.
 
 ```bash
 export CONTAINER_RUNTIME=podman
 # PowerShell: $env:CONTAINER_RUNTIME="podman"
 ```
 
-## S3 호환 스토리지
+## S3-compatible storage
 
-AWS SDK 표준 환경 변수를 사용합니다.
+Uses standard AWS SDK environment variables.
 
 ```bash
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 export AWS_DEFAULT_REGION=ap-northeast-2
-export AWS_ENDPOINT_URL_S3=http://localhost:4566   # Ministack/LocalStack 기본 포트
+export AWS_ENDPOINT_URL_S3=http://localhost:4566   # Default Ministack/LocalStack port
 ```
 
-`AWS_ENDPOINT_URL_S3`이 없으면 `AWS_ENDPOINT_URL`도 사용할 수 있습니다.
+If `AWS_ENDPOINT_URL_S3` is absent, `AWS_ENDPOINT_URL` can also be used.
 
-## 언어와 자동완성
+## Language and shell completion
 
 ```bash
-compman lang ko                    # 현재 프로세스 기본 언어 설정
-compman --lang en --help           # 이번 호출만 영어 사용
-export COMPMAN_LANG=ko             # 셸 환경에서 기본 언어 설정
+compman lang ko                    # Set the default language for the current process
+compman --lang en --help           # Use English for this invocation only
+export COMPMAN_LANG=ko             # Set the default language in the shell environment
 
 compman completion powershell --install
 compman completion bash --install
@@ -296,7 +296,7 @@ compman completion zsh --install
 compman completion fish --install
 ```
 
-## 개발 및 검증
+## Development and verification
 
 ```bash
 uv sync --dev
@@ -305,12 +305,12 @@ uv run mypy compman
 uv run pytest --cov=compman --cov-report=term-missing
 ```
 
-CI는 다음 항목을 검증합니다.
+CI verifies:
 
-- Ubuntu, macOS, Windows × Python 3.10–3.13 테스트
-- 문장·분기 커버리지 100%
-- Ruff 및 mypy
-- wheel 빌드, 격리 설치, CLI 실행
-- Ministack S3 수신, Docker 이미지 빌드, Compose 실행·종료 E2E
+- Ubuntu, macOS, and Windows × Python 3.10–3.13 tests
+- 100% statement and branch coverage
+- Ruff and mypy
+- Wheel build, isolated installation, and CLI execution
+- Ministack S3 download, Docker image build, and Compose start/stop E2E
 
-현재 제약과 개선 백로그는 [REVIEW.md](REVIEW.md), 테스트 프로젝트 사용법은 [`test/`](test/) 아래의 각 README를 참고하세요.
+For current constraints and the improvement backlog, see [REVIEW.md](REVIEW.md). For test-project usage, see each README under [`test/`](test/).

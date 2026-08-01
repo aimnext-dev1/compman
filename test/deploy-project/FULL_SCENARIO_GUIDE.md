@@ -1,12 +1,12 @@
 # compman Deploy & Stack E2E Full Scenario Guide
 
-`compman` CLI를 사용하여 S3 프로젝트 배포, `compman.yml` 자동 갱신, `project/` 디렉터리 소스 분리, Docker 이미지 빌드, 스택 기동 및 `compman update`를 통한 컨테이너 재생성까지 설명합니다.
+This guide covers S3 project deployment with the `compman` CLI, automatic `compman.yml` updates, separating source into the `project/` directory, building Docker images, starting the stack, and recreating containers through `compman update`.
 
 ---
 
-## 📋 사전 환경 구성 (Environment Setup)
+## 📋 Environment Setup
 
-테스트 및 실동작에 필요한 S3 인증 및 에뮬레이터(ministack) 환경변수를 설정합니다.
+Set the environment variables for the S3 credentials and emulator (ministack) needed for testing and operation.
 
 ```bash
 # Windows PowerShell
@@ -24,10 +24,10 @@ export AWS_ENDPOINT_URL_S3="http://localhost:4566"
 
 ---
 
-## 🚀 8단계 풀 시나리오 가이드 (Full Scenario Steps)
+## 🚀 Eight-Step Full Scenario Guide
 
-### Step 1. 테스트 작업 디렉터리 생성 및 이동
-새로운 프로젝트 디렉터리를 생성하고 이동합니다.
+### Step 1. Create and enter a test working directory
+Create and enter a new project directory.
 
 ```bash
 mkdir -p test/deploy-project/target/e2e-scenario-test
@@ -36,18 +36,18 @@ cd test/deploy-project/target/e2e-scenario-test
 
 ---
 
-### Step 2. S3 경로를 지정하여 첫 배포 (`--path`)
-S3 버킷 경로를 전달받아 첫 배포를 실행합니다.
+### Step 2. First deployment with an S3 path (`--path`)
+Pass the S3 bucket path and run the first deployment.
 
 ```bash
 compman deploy --path s3://deploy-test
 ```
 
-- **출력 결과**: `Created compman.yml`, `Created docker-compose.yml`, `Deploy done.`
-- **구조 특징**:
-  - 루트 디렉터리: `compman.yml`, `docker-compose.yml`
-  - 하위 디렉터리 (`project/`): S3 소스 파일 (`Dockerfile`, `script/` 등)
-- **`compman.yml` 상태**:
+- **Output**: `Created compman.yml`, `Created docker-compose.yml`, `Deploy done.`
+- **Structure**:
+  - Root directory: `compman.yml`, `docker-compose.yml`
+  - Subdirectory (`project/`): S3 source files (`Dockerfile`, `script/`, and so on)
+- **`compman.yml` state**:
   ```yaml
   compman:
     name: e2e-scenario-test
@@ -60,69 +60,69 @@ compman deploy --path s3://deploy-test
 
 ---
 
-### Step 3. 다른 S3 경로로 배포 경로 갱신 (`--path` 갱신)
-아카이브 파일 경로로 변경하여 배포를 수행하고 `compman.yml`의 `deploy` 경로 갱신을 확인합니다.
+### Step 3. Update the deployment path to another S3 path (update `--path`)
+Deploy from an archive path and confirm that the `deploy` path in `compman.yml` is updated.
 
 ```bash
 compman deploy --path s3://deploy-test/archives/seed.tar.gz
 ```
 
-- **출력 결과**: `Updated deploy in compman.yml (s3://deploy-test/archives/seed.tar.gz)`, `Deploy done.`
-- **`compman.yml` 상태**: `deploy` 속성이 `s3://deploy-test/archives/seed.tar.gz`로 자동 갱신됩니다.
-- **특징**: `project/` 디렉터리가 깔끔하게 비워진 후 아카이브 내용만 압축 해제됩니다.
+- **Output**: `Updated deploy in compman.yml (s3://deploy-test/archives/seed.tar.gz)`, `Deploy done.`
+- **`compman.yml` state**: the `deploy` property is automatically updated to `s3://deploy-test/archives/seed.tar.gz`.
+- **Behavior**: the `project/` directory is cleanly emptied, then only the archive contents are extracted.
 
 ---
 
-### Step 4. `--path` 옵션 없이 재배포
-`compman.yml`에 기록된 경로를 통해 `--path` 없이 간단히 배포합니다.
+### Step 4. Redeploy without the `--path` option
+Deploy simply without `--path` by using the path recorded in `compman.yml`.
 
 ```bash
 compman deploy
 ```
 
-- **출력 결과**: `Deploy done.`
-- **특징**: `compman.yml`의 최신 `deploy` 경로를 자동으로 인식하여 배포됩니다.
+- **Output**: `Deploy done.`
+- **Behavior**: deployment automatically uses the latest `deploy` path in `compman.yml`.
 
 ---
 
-### Step 5. 소스 다운로드 + Docker 이미지 자동 빌드 (`--build`)
-S3 소스를 다운로드하고 `project/Dockerfile`을 기반으로 Docker 이미지를 빌드합니다.
+### Step 5. Download source + automatically build the Docker image (`--build`)
+Download S3 source and build a Docker image based on `project/Dockerfile`.
 
 ```bash
 compman deploy --build
 ```
 
-- **출력 결과**: `Building image 'e2e-scenario-test' in project...`, `Deploy done.`
-- **생성 이미지**: `e2e-scenario-test:latest`
+- **Output**: `Building image 'e2e-scenario-test' in project...`, `Deploy done.`
+- **Created image**: `e2e-scenario-test:latest`
 
 ---
 
-### Step 6. 컨테이너 스택 기동 및 서비스 상태 확인
-빌드된 이미지를 기반으로 Docker 컨테이너를 기동하고 웹 서비스를 확인합니다.
+### Step 6. Start the container stack and check service status
+Start Docker containers from the built image and verify the web service.
 
 ```bash
-# 1. 스택 백그라운드 기동
+# 1. Start the stack in the background
 compman stack up
 
-# 2. 서비스 기동 상태 및 포트 바인딩 확인
+# 2. Check service status and port binding
 compman service status
 
-# 3. HTTP 웹 데몬 응답 확인 (포트 18080)
+# 3. Check the HTTP web-daemon response (port 18080)
 curl http://localhost:18080
 ```
 
-- **상태 확인**: `0.0.0.0:18080->18080/tcp` 포트 바인딩 확인 및 웹 응답 수신.
+- **Status check**: verify the `0.0.0.0:18080->18080/tcp` port binding and receive the web response.
 
 ---
 
-### Step 7. 단독 명령어로 최신 버전 재생성 배포 (`compman update`)
-젠킨스에서 S3로 신규 빌드 아티팩트를 올린 후, 서버에서 S3 최신 소스 수신 $\rightarrow$ 이미지 재빌드 $\rightarrow$ 기존 컨테이너 강제 재생성을 수행합니다. 단일 인스턴스에서는 중단 시간이 발생할 수 있습니다.
+### Step 7. Redeploy the latest version with a single command (`compman update`)
+After Jenkins uploads a new build artifact to S3, the server receives the latest S3 source $\rightarrow$ rebuilds the image $\rightarrow$ force-recreates the existing container. Single-instance deployments may have downtime.
 
 ```bash
 compman update
 ```
 
-- **실행 결과**:
+- **Result**:
   ```text
   Building image 'e2e-scenario-test' in project...
   Deploy done.
@@ -131,28 +131,28 @@ compman update
   Container e2e-scenario-test-app-1 Starting
   Container e2e-scenario-test-app-1 Started
   ```
-- **특징**: 아무런 인자나 플래그 없이 단 한 줄의 커맨드로 최신 버전 교체 기동 완료!
+- **Behavior**: the latest version is replaced and started with one command and no arguments or flags.
 
 ---
 
-### Step 8. 스택 정돈 및 제거
-테스트 완료 후 기동된 컨테이너 및 네트워크 스택을 정돈합니다.
+### Step 8. Clean up and remove the stack
+After testing, clean up the running containers and network stack.
 
 ```bash
 compman stack down --yes
 ```
 
-- **결과**: `Container Stopped`, `Container Removed`, `Network Removed`.
+- **Result**: `Container Stopped`, `Container Removed`, `Network Removed`.
 
 ---
 
-## 📌 핵심 정리 (Key Takeaways)
+## 📌 Key Takeaways
 
-| 구 분 | 명령어 | 핵심 동작 |
+| Category | Command | Core behavior |
 | :--- | :--- | :--- |
-| **단독 최신 업데이트** | **`compman update`** | **S3 최신 다운로드 + 이미지 빌드 + 기존 컨테이너 강제 재생성** |
-| **기본 배포** | `compman deploy --path <S3_URI>` | S3 소스를 `project/`에 다운로드 + `compman.yml`에 `deploy` 경로 자동 기록 |
-| **경로 재사용** | `compman deploy` | `compman.yml`의 최신 `deploy` 경로를 참조하여 자동 배포 |
-| **배포 + 빌드** | `compman deploy --build` | S3 다운로드 + `project/Dockerfile` 기반 Docker 이미지 자동 빌드 |
-| **스택 기동** | `compman stack up` | 루트 `docker-compose.yml` 기반 컨테이너 기동 (이미지 변경 시 Recreate) |
-| **스택 종료** | `compman stack down --yes` | 기동된 컨테이너 및 네트워크 안전 정돈 |
+| **Standalone latest update** | **`compman update`** | **Download the latest S3 source + build the image + force-recreate existing containers** |
+| **Basic deployment** | `compman deploy --path <S3_URI>` | Download S3 source to `project/` + automatically record the `deploy` path in `compman.yml` |
+| **Reuse path** | `compman deploy` | Automatically deploy using the latest `deploy` path in `compman.yml` |
+| **Deploy + build** | `compman deploy --build` | Download from S3 + automatically build a Docker image based on `project/Dockerfile` |
+| **Start stack** | `compman stack up` | Start containers based on the root `docker-compose.yml` (recreate when the image changes) |
+| **Stop stack** | `compman stack down --yes` | Safely clean up running containers and networks |

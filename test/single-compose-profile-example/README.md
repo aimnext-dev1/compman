@@ -1,8 +1,8 @@
 # single-compose-profile-example
 
-`compman` 단일 compose 파일 + profile 예제 — 환경변수만 profile로 관리.
+`compman` single Compose-file + profile example — manage only environment variables by profile.
 
-## 구조
+## Structure
 
 ```
 single-compose-profile-example/
@@ -10,7 +10,7 @@ single-compose-profile-example/
 └── docker-compose.yml
 ```
 
-## 사용
+## Usage
 
 ```bash
 compman stack up dev      # docker compose -f docker-compose.yml -p single-compose-app up -d
@@ -21,10 +21,10 @@ compman stack up prod     # docker compose -f docker-compose.yml -p single-compo
 compman stack down --yes
 ```
 
-## 설명
+## Explanation
 
-profile에 `file`을 생략하면 기본값 `docker-compose.yml`을 사용합니다.
-같은 compose 파일을 공유하되 profile별 env vars만 다르게 주입할 수 있습니다.
+When `file` is omitted for a profile, it defaults to `docker-compose.yml`.
+You can share the same Compose file while injecting different environment variables for each profile.
 
 ```yaml
 compose:

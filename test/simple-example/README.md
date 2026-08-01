@@ -1,8 +1,8 @@
 # simple-example
 
-`compman` 단순 compose 파일 목록 예시 — profile 없이 compose up.
+`compman` simple Compose-file list example — Compose up without profiles.
 
-## 구조
+## Structure
 
 ```
 simple-example/
@@ -10,7 +10,7 @@ simple-example/
 └── docker-compose.yml
 ```
 
-## 사용
+## Usage
 
 ```bash
 compman stack up
@@ -20,14 +20,14 @@ compman service start web
 compman stack down --yes
 ```
 
-## 설명
+## Explanation
 
-profile이 필요 없는 단순한 경우 `compose`를 리스트로 지정합니다.
-`base`나 per-profile env 없이 compose 파일만 `-f`로 전달됩니다.
+For a simple setup that does not need profiles, specify `compose` as a list.
+Only Compose files are passed with `-f`, without `base` or per-profile environment variables.
 
 ```yaml
 compose:
   - docker-compose.yml
 ```
 
-`compose` 키를 아예 생략하면 기본값으로 `docker-compose.yml`을 찾습니다.
+If the `compose` key is omitted entirely, it defaults to `docker-compose.yml`.

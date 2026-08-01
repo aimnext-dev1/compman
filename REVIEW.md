@@ -38,7 +38,7 @@ Recommended design: optional SHA-256/object version configuration, archive size/
 
 ### Improve release engineering
 
-Package version is fixed at `0.1.0`, dependencies have no direct lower bounds, and no documented changelog/release process exists.
+Version `1.0.0` marks the first stable release. Dependencies still have no direct lower bounds, and no documented changelog or release process exists.
 
 Recommended design: tag-derived versions, release notes/changelog, dependency policy, reproducible wheel verification, and publishing automation.
 

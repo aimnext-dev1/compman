@@ -35,7 +35,7 @@ def generate_seed(
 
     index_html_content = (
         '<!DOCTYPE html>\n'
-        '<html lang="ko">\n'
+        '<html lang="en">\n'
         '<head>\n'
         '    <meta charset="UTF-8">\n'
         '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
@@ -53,7 +53,7 @@ def generate_seed(
         '</head>\n'
         '<body>\n'
         '    <div class="card">\n'
-        '        <h1>🚀 compman Seed App</h1>\n'
+        '        <h1>compman Seed App</h1>\n'
         '        <p><span class="badge">Nginx Alpine High-Performance</span></p>\n'
         '        <div class="time" id="clock">Loading time...</div>\n'
         '        <p style="color: #94a3b8; font-size: 0.875rem;">Instant Sub-Millisecond Container Response</p>\n'

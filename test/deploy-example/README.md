@@ -1,30 +1,30 @@
 # deploy-example
 
-`compman` deploy 기능 예시 — S3에서 프로젝트 리소스를 받아와 원자적 교체.
+`compman` deploy example — fetch project resources from S3 and replace them atomically.
 
-## 동작
+## Behavior
 
-S3 경로(`compman.yml: deploy` 또는 `--path`) 유형에 따라 처리해 **`dirs.project` 디렉터리**의 내용을 교체합니다.
+Depending on the S3 path type (`compman.yml: deploy` or `--path`), replaces the contents of the **`dirs.project` directory**.
 
-- **prefix 경로** — key 아래 모든 객체를 구조 보존 다운로드
+- **Prefix path** — download every object under the key while preserving its structure
   ```
   s3://<bucket>/app/
   ├── Dockerfile                 # → project/Dockerfile
   └── script/                    # → project/script/
   ```
-- **아카이브 파일** — `.tar.gz`/`.tgz`/`.zip` 객체를 다운로드해 추출. 최상위 폴더가 하나뿐이면 평탄화
+- **Archive file** — download and extract a `.tar.gz`/`.tgz`/`.zip` object. Flatten it when it contains exactly one top-level directory.
   ```
-  s3://<bucket>/app.tar.gz (내부: app/Dockerfile, app/script/)  → project/Dockerfile, project/script/
+  s3://<bucket>/app.tar.gz (contents: app/Dockerfile, app/script/)  → project/Dockerfile, project/script/
   ```
 
-기존 관리 디렉터리 내용은 새 트리로 교체됩니다. 루트의 `compman.yml`과 `docker-compose.yml`은 scaffold 로직이 별도로 생성 또는 갱신합니다.
+The existing managed directory contents are replaced with the new tree. Scaffolding separately creates or updates the root `compman.yml` and `docker-compose.yml`.
 
-**빈 디렉토리 자동 scaffold**: `compman.yml`/`docker-compose.yml`이 없으면 deploy가 자동 생성합니다.
+**Automatic scaffolding in an empty directory**: deploy creates `compman.yml` and `docker-compose.yml` when they do not exist.
 ```yaml
 # compman.yml
 compman:
   name: <cwd dirname>
-  deploy: s3://<사용한 경로>     # 다음 deploy는 --path 없이 동작
+  deploy: s3://<path-used>     # the next deploy works without --path
   compose:
     - docker-compose.yml
 ```
@@ -32,15 +32,15 @@ compman:
 # docker-compose.yml
 services:
   app:
-    image: <--tag 또는 dirname>  # --build 시 빌드된 이미지와 일치
+    image: <--tag or dirname>  # matches the image built with --build
     restart: unless-stopped
 ```
-기존 파일은 덮어쓰지 않습니다. 빈 디렉토리에서 `compman deploy --build` → 바로 `compman stack up` 가능.
-실행 중인 컨테이너는 건드리지 않습니다.
+Existing files are not overwritten. In an empty directory, you can run `compman deploy --build` followed directly by `compman stack up`.
+Running containers are not touched.
 
-## 설정
+## Configuration
 
-- S3 경로: `compman.yml`의 `deploy` 키 또는 CLI `--path` override
+- S3 path: the `deploy` key in `compman.yml`, or the CLI `--path` override
   ```yaml
   compman:
     deploy: s3://my-bucket/app
@@ -48,24 +48,24 @@ services:
   ```bash
   compman deploy --path s3://my-bucket/other
   ```
-- 엔드포인트: `AWS_ENDPOINT_URL_S3` 또는 `AWS_ENDPOINT_URL` — 미설정 시 실제 AWS, 설정 시 해당 엔드포인트로 (로컬 ministack 테스트용, root `docker-compose.yaml` 기동 시 `http://localhost:4566`)
-- 인증: 표준 `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` env vars
-- boto3 사용 (aws CLI 불필요)
+- Endpoint: `AWS_ENDPOINT_URL_S3` or `AWS_ENDPOINT_URL` — real AWS when unset; the specified endpoint when set (for local ministack testing, `http://localhost:4566` when the root `docker-compose.yaml` is running)
+- Credentials: standard `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` env vars
+- Uses boto3 (AWS CLI not required)
 
-## 사용법
+## Usage
 
 ```bash
-compman init                        # 심플 compman.yml 생성 (name = cwd dirname, 풀 옵션은 주석)
-compman deploy                     # compman.yml의 deploy 경로에서 fetch
-compman deploy --path s3://...     # 경로 override
-compman deploy --build --tag myapp # fetch 후 docker build -t myapp .
+compman init                        # create a simple compman.yml (name = cwd dirname; full options are commented)
+compman deploy                     # fetch from the deploy path in compman.yml
+compman deploy --path s3://...     # override the path
+compman deploy --build --tag myapp # fetch, then docker build -t myapp .
 ```
 
-`--build` 시 태그 미지정이면 cwd 디렉토리명이 기본 태그가 됩니다.
+When using `--build`, the cwd directory name is the default tag if no tag is provided.
 
-## 주의
+## Caution
 
-deploy는 fetch된 파일을 기본적으로 현재 디렉터리 아래 **`project/`**에 생성합니다. 파일 swap 실패는 롤백하지만 이후 scaffold 또는 Docker build 실패 시 새 소스 트리는 유지됩니다.
-repo 루트에서 실행하면 untracked 파일이 생기므로, **스크래치/타깃 디렉토리에서 실행**하세요.
+By default, deploy creates fetched files in **`project/`** under the current directory. A failed file swap rolls back, but a later scaffolding or Docker-build failure leaves the new source tree in place.
+Running it from the repository root creates untracked files, so **run it in a scratch/target directory**.
 
-실제 테스트 절차는 `test/deploy-project/` 참고.
+See `test/deploy-project/` for the full test procedure.
