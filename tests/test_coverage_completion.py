@@ -10,7 +10,6 @@ import tarfile
 from unittest.mock import MagicMock, patch
 
 import pytest
-from typer import _click
 from typer.core import TyperGroup
 
 import compman.archive as archive
@@ -53,12 +52,16 @@ def test_main_module_can_be_loaded_without_running_cli():
     assert "app" in namespace
 
 
-def test_cli_group_converts_command_error():
+def test_cli_group_converts_command_error(capsys: pytest.CaptureFixture[str]):
     group = cli.HelpOnUnknownCommandGroup(name="test")
     with patch.object(TyperGroup, "main", side_effect=CommandError("boom", code=7)):
-        with pytest.raises(_click.exceptions.Exit) as exc:
+        with pytest.raises(SystemExit) as exc:
             group.main()
-    assert exc.value.exit_code == 7
+    assert exc.value.code == 7
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "boom\n"
+    assert "Traceback" not in captured.err
 
 
 def test_config_rejects_non_string_folder(temp_dir):
