@@ -39,21 +39,35 @@ def test_deploy_existing_config_s3(dummy_runtime, temp_dir: pathlib.Path):
         pass
     mock_s3.download_file.side_effect = lambda b, k, dst: pathlib.Path(dst).write_bytes(tar_path.read_bytes())
 
-    with patch("boto3.client", return_value=mock_s3), patch("compman.deploy.detect_runtime", return_value=dummy_runtime):
+    calls: list[str] = []
+    dummy_runtime.ensure_ready_for_start = MagicMock(side_effect=lambda callback: calls.append("ready"))
+    dummy_runtime.passthru_cli = MagicMock(side_effect=lambda *_args, **_kwargs: calls.append("build"))
+    with patch("boto3.client", return_value=mock_s3), patch(
+        "compman.deploy.detect_runtime", return_value=dummy_runtime
+    ) as detect:
         deploy.deploy(build=True, tag="my_tag", s3_path=None)
         assert (temp_dir / "compman.yml").exists()
+    assert calls == ["ready", "build"]
+    detect.assert_called_once()
+    dummy_runtime.ensure_ready_for_start.assert_called_once()
+    dummy_runtime.passthru_cli.assert_called_once_with(
+        ["build", "-t", "my_tag", "."], cwd=temp_dir / "project"
+    )
 
 
-def test_deploy_zip_archive(dummy_runtime, temp_dir: pathlib.Path):
+def test_deploy_zip_archive(temp_dir: pathlib.Path):
     mock_s3 = MagicMock()
     zip_path = temp_dir / "app.zip"
     with zipfile.ZipFile(zip_path, "w") as zf:
         zf.writestr("test.txt", "hello")
     mock_s3.download_file.side_effect = lambda b, k, dst: pathlib.Path(dst).write_bytes(zip_path.read_bytes())
 
-    with patch("boto3.client", return_value=mock_s3), patch("compman.deploy.detect_runtime", return_value=dummy_runtime):
+    with patch("boto3.client", return_value=mock_s3), patch(
+        "compman.deploy.detect_runtime"
+    ) as detect:
         deploy.deploy(build=False, tag=None, s3_path="s3://my-bucket/app.zip")
         assert (temp_dir / "project" / "test.txt").exists()
+    detect.assert_not_called()
 
 
 def test_deploy_rejects_zip_path_traversal(temp_dir: pathlib.Path):

@@ -18,6 +18,7 @@ from botocore.exceptions import (
 from compman.config import ConfigError, load_config, sanitize_project_name
 from compman.docker import detect_runtime
 from compman.i18n import t
+from compman.ops.common import ensure_runtime_ready
 from compman.s3_source import download as _download  # noqa: F401
 from compman.s3_source import download_recursive as _download_recursive  # noqa: F401
 from compman.s3_source import fetch as _fetch
@@ -87,7 +88,9 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
         if build:
             stage = "building the container image"
             typer.echo(t("msg.deploy_building", image=image, path=project_subfolder))
-            detect_runtime().passthru_cli(["build", "-t", image, "."], cwd=deploy_target)
+            runtime = detect_runtime()
+            ensure_runtime_ready(runtime)
+            runtime.passthru_cli(["build", "-t", image, "."], cwd=deploy_target)
         typer.echo(t("msg.deploy_done"))
     except SystemExit:
         raise

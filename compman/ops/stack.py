@@ -5,10 +5,12 @@ import typer
 from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_context
 from compman.i18n import t
+from compman.ops.common import ensure_runtime_ready
 
 
 def up(runtime: ContainerRuntime, config: Config, profile: str | None = None) -> None:
     context = resolve_compose_context(config, profile)
+    ensure_runtime_ready(runtime)
     runtime.passthru_compose(
         ["up", "-d", "--force-recreate"],
         project=context.project,
@@ -31,6 +33,7 @@ def update(
     runtime: ContainerRuntime, config: Config, profile: str | None = None
 ) -> None:
     context = resolve_compose_context(config, profile)
+    ensure_runtime_ready(runtime)
     runtime.passthru_compose(
         ["up", "-d", "--build", "--force-recreate"],
         project=context.project,

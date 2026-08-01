@@ -11,6 +11,14 @@ from compman.errors import CommandError
 from compman.i18n import t
 
 
+def ensure_runtime_ready(runtime: ContainerRuntime) -> None:
+    runtime.ensure_ready_for_start(
+        lambda: typer.confirm(
+            "Docker Desktop is not running. Start it now?", default=True, abort=False
+        )
+    )
+
+
 def get_key() -> str:
     if sys.platform == "win32":
         import msvcrt
