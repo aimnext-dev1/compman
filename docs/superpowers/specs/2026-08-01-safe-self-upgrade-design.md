@@ -63,8 +63,11 @@ not an in-process self-upgrade.
 
 Document recovery for an already damaged installation:
 
+Keep the recovery source unpinned so uv stores a movable Git source and future
+`uv tool upgrade` commands can advance to newer releases.
+
 ```powershell
 uv tool uninstall compman
-uv tool install git+https://github.com/allbegray/compman.git@v1.1.1
+uv tool install git+https://github.com/allbegray/compman.git
 compman --version
 ```

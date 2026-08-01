@@ -373,7 +373,7 @@ def _run_upgrade_command(cmd: list[str]) -> subprocess.CompletedProcess[str]:
 def upgrade_cmd(
     repo: Annotated[str, typer.Option("--repo", help=t("opt.repo"))] = "https://github.com/allbegray/compman.git",
 ) -> None:
-    typer.echo(t("msg.upgrade_start", repo=repo))
+    typer.echo(t("msg.upgrade_start"))
 
     uv_cmd = _find_uv()
     try:

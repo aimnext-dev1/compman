@@ -101,9 +101,12 @@ git commit -m "fix: make self-upgrade safe on Windows"
 
 Document the supported uv upgrade behavior and broken-install recovery:
 
+Use an unpinned Git source so uv records a source that future `uv tool upgrade`
+commands can move forward.
+
 ```powershell
 uv tool uninstall compman
-uv tool install git+https://github.com/allbegray/compman.git@v1.1.1
+uv tool install git+https://github.com/allbegray/compman.git
 compman --version
 ```
 

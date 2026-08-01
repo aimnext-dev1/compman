@@ -464,8 +464,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "Shell 프로필에 자동완성 스크립트를 자동 등록합니다.",
     },
     "opt.repo": {
-        "en": "Git repository URL for upgrade",
-        "ko": "업그레이드용 Git 저장소 URL",
+        "en": "Git repository URL used only for pip fallback or manual recovery",
+        "ko": "pip 대체 설치 또는 수동 복구에만 사용할 Git 저장소 URL",
     },
     "opt.no_stop": {
         "en": "Don't stop stack during backup/restore",
@@ -526,8 +526,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "PowerShell 자동완성 등록 오류: {error}",
     },
     "msg.upgrade_start": {
-        "en": "Upgrading compman CLI from {repo}...",
-        "ko": "{repo}에서 compman CLI를 업그레이드하는 중...",
+        "en": "Upgrading compman CLI...",
+        "ko": "compman CLI를 업그레이드하는 중...",
     },
     "msg.upgrade_success": {
         "en": "compman CLI upgraded successfully!",

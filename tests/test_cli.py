@@ -190,11 +190,14 @@ def test_cli_unknown_subcommand_shows_group_help(runner: CliRunner):
 
 def test_cli_upgrade_uses_uv_tool_upgrade_with_utf8_decoding(runner: CliRunner):
     result = MagicMock(returncode=0, stdout="", stderr="")
+    repo = "https://example.test/custom/compman.git"
     with patch("compman.cli._find_uv", return_value="/fake/uv"), patch(
         "subprocess.run", return_value=result
     ) as run:
-        res = runner.invoke(app, ["upgrade"])
+        res = runner.invoke(app, ["upgrade", "--repo", repo])
     assert res.exit_code == 0
+    assert "Upgrading compman CLI..." in res.output
+    assert repo not in res.output
     assert "compman CLI upgraded successfully!" in res.output
     run.assert_called_once_with(
         ["/fake/uv", "tool", "upgrade", "compman", "--reinstall"],
@@ -492,17 +495,13 @@ def test_cli_expected_errors_exit_cleanly(runner: CliRunner):
     assert "Traceback" not in runtime_error.output
 
 
-def test_run_upgrade_command_uses_replacement_safe_utf8_decoding():
-    result = MagicMock(returncode=0, stdout="", stderr="")
-    with patch("subprocess.run", return_value=result) as run:
-        assert _run_upgrade_command(["uv"]) is result
-    run.assert_called_once_with(
-        ["uv"],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
+def test_run_upgrade_command_replaces_invalid_utf8_from_real_subprocess():
+    result = _run_upgrade_command(
+        [sys.executable, "-c", "import os; os.write(1, b'invalid: \\xff')"]
     )
+    assert result.returncode == 0
+    assert result.stdout == "invalid: \ufffd"
+    assert result.stderr == ""
 
 
 def test_cli_service_no_services(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):

@@ -76,12 +76,13 @@ This runs `uv tool upgrade compman --reinstall`.
 
 ### Recover a damaged installation
 
-If `compman upgrade` cannot run because the installation is damaged, reinstall the
-released version:
+If `compman upgrade` cannot run because the installation is damaged, reinstall from
+the upstream Git source. Keeping that source unpinned lets future `uv tool upgrade`
+commands continue moving to newer releases:
 
 ```bash
 uv tool uninstall compman
-uv tool install git+https://github.com/allbegray/compman.git@v1.1.1
+uv tool install git+https://github.com/allbegray/compman.git
 compman --version
 ```
 
