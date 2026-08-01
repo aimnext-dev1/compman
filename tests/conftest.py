@@ -16,6 +16,7 @@ class DummyRuntime(ContainerRuntime):
         super().__init__(name="docker", cli=["docker"], compose=["docker", "compose"])
         self.commands_run: list[list[str]] = []
         self.compose_runs: list[dict[str, Any]] = []
+        self.compose_stdout = "my_stack_vol_1\nmy_stack-app-1\n"
 
     def run_cli(
         self,
@@ -51,7 +52,7 @@ class DummyRuntime(ContainerRuntime):
         m = MagicMock()
         m.return_code = 0
         m.returncode = 0
-        m.stdout = "my_stack_vol_1\nmy_stack-app-1\n"
+        m.stdout = self.compose_stdout
         return m
 
     def passthru_cli(self, args: Any, cwd: pathlib.Path | str | None = None) -> int:
