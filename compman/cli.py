@@ -23,6 +23,16 @@ from compman.i18n import get_lang, set_lang, t
 from compman.ops import image, service, stack, volume
 
 
+def _configure_console_output() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure:  # pragma: no branch - standard Python text streams provide it
+            reconfigure(errors="replace")
+
+
+_configure_console_output()
+
+
 def _version_callback(value: bool) -> None:
     if value:
         try:
@@ -84,8 +94,8 @@ def _load(config_path: str | None = None):
         typer.echo(t("msg.config_not_found", err=e), err=True)
         typer.echo("", err=True)
         typer.echo(t("msg.start_guide"), err=True)
-        typer.echo(f"  • compman init                              ({t('msg.init_desc')})", err=True)
-        typer.echo(f"  • compman deploy --path s3://<your-bucket>  ({t('msg.deploy_desc')})", err=True)
+        typer.echo(f"  - compman init                              ({t('msg.init_desc')})", err=True)
+        typer.echo(f"  - compman deploy --path s3://<your-bucket>  ({t('msg.deploy_desc')})", err=True)
         raise typer.Exit(1)
     try:
         runtime = detect_runtime()
@@ -201,7 +211,7 @@ def update_cmd(
 def _render_doctor(report: DoctorReport) -> None:
     typer.echo("Doctor:")
     for check in report.checks:
-        marker = "!" if check.severity == "warning" else "✓" if check.ok else "✗"
+        marker = "!" if check.severity == "warning" else "OK" if check.ok else "X"
         typer.echo(f"{marker} {check.id}: {check.message}")
 
 
@@ -212,12 +222,12 @@ def _render_status(report: StatusReport) -> None:
     if report.profile:
         header += f" (profile: {report.profile})"
     if report.error:
-        header += f" — {report.error}"
+        header += f" - {report.error}"
     typer.echo(header)
     for service_status in report.services:
         health = f", health: {service_status.health}" if service_status.health else ""
         typer.echo(
-            f"{service_status.service}: {service_status.state} — "
+            f"{service_status.service}: {service_status.state} - "
             f"{service_status.status} (container: {service_status.container}{health})"
         )
 

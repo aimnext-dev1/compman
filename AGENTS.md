@@ -97,3 +97,8 @@ uv run ruff check compman tests
 uv run mypy compman
 uv run pytest --cov=compman --cov-report=term-missing
 ```
+
+Before release completion, build a wheel and install it into an isolated uv tool
+directory. Smoke-test the generated `compman.exe` itself, including `--version`,
+English and Korean `--help`, `init`, `doctor`, and `status`; test `upgrade` when
+the stored installation source supports it.

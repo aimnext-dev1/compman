@@ -296,7 +296,7 @@ def test_doctor_failure_exits_one_after_text_report(runner: CliRunner, monkeypat
     result = runner.invoke(app, ["doctor"])
 
     assert result.exit_code == 1
-    assert "✗" in result.stdout
+    assert "X" in result.stdout
     assert "missing" in result.stdout
 
 

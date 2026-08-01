@@ -32,16 +32,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": (
             "Docker Compose Stack Manager CLI.\n\n"
             "Language Options:\n"
-            "  • Use --lang / -l <en|ko> option for a one-time language switch.\n"
-            "  • Set COMPMAN_LANG=ko environment variable for a permanent setting.\n"
-            "  • Run 'compman lang' to view current language or see environment setup guides."
+            "  - Use --lang / -l <en|ko> option for a one-time language switch.\n"
+            "  - Set COMPMAN_LANG=ko environment variable for a permanent setting.\n"
+            "  - Run 'compman lang' to view current language or see environment setup guides."
         ),
         "ko": (
             "Docker Compose 스택 및 배포 관리 CLI.\n\n"
             "언어 설정 방법:\n"
-            "  • --lang / -l <en|ko> 옵션으로 1회성 언어 전환 가능.\n"
-            "  • COMPMAN_LANG=ko 환경 변수를 설정하여 영구 언어 지정 가능.\n"
-            "  • 'compman lang' 명령어로 현재 언어 상태 및 설정 방법 확인 가능."
+            "  - --lang / -l <en|ko> 옵션으로 1회성 언어 전환 가능.\n"
+            "  - COMPMAN_LANG=ko 환경 변수를 설정하여 영구 언어 지정 가능.\n"
+            "  - 'compman lang' 명령어로 현재 언어 상태 및 설정 방법 확인 가능."
         ),
     },
     "cmd.lang": {
@@ -486,8 +486,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
     # Guidance & Error Messages
     "msg.config_not_found": {
-        "en": "💡 compman.yml config file not found ({err})",
-        "ko": "💡 compman.yml 설정 파일을 찾을 수 없습니다 ({err})",
+        "en": "Info: compman.yml config file not found ({err})",
+        "ko": "안내: compman.yml 설정 파일을 찾을 수 없습니다 ({err})",
     },
     "msg.unknown_command": {
         "en": "Error: Unknown command '{command}'.",
@@ -546,20 +546,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "지원하지 않는 언어 코드입니다: '{language}'. 'en' 또는 'ko'를 사용하세요.",
     },
     "msg.lang_info": {
-        "en": "🌐 compman CLI Language Info:",
-        "ko": "🌐 compman CLI 언어 정보:",
+        "en": "compman CLI Language Info:",
+        "ko": "compman CLI 언어 정보:",
     },
     "msg.lang_active": {
-        "en": "  • Active Language : {language}",
-        "ko": "  • 현재 언어 : {language}",
+        "en": "  - Active Language : {language}",
+        "ko": "  - 현재 언어 : {language}",
     },
     "msg.lang_env": {
-        "en": "  • COMPMAN_LANG Env: {value}",
-        "ko": "  • COMPMAN_LANG 환경 변수: {value}",
+        "en": "  - COMPMAN_LANG Env: {value}",
+        "ko": "  - COMPMAN_LANG 환경 변수: {value}",
     },
     "msg.lang_persistent": {
-        "en": "💡 To set language permanently via environment variable:",
-        "ko": "💡 환경 변수로 언어를 영구 설정하려면:",
+        "en": "Info: To set language permanently via environment variable:",
+        "ko": "안내: 환경 변수로 언어를 영구 설정하려면:",
     },
     "msg.deploy_building": {
         "en": "Building image '{image}' in {path}...",
@@ -582,12 +582,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "작업이 취소되었습니다.",
     },
     "msg.backup_dir_not_found": {
-        "en": "💡 Backup directory not found at {path}.",
-        "ko": "💡 백업 디렉터리를 찾을 수 없습니다: {path}",
+        "en": "Info: Backup directory not found at {path}.",
+        "ko": "안내: 백업 디렉터리를 찾을 수 없습니다: {path}",
     },
     "msg.no_backups": {
-        "en": "💡 No {kind} backup files found in {path}.",
-        "ko": "💡 {path}에 {kind} 백업 파일이 없습니다.",
+        "en": "Info: No {kind} backup files found in {path}.",
+        "ko": "안내: {path}에 {kind} 백업 파일이 없습니다.",
     },
     "msg.selected_backup": {
         "en": "Selected backup: {name}",
@@ -618,8 +618,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "S3 경로로 바로 첫 배포",
     },
     "msg.empty_dir_deploy": {
-        "en": "💡 [compman deploy] Empty directory without compman.yml config file.",
-        "ko": "💡 [compman deploy] compman.yml 설정 파일이 없는 빈 디렉터리입니다.",
+        "en": "Info: [compman deploy] Empty directory without compman.yml config file.",
+        "ko": "안내: [compman deploy] compman.yml 설정 파일이 없는 빈 디렉터리입니다.",
     },
     "msg.empty_dir_start": {
         "en": "Start by running one of the following commands:",
@@ -634,56 +634,56 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "  2. 기본 compman.yml 생성:",
     },
     "msg.deploy_path_not_configured": {
-        "en": "💡 [compman deploy] S3 deployment path is not configured.",
-        "ko": "💡 [compman deploy] S3 배포 경로가 지정되지 않았습니다.",
+        "en": "Info: [compman deploy] S3 deployment path is not configured.",
+        "ko": "안내: [compman deploy] S3 배포 경로가 지정되지 않았습니다.",
     },
     "msg.deploy_path_hint1": {
-        "en": "  • Specify 'deploy' field in compman.yml, or",
-        "ko": "  • compman.yml 파일의 'deploy' 속성을 지정하거나,",
+        "en": "  - Specify 'deploy' field in compman.yml, or",
+        "ko": "  - compman.yml 파일의 'deploy' 속성을 지정하거나,",
     },
     "msg.deploy_path_hint2": {
-        "en": "  • Pass S3 path via option: compman deploy --path s3://...",
-        "ko": "  • compman deploy --path s3://... 옵션으로 S3 경로를 전달해주세요.",
+        "en": "  - Pass S3 path via option: compman deploy --path s3://...",
+        "ko": "  - compman deploy --path s3://... 옵션으로 S3 경로를 전달해주세요.",
     },
     "msg.stack_not_running": {
-        "en": "💡 Stack '{name}' is not currently running. Run 'compman stack up' to start it.",
-        "ko": "💡 스택 '{name}'이(가) 현재 실행 중이지 않습니다. 'compman stack up' 커맨드로 시작하세요.",
+        "en": "Info: Stack '{name}' is not currently running. Run 'compman stack up' to start it.",
+        "ko": "안내: 스택 '{name}'이(가) 현재 실행 중이지 않습니다. 'compman stack up' 커맨드로 시작하세요.",
     },
     "msg.no_running_containers": {
-        "en": "💡 No running containers found in this stack. Run 'compman stack up' first.",
-        "ko": "💡 실행 중인 스택 컨테이너가 없습니다. 'compman stack up' 커맨드를 먼저 실행하세요.",
+        "en": "Info: No running containers found in this stack. Run 'compman stack up' first.",
+        "ko": "안내: 실행 중인 스택 컨테이너가 없습니다. 'compman stack up' 커맨드를 먼저 실행하세요.",
     },
     "msg.container_not_found": {
-        "en": "💡 Container '{service}' not found. Run 'compman service status' to check running containers.",
-        "ko": "💡 컨테이너 '{service}'를 찾을 수 없습니다. 'compman service status'로 실행 중인 컨테이너를 확인하세요.",
+        "en": "Info: Container '{service}' not found. Run 'compman service status' to check running containers.",
+        "ko": "안내: 컨테이너 '{service}'를 찾을 수 없습니다. 'compman service status'로 실행 중인 컨테이너를 확인하세요.",
     },
     "msg.backup_not_found": {
-        "en": "💡 Backup not found: {tarball}",
-        "ko": "💡 백업 파일을 찾을 수 없습니다: {tarball}",
+        "en": "Info: Backup not found: {tarball}",
+        "ko": "안내: 백업 파일을 찾을 수 없습니다: {tarball}",
     },
     "msg.volume_map_not_found": {
-        "en": "💡 volume-map.json not found at {path}. Run 'compman volume pull' first.",
-        "ko": "💡 {path} 위치에 volume-map.json이 없습니다. 'compman volume pull'을 먼저 실행하세요.",
+        "en": "Info: volume-map.json not found at {path}. Run 'compman volume pull' first.",
+        "ko": "안내: {path} 위치에 volume-map.json이 없습니다. 'compman volume pull'을 먼저 실행하세요.",
     },
     "msg.s3_failed": {
-        "en": "💡 [compman deploy] Failed to download from {path}",
-        "ko": "💡 [compman deploy] {path} 다운로드 실패",
+        "en": "Info: [compman deploy] Failed to download from {path}",
+        "ko": "안내: [compman deploy] {path} 다운로드 실패",
     },
     "msg.s3_no_creds": {
-        "en": "Error: AWS credentials were not found or are incomplete.\n\nGuide - Please set your AWS credentials using environment variables:\n  • Windows PowerShell:\n      $env:AWS_ACCESS_KEY_ID=\"your-key-id\"\n      $env:AWS_SECRET_ACCESS_KEY=\"your-secret-key\"\n      $env:AWS_DEFAULT_REGION=\"ap-northeast-2\"\n  • Windows CMD:\n      set AWS_ACCESS_KEY_ID=your-key-id\n      set AWS_SECRET_ACCESS_KEY=your-secret-key\n      set AWS_DEFAULT_REGION=ap-northeast-2\n  • Or configure credentials in ~/.aws/credentials",
-        "ko": "오류: AWS 자격 증명을 찾을 수 없거나 불완전합니다.\n\n가이드 - 환경 변수로 AWS 자격 증명을 설정하세요:\n  • Windows PowerShell:\n      $env:AWS_ACCESS_KEY_ID=\"your-key-id\"\n      $env:AWS_SECRET_ACCESS_KEY=\"your-secret-key\"\n      $env:AWS_DEFAULT_REGION=\"ap-northeast-2\"\n  • Windows CMD:\n      set AWS_ACCESS_KEY_ID=your-key-id\n      set AWS_SECRET_ACCESS_KEY=your-secret-key\n      set AWS_DEFAULT_REGION=ap-northeast-2\n  • 또는 ~/.aws/credentials 파일에 설정",
+        "en": "Error: AWS credentials were not found or are incomplete.\n\nGuide - Please set your AWS credentials using environment variables:\n  - Windows PowerShell:\n      $env:AWS_ACCESS_KEY_ID=\"your-key-id\"\n      $env:AWS_SECRET_ACCESS_KEY=\"your-secret-key\"\n      $env:AWS_DEFAULT_REGION=\"ap-northeast-2\"\n  - Windows CMD:\n      set AWS_ACCESS_KEY_ID=your-key-id\n      set AWS_SECRET_ACCESS_KEY=your-secret-key\n      set AWS_DEFAULT_REGION=ap-northeast-2\n  - Or configure credentials in ~/.aws/credentials",
+        "ko": "오류: AWS 자격 증명을 찾을 수 없거나 불완전합니다.\n\n가이드 - 환경 변수로 AWS 자격 증명을 설정하세요:\n  - Windows PowerShell:\n      $env:AWS_ACCESS_KEY_ID=\"your-key-id\"\n      $env:AWS_SECRET_ACCESS_KEY=\"your-secret-key\"\n      $env:AWS_DEFAULT_REGION=\"ap-northeast-2\"\n  - Windows CMD:\n      set AWS_ACCESS_KEY_ID=your-key-id\n      set AWS_SECRET_ACCESS_KEY=your-secret-key\n      set AWS_DEFAULT_REGION=ap-northeast-2\n  - 또는 ~/.aws/credentials 파일에 설정",
     },
     "msg.s3_403": {
-        "en": "Error 403 (Access Denied): Access to '{path}' was forbidden.\n\nGuide - Troubleshooting 403 Forbidden:\n  1️⃣ Ensure AWS credentials have 's3:GetObject' and 's3:ListBucket' permissions.\n  2️⃣ Verify S3 bucket name and key path are correct.\n  3️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.",
-        "ko": "오류 403 (접근 거부): '{path}' 접근 권한이 거부되었습니다.\n\n가이드 - 403 Forbidden 해결 방법:\n  1️⃣ AWS 자격 증명에 's3:GetObject' 및 's3:ListBucket' 권한이 있는지 확인하세요.\n  2️⃣ S3 버킷 이름 및 객체 경로가 정확한지 확인하세요.\n  3️⃣ 로컬 S3 에뮬레이터 사용 시 AWS_ENDPOINT_URL_S3 또는 AWS_ENDPOINT_URL 환경 변수를 확인하세요.",
+        "en": "Error 403 (Access Denied): Access to '{path}' was forbidden.\n\nGuide - Troubleshooting 403 Forbidden:\n  1. Ensure AWS credentials have 's3:GetObject' and 's3:ListBucket' permissions.\n  2. Verify S3 bucket name and key path are correct.\n  3. If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.",
+        "ko": "오류 403 (접근 거부): '{path}' 접근 권한이 거부되었습니다.\n\n가이드 - 403 Forbidden 해결 방법:\n  1. AWS 자격 증명에 's3:GetObject' 및 's3:ListBucket' 권한이 있는지 확인하세요.\n  2. S3 버킷 이름 및 객체 경로가 정확한지 확인하세요.\n  3. 로컬 S3 에뮬레이터 사용 시 AWS_ENDPOINT_URL_S3 또는 AWS_ENDPOINT_URL 환경 변수를 확인하세요.",
     },
     "msg.s3_404": {
-        "en": "Error 404 (Not Found): Bucket or file does not exist: '{path}'\n\nGuide - Troubleshooting 404 Not Found:\n  1️⃣ Verify bucket name and file/archive path on S3.\n  2️⃣ Check for typos in s3://bucket/path",
-        "ko": "오류 404 (찾을 수 없음): 버킷 또는 파일이 S3에 존재하지 않습니다: '{path}'\n\n가이드 - 404 Not Found 해결 방법:\n  1️⃣ S3의 버킷 이름 및 아카이브 파일 경로를 확인하세요.\n  2️⃣ s3://bucket/path 오타 여부를 확인하세요.",
+        "en": "Error 404 (Not Found): Bucket or file does not exist: '{path}'\n\nGuide - Troubleshooting 404 Not Found:\n  1. Verify bucket name and file/archive path on S3.\n  2. Check for typos in s3://bucket/path",
+        "ko": "오류 404 (찾을 수 없음): 버킷 또는 파일이 S3에 존재하지 않습니다: '{path}'\n\n가이드 - 404 Not Found 해결 방법:\n  1. S3의 버킷 이름 및 아카이브 파일 경로를 확인하세요.\n  2. s3://bucket/path 오타 여부를 확인하세요.",
     },
     "msg.s3_network": {
-        "en": "Network Error: Unable to connect to S3 endpoint.\n\nGuide - Troubleshooting connection error:\n  1️⃣ Check internet connection.\n  2️⃣ If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.",
-        "ko": "네트워크 오류: S3 엔드포인트에 연결할 수 없습니다.\n\n가이드 - 네트워크 연결 오류 해결 방법:\n  1️⃣ 인터넷 연결 상태를 확인하세요.\n  2️⃣ 로컬 S3 에뮬레이터 사용 시 AWS_ENDPOINT_URL_S3 또는 AWS_ENDPOINT_URL 환경 변수를 확인하세요.",
+        "en": "Network Error: Unable to connect to S3 endpoint.\n\nGuide - Troubleshooting connection error:\n  1. Check internet connection.\n  2. If using local S3 (e.g. ministack), check AWS_ENDPOINT_URL_S3 or AWS_ENDPOINT_URL.",
+        "ko": "네트워크 오류: S3 엔드포인트에 연결할 수 없습니다.\n\n가이드 - 네트워크 연결 오류 해결 방법:\n  1. 인터넷 연결 상태를 확인하세요.\n  2. 로컬 S3 에뮬레이터 사용 시 AWS_ENDPOINT_URL_S3 또는 AWS_ENDPOINT_URL 환경 변수를 확인하세요.",
     },
     "msg.seed_created": {
         "en": "Created sample seed project: {path}/",
@@ -694,16 +694,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "아카이브 파일이 생성되었습니다: {path}",
     },
     "msg.seed_exists": {
-        "en": "💡 Directory '{path}' already exists and is not empty. Use --force to overwrite.",
-        "ko": "💡 디렉터리 '{path}'가 이미 존재하며 비어있지 않습니다. 덮어쓰려면 --force 옵션을 사용하세요.",
+        "en": "Info: Directory '{path}' already exists and is not empty. Use --force to overwrite.",
+        "ko": "안내: 디렉터리 '{path}'가 이미 존재하며 비어있지 않습니다. 덮어쓰려면 --force 옵션을 사용하세요.",
     },
     "msg.invalid_port": {
         "en": "Error: port must be between 1 and 65535 (got {port}).",
         "ko": "오류: 포트는 1에서 65535 사이여야 합니다 ({port}).",
     },
     "msg.no_volumes": {
-        "en": "💡 No volumes found to back up.",
-        "ko": "💡 백업할 볼륨이 없습니다.",
+        "en": "Info: No volumes found to back up.",
+        "ko": "안내: 백업할 볼륨이 없습니다.",
     },
     "msg.backup_done": {
         "en": "{kind} backup done: {path}",
