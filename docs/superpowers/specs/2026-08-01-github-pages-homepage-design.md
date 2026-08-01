@@ -27,7 +27,7 @@ Use the approved hybrid layout: a concise product landing section followed immed
 - Deployment examples for an S3 prefix/archive and a public HTTP/HTTPS archive.
 - Audience statement for operators in environments where web GUIs or heavyweight management software are unavailable.
 - FAQ covering runtime support, configuration, deployment sources, and safety.
-- Footer with repository, changelog, and license links.
+- Footer with repository, changelog, and MIT License links.
 
 ## Deployment
 
@@ -42,6 +42,7 @@ Use the approved hybrid layout: a concise product landing section followed immed
 - Add the public homepage URL `https://allbegray.github.io/compman/` near the top of README.md.
 - Ignore `.superpowers/` because browser brainstorming artifacts are local design aids, not project content.
 - Include the homepage in version `1.2.0` release notes.
+- Add the OSI-approved MIT License text as `LICENSE` with `Copyright (c) 2026 allbegray`, and declare MIT in package metadata.
 
 ## Verification
 

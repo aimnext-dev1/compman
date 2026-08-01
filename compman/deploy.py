@@ -15,8 +15,10 @@ from botocore.exceptions import (
     PartialCredentialsError,
 )
 
+from compman.archive_source import has_archive_suffix
 from compman.config import Config, ConfigError, load_config, sanitize_project_name
 from compman.docker import ContainerRuntime, detect_runtime
+from compman.http_source import fetch as _fetch_http
 from compman.i18n import t
 from compman.ops.common import ensure_runtime_ready
 from compman.s3_source import download as _download  # noqa: F401
@@ -75,16 +77,24 @@ def deploy(
     bucket = parsed.netloc
     key = parsed.path.lstrip("/")
 
-    stage = "validating the S3 source"
+    stage = "validating the deploy source"
     try:
-        if parsed.scheme != "s3" or not bucket:
-            raise ValueError(f"Invalid S3 path: {s3_path}")
-        stage = "downloading from S3"
-        try:
-            s3 = boto3.client("s3", endpoint_url=endpoint or None)
-            project_root = _fetch(s3, bucket, key, tmp)
-        except (ClientError, EndpointConnectionError, NoCredentialsError, PartialCredentialsError) as e:
-            _handle_s3_error(e, s3_path)
+        if parsed.scheme == "s3":
+            if not bucket:
+                raise ValueError(f"Invalid S3 path: {s3_path}")
+            stage = "downloading from S3"
+            try:
+                s3 = boto3.client("s3", endpoint_url=endpoint or None)
+                project_root = _fetch(s3, bucket, key, tmp)
+            except (ClientError, EndpointConnectionError, NoCredentialsError, PartialCredentialsError) as e:
+                _handle_s3_error(e, s3_path)
+        elif parsed.scheme in ("http", "https"):
+            if not bucket or not has_archive_suffix(parsed.path):
+                raise ValueError(f"HTTP source must be a .tar.gz, .tgz, or .zip archive: {s3_path}")
+            stage = "downloading from HTTP"
+            project_root = _fetch_http(s3_path, tmp)
+        else:
+            raise ValueError(f"Unsupported deploy source: {s3_path}")
         stage = "replacing the deployed files"
         _swap(project_root, deploy_target)
         stage = "generating project configuration"

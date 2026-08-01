@@ -87,12 +87,21 @@ def test_cli_global_lang_flag(runner: CliRunner):
 
 
 def test_cli_init(runner: CliRunner, temp_dir: pathlib.Path):
-    res_sk = runner.invoke(app, ["init", "--skeleton"])
+    res_sk = runner.invoke(app, ["init", "--scaffold"])
     assert res_sk.exit_code == 0
     assert (temp_dir / "compman.yml").exists()
 
-    res_sk_exists = runner.invoke(app, ["init", "--skeleton"])
+    res_sk_exists = runner.invoke(app, ["init", "--scaffold"])
     assert res_sk_exists.exit_code == 0
+
+    removed_skeleton = runner.invoke(app, ["init", "--skeleton"])
+    assert removed_skeleton.exit_code != 0
+    assert "No such option" in strip_ansi(removed_skeleton.output)
+
+    init_help = runner.invoke(app, ["init", "--help"], color=True)
+    plain_help = strip_ansi(init_help.output)
+    assert "--scaffold" in plain_help
+    assert "--skeleton" not in plain_help
 
     res_sd = runner.invoke(app, ["init", "--seed", "-o", "my_seed", "--force"])
     assert res_sd.exit_code == 0

@@ -165,7 +165,7 @@ def _load(config_path: str | None = None):
         typer.echo("", err=True)
         typer.echo(t("msg.start_guide"), err=True)
         typer.echo(f"  - compman init                              ({t('msg.init_desc')})", err=True)
-        typer.echo(f"  - compman deploy --path s3://<your-bucket>  ({t('msg.deploy_desc')})", err=True)
+        typer.echo(f"  - compman deploy --path <source-uri>  ({t('msg.deploy_desc')})", err=True)
         raise typer.Exit(1)
     try:
         runtime = detect_runtime()
@@ -192,7 +192,7 @@ def root(
 # ---- init ----
 @app.command("init", help=t("cmd.init"))
 def init_cmd(
-    skeleton: Annotated[bool, typer.Option("--skeleton", help="Create default compman.yml skeleton")] = False,
+    scaffold: Annotated[bool, typer.Option("--scaffold", help="Create default compman.yml scaffold")] = False,
     s3: Annotated[Optional[str], typer.Option("--s3", help="Fetch package from S3 URL")] = None,
     seed_mode: Annotated[bool, typer.Option("--seed", help="Generate test seed project")] = False,
     output: Annotated[str, typer.Option("-o", "--output", help=t("opt.output"))] = "project",
@@ -206,7 +206,7 @@ def init_cmd(
     from compman.ops.common import prompt_select
 
     # Direct mode routing if explicit flag passed
-    if skeleton:
+    if scaffold:
         choice = 0
     elif s3 is not None:
         choice = 1
@@ -215,14 +215,14 @@ def init_cmd(
     else:
         # Interactive mode selection
         modes = [
-            "1. Create skeleton config (compman.yml)",
+            "1. Create scaffold config (compman.yml)",
             "2. Fetch package from S3 URL",
             "3. Generate test seed project (app.py, Dockerfile, compose)",
         ]
         choice = prompt_select("Select initialization mode", modes, default_index=0)
 
     if choice == 0:
-        # Mode 1: Skeleton compman.yml
+        # Mode 1: Scaffold compman.yml
         path = pathlib.Path(config)
         if path.is_file() and not force:
             typer.echo(t("msg.config_exists", config=config))

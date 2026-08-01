@@ -64,24 +64,24 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": (
             "Initialize project config, fetch S3 package, or generate seed project.\n\n"
             "Provides interactive choices:\n"
-            "  1. Create skeleton config (compman.yml)\n"
+            "  1. Create scaffold config (compman.yml)\n"
             "  2. Fetch package from S3 URL\n"
             "  3. Generate test seed project\n\n"
             "Examples:\n"
             "  compman init\n"
-            "  compman init --skeleton\n"
+            "  compman init --scaffold\n"
             "  compman init --s3 s3://my-bucket/app.tar.gz --build\n"
             "  compman init --seed -o project -p 8080"
         ),
         "ko": (
             "프로젝트 설정, S3 패키지 수신 또는 시드 프로젝트를 생성합니다.\n\n"
             "대화형 선택 지원:\n"
-            "  1. 스켈레톤 설정 (compman.yml) 생성\n"
+            "  1. 스캐폴드 설정 (compman.yml) 생성\n"
             "  2. S3 URL로부터 패키지 수신 및 프로젝트 생성\n"
             "  3. 테스트용 Seed 프로젝트 생성\n\n"
             "사용 예시:\n"
             "  compman init\n"
-            "  compman init --skeleton\n"
+            "  compman init --scaffold\n"
             "  compman init --s3 s3://my-bucket/app.tar.gz --build\n"
             "  compman init --seed -o project -p 8080"
         ),
@@ -102,15 +102,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "cmd.deploy": {
         "en": (
-            "Fetch application package from S3 and generate scaffold.\n\n"
-            "Downloads a project directory or archive (.tar.gz/.zip) from S3, extracts it, and optionally builds the image.\n\n"
+            "Fetch an application package and generate scaffold.\n\n"
+            "Downloads an S3 prefix/archive or public HTTP archive, extracts it safely, and optionally builds the image.\n\n"
             "Examples:\n"
             "  compman deploy --path s3://my-bucket/app\n"
             "  compman deploy --path s3://my-bucket/app.tar.gz --build"
         ),
         "ko": (
-            "S3에서 애플리케이션 패키지를 다운로드하고 스캐폴드를 생성합니다.\n\n"
-            "S3 경로 또는 아카이브(.tar.gz/.zip)를 다운로드하여 해제하고, 필요시 이미지를 빌드합니다.\n\n"
+            "배포 소스에서 애플리케이션 패키지를 다운로드하고 스캐폴드를 생성합니다.\n\n"
+            "S3 경로/아카이브 또는 공개 HTTP 아카이브를 안전하게 해제하고, 필요시 이미지를 빌드합니다.\n\n"
             "사용 예시:\n"
             "  compman deploy --path s3://my-bucket/app\n"
             "  compman deploy --path s3://my-bucket/app.tar.gz --build"
@@ -118,15 +118,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "cmd.update": {
         "en": (
-            "Fetch S3 package (if configured), build image, and update stack.\n\n"
-            "If S3 deploy path is set in compman.yml, fetches latest package first. Otherwise, rebuilds local image and updates stack.\n\n"
+            "Fetch a configured deploy source, build the image, and update the stack.\n\n"
+            "If a deploy source is set in compman.yml, fetches the latest package first. Otherwise, rebuilds the local image and updates the stack.\n\n"
             "Examples:\n"
             "  compman update\n"
             "  compman update dev"
         ),
         "ko": (
-            "최신 S3 패키지를 수신(설정 시)하고 이미지 빌드 및 스택을 갱신합니다.\n\n"
-            "compman.yml에 S3 경로가 설정된 경우 최신 패키지를 먼저 수신하며, 설정이 없으면 로컬 빌드로 갱신합니다.\n\n"
+            "설정된 배포 소스를 수신하고 이미지 빌드 및 스택을 갱신합니다.\n\n"
+            "compman.yml에 배포 소스가 설정된 경우 최신 패키지를 먼저 수신하며, 설정이 없으면 로컬 빌드로 갱신합니다.\n\n"
             "사용 예시:\n"
             "  compman update\n"
             "  compman update dev"
@@ -448,8 +448,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "JSON으로 출력",
     },
     "opt.path": {
-        "en": "S3 URI path (default: 'deploy' in compman.yml)",
-        "ko": "S3 URI 경로 (기본값: compman.yml의 deploy 속성)",
+        "en": "S3 URI or public HTTP archive URL (default: 'deploy' in compman.yml)",
+        "ko": "S3 URI 또는 공개 HTTP 아카이브 URL (기본값: compman.yml의 deploy 속성)",
     },
     "opt.build": {
         "en": "Build Docker image after fetching",
@@ -618,8 +618,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "기본 compman.yml 생성",
     },
     "msg.deploy_desc": {
-        "en": "Deploy directly with S3 path",
-        "ko": "S3 경로로 바로 첫 배포",
+        "en": "Deploy directly from a source URI",
+        "ko": "소스 URI로 바로 첫 배포",
     },
     "msg.empty_dir_deploy": {
         "en": "Info: [compman deploy] Empty directory without compman.yml config file.",
@@ -630,24 +630,24 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "다음 중 하나로 첫 배포 또는 설정을 시작해보세요:",
     },
     "msg.deploy_direct_hint": {
-        "en": "  1. Deploy directly with an S3 path:",
-        "ko": "  1. S3 경로로 바로 배포:",
+        "en": "  1. Deploy directly with a source URI:",
+        "ko": "  1. 소스 URI로 바로 배포:",
     },
     "msg.config_hint": {
         "en": "  2. Generate a default compman.yml:",
         "ko": "  2. 기본 compman.yml 생성:",
     },
     "msg.deploy_path_not_configured": {
-        "en": "Info: [compman deploy] S3 deployment path is not configured.",
-        "ko": "안내: [compman deploy] S3 배포 경로가 지정되지 않았습니다.",
+        "en": "Info: [compman deploy] Deployment source is not configured.",
+        "ko": "안내: [compman deploy] 배포 소스가 지정되지 않았습니다.",
     },
     "msg.deploy_path_hint1": {
         "en": "  - Specify 'deploy' field in compman.yml, or",
         "ko": "  - compman.yml 파일의 'deploy' 속성을 지정하거나,",
     },
     "msg.deploy_path_hint2": {
-        "en": "  - Pass S3 path via option: compman deploy --path s3://...",
-        "ko": "  - compman deploy --path s3://... 옵션으로 S3 경로를 전달해주세요.",
+        "en": "  - Pass a source via option: compman deploy --path <source-uri>",
+        "ko": "  - compman deploy --path <source-uri> 옵션으로 배포 소스를 전달해주세요.",
     },
     "msg.stack_not_running": {
         "en": "Info: Stack '{name}' is not currently running. Run 'compman stack up' to start it.",

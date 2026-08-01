@@ -1,28 +1,15 @@
 from __future__ import annotations
 
-import tarfile
-import zipfile
 from pathlib import Path
 
-from compman.archive import extract_tar, extract_zip
-
-ARCHIVE_SUFFIXES = (".tar.gz", ".tgz", ".zip")
+from compman.archive_source import extract_archive, has_archive_suffix
 
 
 def fetch(s3, bucket: str, key: str, tmp: Path) -> Path:
-    if key.endswith(ARCHIVE_SUFFIXES):
+    if has_archive_suffix(key):
         archive_path = tmp / key.rsplit("/", 1)[-1]
         download(s3, bucket, key, archive_path)
-        extract_dir = tmp / "extract"
-        extract_dir.mkdir()
-        if key.endswith(".zip"):
-            with zipfile.ZipFile(archive_path) as zip_source:
-                extract_zip(zip_source, extract_dir)
-        else:
-            with tarfile.open(archive_path) as tar_source:
-                extract_tar(tar_source, extract_dir)
-        contents = [p for p in extract_dir.iterdir() if p.name != ".gitkeep"]
-        return contents[0] if len(contents) == 1 and contents[0].is_dir() else extract_dir
+        return extract_archive(archive_path, tmp / "extract")
 
     source_dir = tmp / "src"
     download_recursive(s3, bucket, key, source_dir)

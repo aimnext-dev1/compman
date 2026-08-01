@@ -14,21 +14,25 @@ compman/               # Python package
   cli.py               # typer entrypoint: compman.cli:app
   config.py            # compman.yml loader (Config dataclass)
   docker.py            # ContainerRuntime abstraction, compose file resolution
-  deploy.py            # S3 download, managed-tree swap, optional image build
+  deploy.py            # source dispatch, managed-tree swap, optional image build
   archive.py           # path-safe tar/zip extraction
+  archive_source.py    # shared archive recognition/extraction
+  http_source.py       # public HTTP/HTTPS archive download
+  s3_source.py         # S3 prefix/archive download
   scaffold.py          # deploy-time compman/compose generation
   ops/                 # business logic per domain
     stack.py, service.py, volume.py, image.py, seed.py
 tests/                 # pytest unit/regression suite
 test/                  # runnable examples and E2E guides (not pytest tests)
+docs/site/             # dependency-free GitHub Pages homepage
 ```
 
-- `compman init` provides an interactive 3-mode menu (1. Skeleton compman.yml, 2. S3 URL deploy, 3. Test seed project). Direct flags `--skeleton`, `--s3 <url>`, and `--seed` are also supported.
-- Current package version: `1.1.6`.
+- `compman init` provides an interactive 3-mode menu (1. Scaffold compman.yml, 2. S3 URL deploy, 3. Test seed project). Direct flags `--scaffold`, `--s3 <url>`, and `--seed` are also supported.
+- Current package version: `1.2.0`.
 - English is the default UI and documentation language. Korean remains supported through `--lang ko` or `COMPMAN_LANG=ko`; keep Korean text isolated to i18n resources and their tests.
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
 - Python >=3.10; runtime deps: typer, PyYAML, boto3, botocore.
-- Quality gates: 270 pytest tests, 100% statement/branch coverage, Ruff, mypy.
+- Quality gates: 291 pytest tests, 100% statement/branch coverage, Ruff, mypy.
 - CI tests Python 3.10-3.13 on Linux/macOS/Windows and has packaging and Docker/Ministack integration jobs.
 
 ## Config: `compman.yml`
@@ -75,8 +79,8 @@ Two modes:
 - `volume backup` and `image backup` accept `-z`/`--level` from 1 to 9; the default gzip compression level is 6.
 - `service log` displays last 50 lines by default (`docker logs -n 50`), supports `-f`/`--follow` to stream and `-n`/`--tail N` for line count.
 - `service connect` runs `docker exec -it` with bash fallback to sh.
-- `deploy` uses boto3 (no AWS CLI needed). S3 source path comes from `compman.yml: deploy` (single value, no per-profile) or `--path` override. `AWS_ENDPOINT_URL_S3` or `AWS_ENDPOINT_URL` env redirects the S3 client (e.g. local ministack at `http://localhost:4566`). Creds via standard `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_DEFAULT_REGION` env vars.
-- Deploy accepts an S3 **prefix** or `.tar.gz`/`.tgz`/`.zip` archive. Archives reject absolute/traversal paths and links; a single top-level directory is flattened.
+- `deploy` sources come from `compman.yml: deploy` (single value, no per-profile) or `--path`. S3 uses boto3 (no AWS CLI needed); `AWS_ENDPOINT_URL_S3` or `AWS_ENDPOINT_URL` redirects the client (e.g. ministack at `http://localhost:4566`). Credentials use standard AWS environment variables.
+- Deploy accepts an S3 **prefix** or `.tar.gz`/`.tgz`/`.zip` archive, plus public HTTP/HTTPS archives with those suffixes. HTTP uses standard TLS/redirect behavior, a 30-second timeout, and no authentication options. Archives reject absolute/traversal paths and links; a single top-level directory is flattened.
 - `compman upgrade` refreshes the uv tool from its stored source with `uv tool upgrade compman --reinstall --managed-python --python 3.13`. To recover a damaged installation, run `uv tool uninstall compman`, then `uv tool install --managed-python --python 3.13 git+https://github.com/allbegray/compman.git`, and verify with `compman --version`. Keep the recovery source unpinned so future `uv tool upgrade` runs can move to newer releases.
 - The fetched tree replaces the contents of the managed `dirs.project` directory, preserving `.git` and `.gitkeep`. Root `compman.yml` and `docker-compose.yml` are scaffolded or updated separately.
 - File swap rollback is atomic at the managed-tree step, but the full fetch -> scaffold -> build operation is not transactional: a later scaffold/build failure leaves the new source tree in place.

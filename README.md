@@ -1,6 +1,8 @@
 # compman — Docker Compose Stack Manager CLI
 
-`compman` manages Docker or Podman Compose stacks—including execution, service operations, volume and image backup, and S3-based deployment—from one CLI.
+`compman` manages Docker or Podman Compose stacks—including execution, service operations, volume and image backup, and S3 or HTTP archive deployment—from one CLI.
+
+**Project homepage:** https://allbegray.github.io/compman/
 
 ## Who Is This For?
 
@@ -12,7 +14,7 @@ If every convenient option has been answered with "not allowed," `compman` is fo
 
 - Automatically detects Docker Compose and Podman Compose runtimes
 - Supports a single Compose file and environment-specific profile configurations
-- Deploys from an S3 prefix or a `.tar.gz`/`.tgz`/`.zip` archive
+- Deploys from an S3 prefix/archive or a public HTTP/HTTPS `.tar.gz`/`.tgz`/`.zip` archive
 - Automatically creates `compman.yml` and `docker-compose.yml` when deploying into an empty directory
 - Creates and restores timestamped backups of volumes and container images
 - Korean and English help, plus shell completion
@@ -23,6 +25,7 @@ If every convenient option has been answered with "not allowed," `compman` is fo
 - Python 3.10 or later
 - Docker Compose or Podman Compose
 - For S3 deployments: accessible S3-compatible storage and AWS credentials
+- For HTTP deployments: a public archive URL (authenticated URLs are not yet supported)
 
 CI verifies Python 3.10–3.13 on Ubuntu, macOS, and Windows. See the `Python version strategy` section of [REVIEW.md](REVIEW.md) for the Python 3.14 support plan and upgrade decision.
 
@@ -96,7 +99,7 @@ compman --version
 
 ```bash
 cd my-project
-compman init --skeleton
+compman init --scaffold
 compman stack up
 compman service status
 compman stack down --yes
@@ -105,7 +108,7 @@ compman stack down --yes
 Running `compman init` without arguments displays an interactive menu with these three modes.
 
 ```bash
-compman init --skeleton                         # Create compman.yml
+compman init --scaffold                         # Create compman.yml
 compman init --s3 s3://bucket/app.tar.gz --build
 compman init --seed -o project -p 18080         # Create a test project
 compman init --seed -o project -a               # Create a test project and archive
@@ -113,7 +116,7 @@ compman init --seed -o project -a               # Create a test project and arch
 
 Overwriting existing files requires an explicit `--force`.
 
-### Deploy a new project from S3
+### Deploy a new project from S3 or HTTP
 
 Run this from an empty working directory.
 
@@ -136,6 +139,12 @@ S3 paths support these two formats.
 
 - Prefix: Recursively downloads objects beneath the path and preserves their directory structure.
 - Archive: Safely extracts `.tar.gz`, `.tgz`, or `.zip`; a single top-level directory is flattened automatically.
+
+Public HTTP and HTTPS URLs support archives only. Query strings are allowed, but the URL path must end in `.tar.gz`, `.tgz`, or `.zip`.
+
+```bash
+compman deploy --path https://example.com/releases/app.zip --build --tag my-app
+```
 
 Only the deployment target with the same name is replaced; other user files are retained. If the source-replacement step fails, the previous tree is restored. A full transaction covering later scaffold generation and image building is not yet guaranteed.
 
@@ -197,18 +206,18 @@ compman:
 ```
 
 - `folder`: Relative subdirectory containing Compose files
-- `dirs.project`: Relative subdirectory for S3 deployment source
+- `dirs.project`: Relative subdirectory for managed deployment source
 - `dirs.backup`: Directory for backup archives
 - `dirs.volume`: Directory for transferring volume data to and from the host
-- `deploy`: Default S3 path for `compman deploy` and `compman update`
+- `deploy`: Default S3 URI or public HTTP archive URL for `compman deploy` and `compman update`
 
 Managed paths cannot escape the directory containing `compman.yml`. `--path` overrides the configured `deploy` value for one invocation only.
 
 ## Commands
 
 ```text
-compman init [--skeleton | --s3 URI | --seed]
-compman deploy [--path S3_URI] [--build] [--tag TAG]
+compman init [--scaffold | --s3 URI | --seed]
+compman deploy [--path SOURCE_URI] [--build] [--tag TAG]
 compman update [PROFILE]
 compman doctor [--profile PROFILE] [-c|--config PATH] [--json]
 compman status [--profile PROFILE] [-c|--config PATH] [--json]
@@ -243,7 +252,7 @@ View all options for a command with `compman <command> --help`.
 
 ### Behavioral notes
 
-- `update`: When `deploy` is configured, it downloads from S3, builds images, and starts the stack. Otherwise, it updates the local Compose project with `up -d --build`.
+- `update`: When `deploy` is configured, it downloads the S3 or HTTP source, builds images, and starts the stack. Otherwise, it updates the local Compose project with `up -d --build`.
 - `service log`: Displays the last 50 lines by default and streams output with `-f`.
 - `service connect`: Falls back to `sh` if connecting with `bash` fails.
 - `volume backup/restore`: By default, brings the stack down during the operation and restores it afterward. Use `--no-stop` only when you understand the consistency risk.

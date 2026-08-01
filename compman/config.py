@@ -172,7 +172,7 @@ def dump_default_config(name: str) -> str:
     - docker-compose.yml
   # --- optional features ---
   # folder: my-project             # _project/ subdirectory
-  # deploy: s3://bucket/app        # deploy source (--path overrides)
+  # deploy: s3://bucket/app        # S3 or HTTP archive source (--path overrides)
   # dirs:
   #   backup: backup
   #   volume: volume

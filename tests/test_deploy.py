@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import pathlib
 import tarfile
 import zipfile
@@ -13,7 +14,8 @@ from botocore.exceptions import (
     PartialCredentialsError,
 )
 
-from compman import deploy
+from compman import deploy, http_source
+from compman.archive_source import extract_archive, has_archive_suffix
 
 
 def test_deploy_no_s3_path(temp_dir: pathlib.Path):
@@ -21,9 +23,111 @@ def test_deploy_no_s3_path(temp_dir: pathlib.Path):
         deploy.deploy(s3_path=None)
 
 
+@pytest.mark.parametrize("name", ["app.tar.gz", "app.tgz", "app.zip", "APP.ZIP"])
+def test_archive_source_recognizes_supported_suffixes(name: str):
+    assert has_archive_suffix(name)
+
+
+def test_archive_source_rejects_unsupported_suffix():
+    assert not has_archive_suffix("app.tar")
+
+
+def test_archive_source_extracts_and_flattens_single_directory(temp_dir: pathlib.Path):
+    archive = temp_dir / "app.zip"
+    with zipfile.ZipFile(archive, "w") as zip_file:
+        zip_file.writestr("app/main.py", "print('ok')")
+
+    extracted = extract_archive(archive, temp_dir / "extract")
+
+    assert extracted == temp_dir / "extract" / "app"
+    assert (extracted / "main.py").is_file()
+
+
+def test_archive_source_keeps_multiple_root_entries(temp_dir: pathlib.Path):
+    archive = temp_dir / "app.tgz"
+    first = temp_dir / "first.txt"
+    second = temp_dir / "second.txt"
+    first.write_text("first", encoding="utf-8")
+    second.write_text("second", encoding="utf-8")
+    with tarfile.open(archive, "w:gz") as tar_file:
+        tar_file.add(first, arcname=first.name)
+        tar_file.add(second, arcname=second.name)
+
+    extracted = extract_archive(archive, temp_dir / "extract")
+
+    assert extracted == temp_dir / "extract"
+
+
+@pytest.mark.parametrize(
+    ("url", "archive_name"),
+    [
+        ("http://example.test/app.zip", "app.zip"),
+        ("https://example.test/app.zip?token=public", "app.zip"),
+    ],
+)
+def test_http_source_downloads_archive(url: str, archive_name: str, temp_dir: pathlib.Path):
+    archive = temp_dir / archive_name
+    with zipfile.ZipFile(archive, "w") as zip_file:
+        zip_file.writestr("app.txt", "hello")
+    response = io.BytesIO(archive.read_bytes())
+    download_dir = temp_dir / "download"
+    download_dir.mkdir()
+
+    with patch("compman.http_source.urlopen", return_value=response) as urlopen:
+        extracted = http_source.fetch(url, download_dir)
+
+    urlopen.assert_called_once_with(url, timeout=30)
+    assert (extracted / "app.txt").read_text(encoding="utf-8") == "hello"
+
+
+@pytest.mark.parametrize("url", ["https://example.test/app.tar", "ftp://example.test/app.zip"])
+def test_http_source_rejects_invalid_source(url: str, temp_dir: pathlib.Path):
+    with patch("compman.http_source.urlopen") as urlopen:
+        with pytest.raises(ValueError):
+            http_source.fetch(url, temp_dir)
+
+    urlopen.assert_not_called()
+
+
 def test_deploy_invalid_s3_path(temp_dir: pathlib.Path):
     with pytest.raises(SystemExit):
         deploy.deploy(s3_path="https://bucket/key")
+
+
+@pytest.mark.parametrize("scheme", ["http", "https"])
+def test_deploy_dispatches_http_archive_without_s3(scheme: str, temp_dir: pathlib.Path):
+    source = temp_dir / "http-source"
+    source.mkdir()
+    (source / "app.txt").write_text("http", encoding="utf-8")
+    url = f"{scheme}://example.test/app.zip"
+
+    with patch("compman.deploy._fetch_http", return_value=source) as fetch_http, patch("boto3.client") as boto_client:
+        deploy.deploy(s3_path=url)
+
+    fetch_http.assert_called_once()
+    assert fetch_http.call_args.args[0] == url
+    boto_client.assert_not_called()
+    assert (temp_dir / "project" / "app.txt").read_text(encoding="utf-8") == "http"
+
+
+def test_deploy_reports_http_download_stage(temp_dir: pathlib.Path, capsys):
+    with patch("compman.deploy._fetch_http", side_effect=OSError("connection reset")):
+        with pytest.raises(SystemExit):
+            deploy.deploy(s3_path="https://example.test/app.zip")
+
+    error = capsys.readouterr().err
+    assert "downloading from HTTP" in error
+    assert "connection reset" in error
+
+
+def test_deploy_rejects_unsupported_source_scheme(temp_dir: pathlib.Path):
+    with pytest.raises(SystemExit):
+        deploy.deploy(s3_path="ftp://example.test/app.zip")
+
+
+def test_deploy_rejects_s3_source_without_bucket(temp_dir: pathlib.Path):
+    with pytest.raises(SystemExit):
+        deploy.deploy(s3_path="s3:///app.zip")
 
 
 def test_deploy_empty_dir_help_exit(temp_dir: pathlib.Path):

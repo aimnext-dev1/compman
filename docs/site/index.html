@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="compman is a lightweight CLI for Docker and Podman Compose stacks, backups, diagnostics, and deployments.">
+  <meta name="theme-color" content="#090e1a">
+  <title>compman — Docker Compose, kept manageable</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav shell" aria-label="Main navigation">
+      <a class="brand" href="#top"><span aria-hidden="true">◆</span> compman</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#quick-start">Quick start</a>
+        <a href="#commands">Commands</a>
+        <a href="#deploy">Deploy</a>
+        <a href="#faq">FAQ</a>
+        <a class="nav-github" href="https://github.com/allbegray/compman">GitHub</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero shell" id="top">
+      <div class="hero-copy">
+        <p class="eyebrow">Lightweight Compose operations</p>
+        <h1>Docker Compose,<br><span>kept manageable.</span></h1>
+        <p class="hero-lead">Control stacks, inspect services, protect data, and deploy releases without installing a heavyweight management platform.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#quick-start">Get started</a>
+          <a class="button secondary" href="https://github.com/allbegray/compman#readme">Read the docs</a>
+        </div>
+        <p class="compatibility">Python 3.10+ · Docker or Podman · Linux, macOS, Windows</p>
+      </div>
+      <div class="terminal" aria-label="Example compman commands">
+        <div class="terminal-bar"><i></i><i></i><i></i><span>operator@host</span></div>
+        <pre><code><b>$</b> compman status
+Stack <em>payments</em> is healthy
+  api       <strong>running</strong>
+  postgres  <strong>running</strong>
+
+<b>$</b> compman volume backup
+Backup created successfully
+
+<b>$</b> compman deploy --path release.zip
+Deploy completed</code></pre>
+      </div>
+    </section>
+
+    <section class="audience">
+      <div class="shell audience-inner">
+        <p class="eyebrow">For constrained environments</p>
+        <h2>When a web GUI is unavailable, blocked by a firewall, or simply too heavy.</h2>
+        <p>Dedicated to the brave souls managing everything with raw Docker commands because every other tool was somehow “not allowed.”</p>
+      </div>
+    </section>
+
+    <section class="section shell" id="features">
+      <div class="section-heading">
+        <p class="eyebrow">One focused tool</p>
+        <h2>Common operations without the command archaeology.</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="card"><span class="card-icon">01</span><h3>Stack &amp; services</h3><p>Start, stop, update, inspect, connect to, and follow logs from Compose services.</p></article>
+        <article class="card"><span class="card-icon">02</span><h3>Safe backups</h3><p>Back up and restore named volumes or container images with configurable gzip compression.</p></article>
+        <article class="card"><span class="card-icon">03</span><h3>Useful diagnostics</h3><p>Get human-readable or JSON health reports with <code>status</code> and <code>doctor</code>.</p></article>
+        <article class="card"><span class="card-icon">04</span><h3>Simple deployments</h3><p>Fetch an S3 prefix or archive, or a public HTTP archive, then optionally build and recreate.</p></article>
+      </div>
+    </section>
+
+    <section class="section quick-start" id="quick-start">
+      <div class="shell split-section">
+        <div>
+          <p class="eyebrow">Quick start</p>
+          <h2>From Compose file to managed stack.</h2>
+          <p>Install compman as an isolated tool, create a starting configuration, and bring the project up.</p>
+          <a class="text-link" href="https://github.com/allbegray/compman#configuration">Explore configuration →</a>
+        </div>
+        <div class="code-panel">
+          <pre><code><span># Install from GitHub</span>
+uv tool install git+https://github.com/allbegray/compman.git
+
+<span># In your Compose project</span>
+compman init --scaffold
+compman stack up
+compman status</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell" id="commands">
+      <div class="section-heading">
+        <p class="eyebrow">Command map</p>
+        <h2>Predictable commands, grouped by what you manage.</h2>
+      </div>
+      <div class="command-grid">
+        <div><h3>Observe</h3><code>status</code><code>doctor</code><code>service status</code><code>service log</code></div>
+        <div><h3>Operate</h3><code>stack up</code><code>stack down</code><code>stack update</code><code>service connect</code></div>
+        <div><h3>Protect</h3><code>volume backup</code><code>volume restore</code><code>image backup</code><code>image restore</code></div>
+        <div><h3>Deliver</h3><code>deploy</code><code>update</code><code>init</code><code>completion</code></div>
+      </div>
+      <p class="center"><a class="button secondary" href="https://github.com/allbegray/compman#commands">View the full command reference</a></p>
+    </section>
+
+    <section class="section deploy-section" id="deploy">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">Bring your own release source</p>
+          <h2>Deploy from S3 or a public HTTP archive.</h2>
+          <p>S3 supports prefixes and archives. HTTP and HTTPS accept <code>.tar.gz</code>, <code>.tgz</code>, and <code>.zip</code> archives.</p>
+        </div>
+        <div class="deploy-grid">
+          <article><h3>S3-compatible storage</h3><pre><code>compman deploy --path \
+  s3://my-bucket/releases/app.tar.gz \
+  --build --tag my-app</code></pre><p>Works with AWS S3 and endpoint-compatible services such as Ministack.</p></article>
+          <article><h3>Public HTTP / HTTPS</h3><pre><code>compman deploy --path \
+  https://example.com/releases/app.zip \
+  --build --tag my-app</code></pre><p>Streams the archive with standard TLS verification. Authenticated URLs are not yet supported.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell" id="faq">
+      <div class="section-heading"><p class="eyebrow">FAQ</p><h2>Small tool, clear boundaries.</h2></div>
+      <div class="faq-grid">
+        <details><summary>Docker only?</summary><p>No. compman auto-detects Docker Compose, Podman Compose, legacy docker-compose, and podman-compose.</p></details>
+        <details><summary>Where is configuration stored?</summary><p>A project-local <code>compman.yml</code> describes the stack, Compose files, profiles, managed directories, and optional deploy source.</p></details>
+        <details><summary>Are archive deployments safe?</summary><p>Archive extraction rejects absolute paths, traversal, and links. Managed-tree replacement rolls back if its file swap fails.</p></details>
+        <details><summary>Is there a daemon or server?</summary><p>No. compman is an on-demand CLI that delegates container operations to the detected local runtime.</p></details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer-inner">
+      <p><strong>◆ compman</strong><br><span>Compose operations for constrained environments.</span></p>
+      <p><a href="https://github.com/allbegray/compman">Repository</a><a href="https://github.com/allbegray/compman/blob/main/CHANGELOG.md">Changelog</a><a href="https://github.com/allbegray/compman/blob/main/LICENSE">MIT License</a></p>
+    </div>
+  </footer>
+</body>
+</html>

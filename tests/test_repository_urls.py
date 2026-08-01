@@ -12,14 +12,14 @@ def test_official_repository_urls_use_current_owner():
         assert "allbegray/compman" in content
 
 
-def test_package_version_is_1_1_6():
+def test_package_version_is_1_2_0():
     root = Path(__file__).parents[1]
     project = (root / "pyproject.toml").read_text(encoding="utf-8")
     lock = (root / "uv.lock").read_text(encoding="utf-8")
 
-    assert re.search(r'(?m)^version = "1\.1\.6"$', project)
-    assert re.search(r'(?m)^name = "compman"\r?\nversion = "1\.1\.6"$', lock)
-    assert "## [1.1.6]" in (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert re.search(r'(?m)^version = "1\.2\.0"$', project)
+    assert re.search(r'(?m)^name = "compman"\r?\nversion = "1\.2\.0"$', lock)
+    assert "## [1.2.0]" in (root / "CHANGELOG.md").read_text(encoding="utf-8")
 
 
 def test_successful_main_ci_run_creates_version_tag_once():
@@ -45,6 +45,64 @@ def test_successful_main_ci_run_creates_version_tag_once():
         assert expected in release
 
     assert 'tags-ignore: ["**"]' in ci
+
+
+def test_github_pages_homepage_contract():
+    root = Path(__file__).parents[1]
+    html = (root / "docs" / "site" / "index.html").read_text(encoding="utf-8")
+    css = (root / "docs" / "site" / "styles.css").read_text(encoding="utf-8")
+
+    for expected in (
+        'name="viewport"',
+        'name="description"',
+        'href="styles.css"',
+        'id="features"',
+        'id="quick-start"',
+        'id="commands"',
+        'id="deploy"',
+        'id="faq"',
+        "compman init --scaffold",
+        "s3://my-bucket/releases/app.tar.gz",
+        "https://example.com/releases/app.zip",
+        "https://github.com/allbegray/compman",
+        "LICENSE",
+    ):
+        assert expected in html
+
+    assert "<script" not in html
+    assert "http://" not in html
+    assert "@media" in css
+    assert ":focus-visible" in css
+
+
+def test_github_pages_workflow_contract():
+    root = Path(__file__).parents[1]
+    workflow = (root / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
+
+    for expected in (
+        "workflow_dispatch:",
+        "actions/configure-pages@",
+        "actions/upload-pages-artifact@",
+        "actions/deploy-pages@",
+        "path: docs/site",
+        "contents: read",
+        "pages: write",
+        "id-token: write",
+        "environment:",
+        "name: github-pages",
+        "cancel-in-progress: false",
+    ):
+        assert expected in workflow
+
+
+def test_project_uses_mit_license():
+    root = Path(__file__).parents[1]
+    license_text = (root / "LICENSE").read_text(encoding="utf-8")
+    project = (root / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert license_text.startswith("MIT License\n")
+    assert "Copyright (c) 2026 allbegray" in license_text
+    assert 'license = "MIT"' in project
 
 
 def test_english_is_used_outside_korean_localization_resources():

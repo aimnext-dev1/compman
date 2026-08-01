@@ -3,6 +3,22 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.2.0] - 2026-08-01
+
+### Changed
+
+- Replaced `compman init --skeleton` with `compman init --scaffold` and updated
+  interactive and localized guidance to use scaffold terminology. The removed
+  `--skeleton` option is no longer accepted.
+
+### Added
+
+- Added public HTTP and HTTPS `.tar.gz`, `.tgz`, and `.zip` deployment sources
+  alongside existing S3 prefix and archive support.
+- Added a dependency-free project homepage deployed through GitHub Pages at
+  `https://allbegray.github.io/compman/`.
+- Licensed compman under the MIT License.
+
 ## [1.1.6] - 2026-08-01
 
 ### Added
