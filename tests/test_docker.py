@@ -431,10 +431,13 @@ def test_ensure_ready_for_start_rejects_declined_start(monkeypatch):
     with (
         patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)),
         patch.object(subprocess, "Popen") as popen,
-        pytest.raises(RuntimeError, match="declined"),
     ):
-        runtime.ensure_ready_for_start(confirm_start)
+        with pytest.raises(RuntimeError) as exc_info:
+            runtime.ensure_ready_for_start(confirm_start)
 
+    assert str(exc_info.value) == (
+        "Docker Desktop startup was declined. Start Docker Desktop manually and retry."
+    )
     confirm_start.assert_called_once_with()
     popen.assert_not_called()
 

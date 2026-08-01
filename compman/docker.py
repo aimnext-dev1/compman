@@ -40,7 +40,9 @@ class ContainerRuntime:
                 "Docker Desktop is not ready and cannot be started from a non-interactive session."
             )
         if not confirm_start():
-            raise RuntimeError("Docker Desktop startup was declined.")
+            raise RuntimeError(
+                "Docker Desktop startup was declined. Start Docker Desktop manually and retry."
+            )
 
         desktop = shutil.which("Docker Desktop.exe")
         if not desktop:
