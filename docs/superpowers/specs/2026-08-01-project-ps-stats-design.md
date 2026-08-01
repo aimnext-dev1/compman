@@ -14,8 +14,8 @@ Add convenient container inspection commands that operate only on the Compose pr
 
 ### `compman stats [PROFILE]`
 
-- Stream CPU, memory, network, and related runtime statistics for containers belonging to the selected compman project.
-- Accept `--no-stream` to print one snapshot and exit.
+- Print one CPU, memory, network, and related runtime statistics snapshot for containers belonging to the selected compman project, then exit.
+- Accept `-f` / `--follow` to stream statistics continuously, matching `compman service log -f`.
 - Use the existing profile selection and validation rules.
 
 Neither command provides a global mode. Users who need runtime-wide information can continue to use `docker ps`, `docker stats`, or their Podman equivalents directly.
@@ -26,7 +26,7 @@ The CLI layer will expose two top-level Typer commands. Each command will load `
 
 `ps` will delegate to the selected Compose implementation with `ps`, adding `--all` when requested.
 
-`stats` will first ask Compose for the selected project's running container IDs with `ps --quiet`, then pass those IDs to the detected runtime's native `stats` command, adding `--no-stream` when requested. Docker Compose has a native `stats` subcommand, but Podman's Compose command is a wrapper around an external provider whose supported subcommands can vary. Resolving IDs through Compose and displaying statistics through `docker stats` or `podman stats` keeps project scoping while supporting every runtime path already detected by compman.
+`stats` will first ask Compose for the selected project's running container IDs with `ps --quiet`, then pass those IDs to the detected runtime's native `stats` command. It adds `--no-stream` by default and omits it when `--follow` is requested. Docker Compose has a native `stats` subcommand, but Podman's Compose command is a wrapper around an external provider whose supported subcommands can vary. Resolving IDs through Compose and displaying statistics through `docker stats` or `podman stats` keeps project scoping while supporting every runtime path already detected by compman.
 
 The runtime abstraction will remain responsible for building and executing Docker Compose, Podman Compose, `podman-compose`, or legacy `docker-compose` commands. No parsing or reformatting of native output will be introduced.
 
@@ -43,9 +43,9 @@ Update the root README command reference and shell completion command lists so b
 
 ## Verification
 
-- Unit tests will cover command construction, profile handling, `ps --all`, `stats --no-stream`, container-ID discovery, and the empty-project guard.
+- Unit tests will cover command construction, profile handling, `ps --all`, the default statistics snapshot, `stats --follow`, container-ID discovery, and the empty-project guard.
 - Existing quality gates must remain green with 100% statement and branch coverage.
-- Build the distributable Windows executable and exercise `ps`, `ps --all`, and `stats --no-stream` against a real temporary Compose project.
+- Build the distributable Windows executable and exercise `ps`, `ps --all`, and the default `stats` snapshot against a real temporary Compose project.
 - The streaming `stats` path will be verified through command construction/unit coverage to keep automated validation bounded.
 
 ## Non-goals

@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - `compman ps [PROFILE]` shows the selected project's running containers; `-a` / `--all` includes stopped containers.
-- `compman stats [PROFILE]` streams native runtime statistics; `--no-stream` prints one snapshot.
+- `compman stats [PROFILE]` prints one native runtime statistics snapshot; `-f` / `--follow` streams continuously.
 - No runtime-wide mode, custom formatting, filtering, sorting, aggregation, interval, or export feature is added.
 - Docker, Docker Compose, Podman Compose, `podman-compose`, and legacy `docker-compose` detection behavior remains unchanged.
 - An empty project exits successfully; `stats` prints a localized informational message and must not invoke unscoped runtime statistics.
@@ -29,7 +29,7 @@
 
 **Interfaces:**
 - Consumes: `resolve_compose_context(config: Config, profile: str | None) -> ComposeContext`, `ContainerRuntime.passthru_compose(...)`, `ContainerRuntime.run_compose(...)`, and `ContainerRuntime.passthru_cli(...)`.
-- Produces: `ps(runtime: ContainerRuntime, config: Config, profile: str | None = None, all_containers: bool = False) -> None` and `stats(runtime: ContainerRuntime, config: Config, profile: str | None = None, no_stream: bool = False) -> None`.
+- Produces: `ps(runtime: ContainerRuntime, config: Config, profile: str | None = None, all_containers: bool = False) -> None` and `stats(runtime: ContainerRuntime, config: Config, profile: str | None = None, follow: bool = False) -> None`.
 
 - [ ] **Step 1: Add failing operation tests**
 
@@ -51,17 +51,17 @@ def test_ps_all_includes_stopped_containers(dummy_runtime, config):
     assert dummy_runtime.compose_runs[-1]["args"] == ["ps", "--all"]
 
 
-def test_stats_resolves_project_ids_then_streams(dummy_runtime, config):
+def test_stats_resolves_project_ids_then_prints_snapshot(dummy_runtime, config):
     dummy_runtime.compose_stdout = "cid-one\ncid-two\n"
     container.stats(dummy_runtime, config)
     assert dummy_runtime.compose_runs[-1]["args"] == ["ps", "--quiet"]
-    assert dummy_runtime.commands_run[-1] == ["stats", "cid-one", "cid-two"]
+    assert dummy_runtime.commands_run[-1] == ["stats", "--no-stream", "cid-one", "cid-two"]
 
 
-def test_stats_no_stream_and_empty_project(dummy_runtime, config, capsys):
+def test_stats_follow_and_empty_project(dummy_runtime, config, capsys):
     dummy_runtime.compose_stdout = "cid-one\n"
-    container.stats(dummy_runtime, config, no_stream=True)
-    assert dummy_runtime.commands_run[-1] == ["stats", "--no-stream", "cid-one"]
+    container.stats(dummy_runtime, config, follow=True)
+    assert dummy_runtime.commands_run[-1] == ["stats", "cid-one"]
 
     dummy_runtime.compose_stdout = "\n"
     before = list(dummy_runtime.commands_run)
@@ -103,7 +103,7 @@ def ps(runtime: ContainerRuntime, config: Config, profile: str | None = None,
 
 
 def stats(runtime: ContainerRuntime, config: Config, profile: str | None = None,
-          no_stream: bool = False) -> None:
+          follow: bool = False) -> None:
     context = resolve_compose_context(config, profile)
     result = runtime.run_compose(["ps", "--quiet"], project=context.project,
                                  compose_files=context.files, env=context.env)
@@ -112,7 +112,7 @@ def stats(runtime: ContainerRuntime, config: Config, profile: str | None = None,
         typer.echo(t("msg.no_running_containers"))
         return
     args = ["stats"]
-    if no_stream:
+    if not follow:
         args.append("--no-stream")
     runtime.passthru_cli([*args, *container_ids])
 ```
@@ -140,7 +140,7 @@ git commit -m "feat: add project container inspection operations"
 
 **Interfaces:**
 - Consumes: Task 1's `compman.ops.container.ps(...)` and `compman.ops.container.stats(...)`.
-- Produces: `compman ps [PROFILE] [-a|--all] [-c|--config PATH]` and `compman stats [PROFILE] [--no-stream] [-c|--config PATH]`.
+- Produces: `compman ps [PROFILE] [-a|--all] [-c|--config PATH]` and `compman stats [PROFILE] [-f|--follow] [-c|--config PATH]`.
 
 - [ ] **Step 1: Add failing CLI routing and help tests**
 
@@ -157,8 +157,10 @@ def test_cli_project_ps_and_stats(runner, dummy_runtime, temp_dir):
         assert dummy_runtime.compose_runs[-1]["args"] == ["ps"]
         assert runner.invoke(app, ["ps", "--all"]).exit_code == 0
         assert dummy_runtime.compose_runs[-1]["args"] == ["ps", "--all"]
-        assert runner.invoke(app, ["stats", "--no-stream"]).exit_code == 0
+        assert runner.invoke(app, ["stats"]).exit_code == 0
         assert dummy_runtime.commands_run[-1] == ["stats", "--no-stream", "cid123"]
+        assert runner.invoke(app, ["stats", "--follow"]).exit_code == 0
+        assert dummy_runtime.commands_run[-1] == ["stats", "cid123"]
 
 
 def test_ps_stats_help_is_localized(runner):
@@ -193,11 +195,11 @@ def ps_cmd(
 @app.command("stats", help=t("cmd.stats"))
 def stats_cmd(
     profile: Annotated[Optional[str], typer.Argument()] = None,
-    no_stream: Annotated[bool, typer.Option("--no-stream", help=t("opt.no_stream"))] = False,
+    follow: Annotated[bool, typer.Option("--follow", "-f", help=t("opt.follow"))] = False,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    _container_ops().stats(ctx["runtime"], ctx["config"], profile, no_stream)
+    _container_ops().stats(ctx["runtime"], ctx["config"], profile, follow)
 ```
 
 - [ ] **Step 4: Add English and Korean i18n entries and completion names**
@@ -208,7 +210,7 @@ Define exact translations:
 "cmd.ps": {"en": "List project containers", "ko": "프로젝트 컨테이너 목록 표시"},
 "cmd.stats": {"en": "Display project container resource usage", "ko": "프로젝트 컨테이너 리소스 사용량 표시"},
 "opt.all": {"en": "Include stopped containers", "ko": "중지된 컨테이너 포함"},
-"opt.no_stream": {"en": "Print one snapshot and exit", "ko": "한 번만 출력하고 종료"},
+"opt.follow": {"en": "Stream statistics continuously", "ko": "통계를 계속 출력"},
 ```
 
 Add `'ps'` and `'stats'` to `_ps_completion_snippet()` and add `compman.ops.container` to the lazy-import regression set.
@@ -243,7 +245,7 @@ git commit -m "feat: expose project ps and stats commands"
 
 - [ ] **Step 1: Update repository contract tests first**
 
-Rename `test_package_version_is_1_2_0` to `test_package_version_is_1_3_0`, require `version = "1.3.0"` in `pyproject.toml` and `uv.lock`, require `## [1.3.0]` in `CHANGELOG.md`, and require the homepage command section to contain `compman ps` and `compman stats --no-stream`.
+Rename `test_package_version_is_1_2_0` to `test_package_version_is_1_3_0`, require `version = "1.3.0"` in `pyproject.toml` and `uv.lock`, require `## [1.3.0]` in `CHANGELOG.md`, and require the homepage command section to contain `compman ps` and `compman stats -f`.
 
 - [ ] **Step 2: Run the contract test and confirm it fails on old metadata**
 
@@ -257,10 +259,10 @@ Add the following command forms to README command reference and examples:
 
 ```text
 compman ps [PROFILE] [-a|--all] [-c|--config PATH]
-compman stats [PROFILE] [--no-stream] [-c|--config PATH]
+compman stats [PROFILE] [-f|--follow] [-c|--config PATH]
 ```
 
-Explain that both are project-scoped, `stats` streams by default, and users should call Docker/Podman directly for global results. Add the same concise command examples to `docs/site/index.html`. Update `AGENTS.md` structure/CLI quirks and current quality-gate test count after the final test collection is known.
+Explain that both are project-scoped, `stats` prints one snapshot by default, `-f` streams continuously, and users should call Docker/Podman directly for global results. Add the same concise command examples to `docs/site/index.html`. Update `AGENTS.md` structure/CLI quirks and current quality-gate test count after the final test collection is known.
 
 - [ ] **Step 4: Bump the release and lock metadata**
 
@@ -272,7 +274,7 @@ Set `pyproject.toml` to `version = "1.3.0"`, run `uv lock`, and add a dated `CHA
 ### Added
 
 - Added project-scoped `compman ps` container listings with `-a`/`--all`.
-- Added project-scoped `compman stats` resource monitoring with `--no-stream` snapshots.
+- Added project-scoped `compman stats` resource snapshots with `-f`/`--follow` streaming.
 ```
 
 - [ ] **Step 5: Run repository contract tests**
@@ -347,15 +349,15 @@ services:
 docker compose -p compman-ps-stats-e2e -f "$CompmanE2ERoot\docker-compose.yml" up -d
 & "$env:UV_TOOL_BIN_DIR\compman.exe" ps --config "$CompmanE2ERoot\compman.yml"
 & "$env:UV_TOOL_BIN_DIR\compman.exe" ps --all --config "$CompmanE2ERoot\compman.yml"
-& "$env:UV_TOOL_BIN_DIR\compman.exe" stats --no-stream --config "$CompmanE2ERoot\compman.yml"
+& "$env:UV_TOOL_BIN_DIR\compman.exe" stats --config "$CompmanE2ERoot\compman.yml"
 docker compose -p compman-ps-stats-e2e -f "$CompmanE2ERoot\docker-compose.yml" down
 ```
 
-Expected: only that temporary project's container appears; `stats --no-stream` prints one resource snapshot and exits. Stop and remove the temporary project through its Compose file after verification.
+Expected: only that temporary project's container appears; `stats` prints one resource snapshot and exits. Stop and remove the temporary project through its Compose file after verification.
 
 - [ ] **Step 5: Verify the empty-project guard with the built executable**
 
-After removing the temporary container, run `& "$env:UV_TOOL_BIN_DIR\compman.exe" stats --no-stream --config "$CompmanE2ERoot\compman.yml"`.
+After removing the temporary container, run `& "$env:UV_TOOL_BIN_DIR\compman.exe" stats --config "$CompmanE2ERoot\compman.yml"`.
 
 Expected: a concise no-running-containers message, exit code 0, and no global container statistics.
 
