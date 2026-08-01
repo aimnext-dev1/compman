@@ -31,21 +31,26 @@ def test_ps_all_includes_stopped_containers(dummy_runtime, config):
     assert dummy_runtime.compose_runs[-1]["args"] == ["ps", "--all"]
 
 
-def test_stats_resolves_project_ids_then_streams(dummy_runtime, config):
+def test_stats_resolves_project_ids_then_prints_snapshot(dummy_runtime, config):
     dummy_runtime.compose_stdout = "cid-one\ncid-two\n"
 
     container.stats(dummy_runtime, config)
 
     assert dummy_runtime.compose_runs[-1]["args"] == ["ps", "--quiet"]
-    assert dummy_runtime.commands_run[-1] == ["stats", "cid-one", "cid-two"]
+    assert dummy_runtime.commands_run[-1] == [
+        "stats",
+        "--no-stream",
+        "cid-one",
+        "cid-two",
+    ]
 
 
-def test_stats_no_stream_prints_one_snapshot(dummy_runtime, config):
+def test_stats_follow_streams_continuously(dummy_runtime, config):
     dummy_runtime.compose_stdout = "cid-one\n"
 
-    container.stats(dummy_runtime, config, no_stream=True)
+    container.stats(dummy_runtime, config, follow=True)
 
-    assert dummy_runtime.commands_run[-1] == ["stats", "--no-stream", "cid-one"]
+    assert dummy_runtime.commands_run[-1] == ["stats", "cid-one"]
 
 
 def test_stats_empty_project_does_not_run_global_stats(dummy_runtime, config, capsys):

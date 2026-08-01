@@ -29,7 +29,7 @@ def stats(
     runtime: ContainerRuntime,
     config: Config,
     profile: str | None = None,
-    no_stream: bool = False,
+    follow: bool = False,
 ) -> None:
     context = resolve_compose_context(config, profile)
     result = runtime.run_compose(
@@ -43,6 +43,6 @@ def stats(
         typer.echo(t("msg.no_running_containers"))
         return
     args = ["stats"]
-    if no_stream:
+    if not follow:
         args.append("--no-stream")
     runtime.passthru_cli([*args, *container_ids])

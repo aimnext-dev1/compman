@@ -90,6 +90,12 @@ def _image_ops():
     return image
 
 
+def _container_ops():
+    from compman.ops import container
+
+    return container
+
+
 def _configure_console_output() -> None:
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
@@ -334,6 +340,35 @@ def status_cmd(
         raise typer.Exit(1)
 
 
+# ---- project containers ----
+@app.command("ps", help=t("cmd.ps"))
+def ps_cmd(
+    profile: Annotated[Optional[str], typer.Argument()] = None,
+    all_containers: Annotated[
+        bool, typer.Option("--all", "-a", help=t("opt.all"))
+    ] = False,
+    config: Annotated[
+        Optional[str], typer.Option("--config", "-c", help=t("opt.config"))
+    ] = None,
+) -> None:
+    ctx = _load(config)
+    _container_ops().ps(ctx["runtime"], ctx["config"], profile, all_containers)
+
+
+@app.command("stats", help=t("cmd.stats"))
+def stats_cmd(
+    profile: Annotated[Optional[str], typer.Argument()] = None,
+    follow: Annotated[
+        bool, typer.Option("--follow", "-f", help=t("opt.follow"))
+    ] = False,
+    config: Annotated[
+        Optional[str], typer.Option("--config", "-c", help=t("opt.config"))
+    ] = None,
+) -> None:
+    ctx = _load(config)
+    _container_ops().stats(ctx["runtime"], ctx["config"], profile, follow)
+
+
 # ---- completion ----
 @app.command("completion", help=t("cmd.completion"))
 def completion_cmd(
@@ -411,7 +446,7 @@ def _ps_completion_snippet() -> str:
         "\n# compman shell completion\n"
         "Register-ArgumentCompleter -Native -CommandName compman -ScriptBlock {\n"
         "    param($wordToComplete, $commandAst, $cursorPosition)\n"
-        "    $subcommands = @('init', 'clear', 'deploy', 'update', 'doctor', 'status', 'upgrade', 'completion', 'seed', 'version', 'stack', 'service', 'volume', 'image')\n"
+        "    $subcommands = @('init', 'clear', 'deploy', 'update', 'doctor', 'status', 'ps', 'stats', 'upgrade', 'completion', 'seed', 'version', 'stack', 'service', 'volume', 'image')\n"
         "    $words = $commandAst.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)\n"
         "    if ($words.Count -le 2) {\n"
         "        $subcommands | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"

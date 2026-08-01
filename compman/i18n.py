@@ -140,6 +140,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Show structured status for services in a running stack.",
         "ko": "실행 중인 스택 서비스의 구조화된 상태를 표시합니다.",
     },
+    "cmd.ps": {
+        "en": "List project containers.",
+        "ko": "프로젝트 컨테이너 목록 표시",
+    },
+    "cmd.stats": {
+        "en": "Display project container resource usage.",
+        "ko": "프로젝트 컨테이너 리소스 사용량 표시",
+    },
     "cmd.completion": {
         "en": (
             "Output or install shell auto-completion script.\n\n"
@@ -442,6 +450,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "opt.config": {
         "en": "Path to compman.yml",
         "ko": "compman.yml 설정 파일 경로",
+    },
+    "opt.all": {
+        "en": "Include stopped containers",
+        "ko": "중지된 컨테이너 포함",
+    },
+    "opt.follow": {
+        "en": "Stream statistics continuously",
+        "ko": "통계를 계속 출력",
     },
     "opt.json": {
         "en": "Output as JSON",

@@ -14,7 +14,7 @@ from compman.cli import _run_upgrade_command, app
 from compman.config import ConfigError
 from compman.diagnostics import CheckResult, DoctorReport, ServiceStatus, StatusReport
 from compman.errors import CommandError
-from compman.i18n import set_lang
+from compman.i18n import set_lang, t
 
 
 def test_importing_cli_does_not_load_command_only_modules():
@@ -27,6 +27,7 @@ def test_importing_cli_does_not_load_command_only_modules():
         "compman.diagnostics",
         "compman.docker",
         "compman.ops.image",
+        "compman.ops.container",
         "compman.ops.service",
         "compman.ops.stack",
         "compman.ops.volume",
@@ -137,6 +138,50 @@ def test_cli_update(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
         res = runner.invoke(app, ["update"])
         assert res.exit_code == 0
+
+
+def test_cli_project_ps_and_stats(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
+    (temp_dir / "compman.yml").write_text(
+        "compman:\n  name: app\n  compose:\n    - docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    (temp_dir / "docker-compose.yml").touch()
+    dummy_runtime.compose_stdout = "cid123\n"
+
+    with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
+        ps_result = runner.invoke(app, ["ps"])
+        assert ps_result.exit_code == 0
+        assert dummy_runtime.compose_runs[-1]["args"] == ["ps"]
+
+        ps_all_result = runner.invoke(app, ["ps", "--all"])
+        assert ps_all_result.exit_code == 0
+        assert dummy_runtime.compose_runs[-1]["args"] == ["ps", "--all"]
+
+        stats_result = runner.invoke(app, ["stats"])
+        assert stats_result.exit_code == 0
+        assert dummy_runtime.commands_run[-1] == ["stats", "--no-stream", "cid123"]
+
+        follow_result = runner.invoke(app, ["stats", "--follow"])
+        assert follow_result.exit_code == 0
+        assert dummy_runtime.commands_run[-1] == ["stats", "cid123"]
+
+        short_follow_result = runner.invoke(app, ["stats", "-f"])
+        assert short_follow_result.exit_code == 0
+        assert dummy_runtime.commands_run[-1] == ["stats", "cid123"]
+
+
+def test_ps_stats_help_and_korean_translations(runner: CliRunner):
+    ps_help = strip_ansi(runner.invoke(app, ["ps", "--help"], color=True).output)
+    stats_help = strip_ansi(runner.invoke(app, ["stats", "--help"], color=True).output)
+
+    assert "List project containers" in ps_help
+    assert "--all" in ps_help
+    assert "Display project container resource usage" in stats_help
+    assert "--follow" in stats_help
+    assert "-f" in stats_help
+    assert "--no-stream" not in stats_help
+    assert t("cmd.ps", lang="ko") == "프로젝트 컨테이너 목록 표시"
+    assert t("cmd.stats", lang="ko") == "프로젝트 컨테이너 리소스 사용량 표시"
 
 
 def test_cli_stack_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
@@ -284,6 +329,8 @@ def test_cli_completion(runner: CliRunner, temp_dir: pathlib.Path):
     assert "Register-ArgumentCompleter" in res.output
     assert "'doctor'" in res.output
     assert "'status'" in res.output
+    assert "'ps'" in res.output
+    assert "'stats'" in res.output
 
     profile = temp_dir / "Microsoft.PowerShell_profile.ps1"
     with patch("compman.cli.subprocess.check_output", return_value=str(profile)) as profile_lookup:
