@@ -26,6 +26,10 @@ If every convenient option has been answered with "not allowed," `compman` is fo
 
 CI verifies Python 3.10–3.13 on Ubuntu, macOS, and Windows. See the `Python version strategy` section of [REVIEW.md](REVIEW.md) for the Python 3.14 support plan and upgrade decision.
 
+Successful CI for a push to `main` automatically creates an annotated tag from
+the version in `pyproject.toml`. Every version bump must include the matching
+dated section in `CHANGELOG.md`; existing tags are never moved.
+
 ## Installation
 
 ### Automatic installation

@@ -12,14 +12,39 @@ def test_official_repository_urls_use_current_owner():
         assert "allbegray/compman" in content
 
 
-def test_package_version_is_1_1_5():
+def test_package_version_is_1_1_6():
     root = Path(__file__).parents[1]
     project = (root / "pyproject.toml").read_text(encoding="utf-8")
     lock = (root / "uv.lock").read_text(encoding="utf-8")
 
-    assert re.search(r'(?m)^version = "1\.1\.5"$', project)
-    assert re.search(r'(?m)^name = "compman"\r?\nversion = "1\.1\.5"$', lock)
-    assert "## [1.1.5]" in (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert re.search(r'(?m)^version = "1\.1\.6"$', project)
+    assert re.search(r'(?m)^name = "compman"\r?\nversion = "1\.1\.6"$', lock)
+    assert "## [1.1.6]" in (root / "CHANGELOG.md").read_text(encoding="utf-8")
+
+
+def test_successful_main_ci_run_creates_version_tag_once():
+    root = Path(__file__).parents[1]
+    release = (root / ".github" / "workflows" / "release-tag.yml").read_text(encoding="utf-8")
+    ci = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    for expected in (
+        "workflow_run:",
+        "workflows: [CI]",
+        "types: [completed]",
+        "github.event.workflow_run.conclusion == 'success'",
+        "github.event.workflow_run.event == 'push'",
+        "github.event.workflow_run.head_branch == 'main'",
+        "contents: write",
+        "github.event.workflow_run.head_sha",
+        "tomllib",
+        "CHANGELOG.md",
+        "git rev-list -n 1",
+        "git tag -a",
+        "git push origin",
+    ):
+        assert expected in release
+
+    assert 'tags-ignore: ["**"]' in ci
 
 
 def test_english_is_used_outside_korean_localization_resources():

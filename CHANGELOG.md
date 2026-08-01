@@ -3,6 +3,15 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.1.6] - 2026-08-01
+
+### Added
+
+- Added a GitHub Actions workflow that creates an annotated version tag after a
+  successful CI run for a push to `main`.
+- Added release guards for CHANGELOG consistency, duplicate tags, and tag
+  collisions, and prevented tag pushes from starting duplicate CI runs.
+
 ## [1.1.5] - 2026-08-01
 
 ### Added
