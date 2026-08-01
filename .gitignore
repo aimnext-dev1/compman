@@ -8,6 +8,7 @@ Thumbs.db
 
 # AI agents
 .agents/
+.superpowers/
 
 # Python
 __pycache__/
