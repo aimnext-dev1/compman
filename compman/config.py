@@ -6,6 +6,8 @@ from pathlib import Path
 
 import yaml
 
+from compman.errors import ConfigError
+
 
 def sanitize_project_name(name: str) -> str:
     """Normalize a string to a valid Docker Compose project name.
@@ -187,7 +189,3 @@ def dump_default_config(name: str) -> str:
   #     env:
   #       DATABASE_URL: prod.example.com:5432
 """
-
-
-class ConfigError(Exception):
-    pass

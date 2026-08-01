@@ -36,6 +36,25 @@ def test_cli_internal_callbacks_and_load(runner, temp_dir):
             cli.init_cmd()
 
 
+def test_cli_lazy_wrappers_delegate_to_command_modules():
+    doctor_report = MagicMock()
+    status_report = MagicMock()
+    with patch("compman.deploy.deploy") as deploy_command:
+        cli._deploy(build=True, tag="tag", s3_path="s3://bucket/key")
+    deploy_command.assert_called_once_with(
+        build=True,
+        tag="tag",
+        s3_path="s3://bucket/key",
+        config=None,
+        runtime=None,
+    )
+
+    with patch("compman.diagnostics.collect_doctor", return_value=doctor_report):
+        assert cli.collect_doctor("compman.yml", "dev") is doctor_report
+    with patch("compman.diagnostics.collect_status", return_value=status_report):
+        assert cli.collect_status("compman.yml", "dev") is status_report
+
+
 def test_cli_init_force_and_completion_existing(runner, temp_dir):
     profile = temp_dir / "profile.ps1"
     profile.write_text("# compman shell completion\nold _COMPMAN_COMPLETE\n", encoding="utf-8")

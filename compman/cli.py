@@ -8,19 +8,86 @@ import subprocess
 import sys
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
-from typing import Annotated, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
 from typer import _click
 from typer.core import TyperGroup
 
-from compman.config import ConfigError, dump_default_config, load_config
-from compman.deploy import deploy as _deploy
-from compman.diagnostics import DoctorReport, StatusReport, collect_doctor, collect_status
-from compman.docker import detect_runtime
-from compman.errors import CommandError
+from compman.errors import CommandError, ConfigError
 from compman.i18n import get_lang, set_lang, t
-from compman.ops import image, service, stack, volume
+
+if TYPE_CHECKING:
+    from compman.config import Config
+    from compman.diagnostics import DoctorReport, StatusReport
+    from compman.docker import ContainerRuntime
+
+
+def dump_default_config(name: str) -> str:
+    from compman.config import dump_default_config as _dump_default_config
+
+    return _dump_default_config(name)
+
+
+def load_config(config_path: str | None = None):
+    from compman.config import load_config as _load_config
+
+    return _load_config(config_path)
+
+
+def detect_runtime():
+    from compman.docker import detect_runtime as _detect_runtime
+
+    return _detect_runtime()
+
+
+def _deploy(
+    *,
+    build: bool,
+    tag: str | None,
+    s3_path: str | None,
+    config: Config | None = None,
+    runtime: ContainerRuntime | None = None,
+) -> None:
+    from compman.deploy import deploy
+
+    deploy(build=build, tag=tag, s3_path=s3_path, config=config, runtime=runtime)
+
+
+def collect_doctor(config_path: str | None, profile: str | None):
+    from compman.diagnostics import collect_doctor as _collect_doctor
+
+    return _collect_doctor(config_path, profile)
+
+
+def collect_status(config_path: str | None, profile: str | None):
+    from compman.diagnostics import collect_status as _collect_status
+
+    return _collect_status(config_path, profile)
+
+
+def _stack_ops():
+    from compman.ops import stack
+
+    return stack
+
+
+def _service_ops():
+    from compman.ops import service
+
+    return service
+
+
+def _volume_ops():
+    from compman.ops import volume
+
+    return volume
+
+
+def _image_ops():
+    from compman.ops import image
+
+    return image
 
 
 def _configure_console_output() -> None:
@@ -202,10 +269,10 @@ def update_cmd(
     ctx = _load(config)
     cfg = ctx["config"]
     if cfg.deploy:
-        _deploy(build=True, tag=None, s3_path=cfg.deploy)
-        stack.up(ctx["runtime"], cfg, profile=profile)
+        _deploy(build=True, tag=None, s3_path=cfg.deploy, config=cfg, runtime=ctx["runtime"])
+        _stack_ops().up(ctx["runtime"], cfg, profile=profile)
     else:
-        stack.update(ctx["runtime"], cfg, profile=profile)
+        _stack_ops().update(ctx["runtime"], cfg, profile=profile)
 
 
 def _render_doctor(report: DoctorReport) -> None:
@@ -387,7 +454,18 @@ def upgrade_cmd(
 
     uv_cmd = _find_uv()
     try:
-        result = _run_upgrade_command([uv_cmd, "tool", "upgrade", "compman", "--reinstall"])
+        result = _run_upgrade_command(
+            [
+                uv_cmd,
+                "tool",
+                "upgrade",
+                "compman",
+                "--reinstall",
+                "--managed-python",
+                "--python",
+                "3.13",
+            ]
+        )
     except FileNotFoundError:
         result = _run_upgrade_command(
             [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{repo}"]
@@ -449,7 +527,7 @@ def stack_up(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    stack.up(ctx["runtime"], ctx["config"], profile)
+    _stack_ops().up(ctx["runtime"], ctx["config"], profile)
 
 
 @stack_app.command("down", help=t("cmd.stack.down"))
@@ -461,7 +539,7 @@ def stack_down(
     if not yes:
         typer.confirm("Remove the entire stack?", abort=True)
     ctx = _load(config)
-    stack.down(ctx["runtime"], ctx["config"], profile)
+    _stack_ops().down(ctx["runtime"], ctx["config"], profile)
 
 
 @stack_app.command("update", help=t("cmd.stack.update"))
@@ -470,7 +548,7 @@ def stack_update(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    stack.update(ctx["runtime"], ctx["config"], profile)
+    _stack_ops().update(ctx["runtime"], ctx["config"], profile)
 
 
 app.add_typer(stack_app, name="stack")
@@ -487,7 +565,7 @@ def service_start(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.start(ctx["runtime"], ctx["config"], tuple(services), profile)
+    _service_ops().start(ctx["runtime"], ctx["config"], tuple(services), profile)
 
 
 @service_app.command("stop", help=t("cmd.service.stop"))
@@ -497,7 +575,7 @@ def service_stop(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.stop(ctx["runtime"], ctx["config"], tuple(services), profile)
+    _service_ops().stop(ctx["runtime"], ctx["config"], tuple(services), profile)
 
 
 @service_app.command("restart", help=t("cmd.service.restart"))
@@ -507,7 +585,7 @@ def service_restart(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.restart(ctx["runtime"], ctx["config"], tuple(services), profile)
+    _service_ops().restart(ctx["runtime"], ctx["config"], tuple(services), profile)
 
 
 @service_app.command("status", help=t("cmd.service.status"))
@@ -516,7 +594,7 @@ def service_status(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.status(ctx["runtime"], ctx["config"], profile)
+    _service_ops().status(ctx["runtime"], ctx["config"], profile)
 
 
 @service_app.command("log", help=t("cmd.service.log"))
@@ -528,7 +606,7 @@ def service_log(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.log(ctx["runtime"], ctx["config"], name, follow=follow, tail=tail, profile=profile)
+    _service_ops().log(ctx["runtime"], ctx["config"], name, follow=follow, tail=tail, profile=profile)
 
 
 @service_app.command("connect", help=t("cmd.service.connect"))
@@ -538,7 +616,7 @@ def service_connect(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    service.connect(ctx["runtime"], ctx["config"], name, profile)
+    _service_ops().connect(ctx["runtime"], ctx["config"], name, profile)
 
 
 app.add_typer(service_app, name="service")
@@ -555,7 +633,7 @@ def volume_backup(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    volume.backup(ctx["runtime"], ctx["config"], no_stop=no_stop, profile=profile)
+    _volume_ops().backup(ctx["runtime"], ctx["config"], no_stop=no_stop, profile=profile)
 
 
 @volume_app.command("restore", help=t("cmd.volume.restore"))
@@ -566,7 +644,7 @@ def volume_restore(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    volume.restore(ctx["runtime"], ctx["config"], timestamp, no_stop=no_stop, profile=profile)
+    _volume_ops().restore(ctx["runtime"], ctx["config"], timestamp, no_stop=no_stop, profile=profile)
 
 
 @volume_app.command("pull", help=t("cmd.volume.pull"))
@@ -575,7 +653,7 @@ def volume_pull(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    volume.pull(ctx["runtime"], ctx["config"], profile)
+    _volume_ops().pull(ctx["runtime"], ctx["config"], profile)
 
 
 @volume_app.command("push", help=t("cmd.volume.push"))
@@ -584,7 +662,7 @@ def volume_push(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    volume.push(ctx["runtime"], ctx["config"], profile)
+    _volume_ops().push(ctx["runtime"], ctx["config"], profile)
 
 
 app.add_typer(volume_app, name="volume")
@@ -601,7 +679,7 @@ def image_backup(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    image.backup(ctx["runtime"], ctx["config"], source_mode=source_image, profile=profile)
+    _image_ops().backup(ctx["runtime"], ctx["config"], source_mode=source_image, profile=profile)
 
 
 @image_app.command("restore", help=t("cmd.image.restore"))
@@ -611,7 +689,7 @@ def image_restore(
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    image.restore(ctx["runtime"], ctx["config"], timestamp, profile)
+    _image_ops().restore(ctx["runtime"], ctx["config"], timestamp, profile)
 
 
 app.add_typer(image_app, name="image")

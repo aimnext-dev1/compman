@@ -15,8 +15,8 @@ from botocore.exceptions import (
     PartialCredentialsError,
 )
 
-from compman.config import ConfigError, load_config, sanitize_project_name
-from compman.docker import detect_runtime
+from compman.config import Config, ConfigError, load_config, sanitize_project_name
+from compman.docker import ContainerRuntime, detect_runtime
 from compman.i18n import t
 from compman.ops.common import ensure_runtime_ready
 from compman.s3_source import download as _download  # noqa: F401
@@ -26,9 +26,14 @@ from compman.scaffold import generate as _generate_scaffold
 from compman.scaffold import update_deploy as _update_compman_deploy  # noqa: F401
 
 
-def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = None) -> None:
-    config = None
-    if (Path.cwd() / "compman.yml").exists():
+def deploy(
+    build: bool = False,
+    tag: str | None = None,
+    s3_path: str | None = None,
+    config: Config | None = None,
+    runtime: ContainerRuntime | None = None,
+) -> None:
+    if config is None and (Path.cwd() / "compman.yml").exists():
         try:
             config = load_config()
         except ConfigError:
@@ -88,7 +93,7 @@ def deploy(build: bool = False, tag: str | None = None, s3_path: str | None = No
         if build:
             stage = "building the container image"
             typer.echo(t("msg.deploy_building", image=image, path=project_subfolder))
-            runtime = detect_runtime()
+            runtime = runtime or detect_runtime()
             ensure_runtime_ready(runtime)
             runtime.passthru_cli(["build", "-t", image, "."], cwd=deploy_target)
         typer.echo(t("msg.deploy_done"))

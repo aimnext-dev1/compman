@@ -8,3 +8,7 @@ class CommandError(Exception):
         self.message = message
         self.code = code
         super().__init__(message)
+
+
+class ConfigError(Exception):
+    """Invalid or unavailable compman configuration."""

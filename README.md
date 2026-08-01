@@ -4,7 +4,7 @@
 
 ## Who Is This For?
 
-This tool is dedicated to the brave, slightly unfortunate souls who cannot use a web GUI, cannot get past the firewall, cannot install heavyweight management software, and have somehow been left alone with nothing but raw Docker commands.
+This tool is dedicated to the brave, slightly unfortunate souls working in environments where a web GUI is unavailable, the firewall blocks everything useful, heavyweight management software cannot be installed, and somehow only raw Docker commands remain.
 
 If every convenient option has been answered with "not allowed," `compman` is for you.
 

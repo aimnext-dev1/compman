@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import pathlib
 import re
+import subprocess
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -13,6 +14,37 @@ from compman.config import ConfigError
 from compman.diagnostics import CheckResult, DoctorReport, ServiceStatus, StatusReport
 from compman.errors import CommandError
 from compman.i18n import set_lang
+
+
+def test_importing_cli_does_not_load_command_only_modules():
+    command_only = {
+        "boto3",
+        "botocore",
+        "yaml",
+        "compman.config",
+        "compman.deploy",
+        "compman.diagnostics",
+        "compman.docker",
+        "compman.ops.image",
+        "compman.ops.service",
+        "compman.ops.stack",
+        "compman.ops.volume",
+    }
+    script = (
+        "import sys; import compman.cli; "
+        f"print(sorted({command_only!r}.intersection(sys.modules)))"
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=True,
+    )
+
+    assert result.stdout.strip() == "[]"
 
 
 def test_cli_version(runner: CliRunner):
@@ -200,7 +232,16 @@ def test_cli_upgrade_uses_uv_tool_upgrade_with_utf8_decoding(runner: CliRunner):
     assert repo not in res.output
     assert "compman CLI upgraded successfully!" in res.output
     run.assert_called_once_with(
-        ["/fake/uv", "tool", "upgrade", "compman", "--reinstall"],
+        [
+            "/fake/uv",
+            "tool",
+            "upgrade",
+            "compman",
+            "--reinstall",
+            "--managed-python",
+            "--python",
+            "3.13",
+        ],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -388,9 +429,12 @@ def test_cli_init_s3_interactive(runner: CliRunner, temp_dir: pathlib.Path):
 def test_cli_update_deploy_path(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  deploy: s3://b/k.tar.gz\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
-    with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.cli._deploy"):
+    with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.cli._deploy") as deploy:
         res = runner.invoke(app, ["update"])
         assert res.exit_code == 0
+    deploy.assert_called_once()
+    assert deploy.call_args.kwargs["config"].name == "app"
+    assert deploy.call_args.kwargs["runtime"] is dummy_runtime
 
 
 def test_cli_stack_down_no_yes_abort(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
