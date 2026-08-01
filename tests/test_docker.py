@@ -507,6 +507,23 @@ def test_ensure_ready_for_start_reports_missing_desktop_executable(monkeypatch):
     popen.assert_not_called()
 
 
+def test_ensure_ready_for_start_reports_missing_program_files_executable(monkeypatch, tmp_path):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setenv("ProgramFiles", str(tmp_path))
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)),
+        patch.object(shutil, "which", return_value=None),
+        patch.object(subprocess, "Popen") as popen,
+        pytest.raises(RuntimeError, match="executable"),
+    ):
+        runtime.ensure_ready_for_start(lambda: True)
+
+    popen.assert_not_called()
+
+
 def test_ensure_ready_for_start_reports_desktop_launch_error(monkeypatch):
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
@@ -540,3 +557,12 @@ def test_ensure_ready_for_start_times_out_after_default_sixty_seconds(monkeypatc
     assert sleep.call_count == 60
     assert sleep.call_args_list == [call(1.0)] * 60
     assert run_cli.call_count == 61
+
+
+def test_docker_is_ready_returns_false_when_info_command_fails():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with patch.object(runtime, "run_cli", side_effect=RuntimeError("docker unavailable")) as run_cli:
+        assert not runtime._docker_is_ready()
+
+    run_cli.assert_called_once_with(["info"], capture=True, check=False)
