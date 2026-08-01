@@ -96,6 +96,11 @@ def test_cli_upgrade_and_uv_paths(runner):
         assert cli._find_uv() == "uv"
 
 
+def test_find_uv_returns_path_from_shutil_which():
+    with patch("shutil.which", return_value="C:/tools/uv.exe"):
+        assert cli._find_uv() == "C:/tools/uv.exe"
+
+
 def test_cli_version_callback_package_missing():
     with patch("compman.cli._pkg_version", side_effect=__import__("importlib").metadata.PackageNotFoundError):
         with pytest.raises(typer.Exit):
