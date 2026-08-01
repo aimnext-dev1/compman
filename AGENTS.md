@@ -28,7 +28,7 @@ test/                  # runnable examples and E2E guides (not pytest tests)
 - English is the default UI and documentation language. Korean remains supported through `--lang ko` or `COMPMAN_LANG=ko`; keep Korean text isolated to i18n resources and their tests.
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
 - Python >=3.10; runtime deps: typer, PyYAML, boto3, botocore.
-- Quality gates: 241 pytest tests, 100% statement/branch coverage, Ruff, mypy.
+- Quality gates: 257 pytest tests, 100% statement/branch coverage, Ruff, mypy.
 - CI tests Python 3.10-3.13 on Linux/macOS/Windows and has packaging and Docker/Ministack integration jobs.
 
 ## Config: `compman.yml`
@@ -62,6 +62,7 @@ Two modes:
 
 - Auto-detects Docker then Podman. Override: `CONTAINER_RUNTIME=podman`.
 - Detection order: `docker compose` -> `podman compose` -> `podman-compose` -> `docker-compose`.
+- On Windows with Docker, `stack up`, `update`, and deploy image builds check whether Docker Desktop is ready. In an interactive terminal, an unavailable Desktop prompts `Docker Desktop is not running. Start it now? [Y/n]`; Enter accepts the default and compman starts it, then waits up to 60 seconds. Choosing `No` exits with guidance to start Docker Desktop manually and retry. Non-interactive commands never launch Docker Desktop. Podman, read-only commands, backup/restore, and stop/down paths do not use this startup check.
 
 ## CLI quirks
 
@@ -78,6 +79,7 @@ Two modes:
 - The fetched tree replaces the contents of the managed `dirs.project` directory, preserving `.git` and `.gitkeep`. Root `compman.yml` and `docker-compose.yml` are scaffolded or updated separately.
 - File swap rollback is atomic at the managed-tree step, but the full fetch -> scaffold -> build operation is not transactional: a later scaffold/build failure leaves the new source tree in place.
 - `update` rebuilds and force-recreates containers; it is not a zero-downtime rolling deployment.
+- Expected operational failures, including Docker Desktop readiness failures, are shown as concise errors without Python tracebacks.
 
 ## Backup naming
 

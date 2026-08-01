@@ -288,7 +288,7 @@ Run: `git diff --check`
 
 Expected: exit `0`.
 
-Run: `rg -n "[가-힣]" AGENTS.md README.md compman tests`
+Run: `rg -n -P "[\x{AC00}-\x{D7A3}]" AGENTS.md README.md compman tests`
 
 Expected: matches only in `compman/i18n.py`, `tests/test_i18n.py`, and intentional Korean assertions in `tests/test_cli.py`.
 

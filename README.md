@@ -270,6 +270,20 @@ export CONTAINER_RUNTIME=podman
 # PowerShell: $env:CONTAINER_RUNTIME="podman"
 ```
 
+### Windows Docker Desktop readiness
+
+On Windows when Docker is the selected runtime, compman checks Docker Desktop before `compman stack up`, `compman update`, `compman stack update`, and a `compman deploy --build` image build. If Docker Desktop is not ready in an interactive terminal, it asks:
+
+```text
+Docker Desktop is not running. Start it now? [Y/n]
+```
+
+Press Enter (or answer `Y`) to start Docker Desktop. compman waits up to 60 seconds for it to become ready before continuing. Answering `N` exits with guidance to start Docker Desktop manually and retry.
+
+In non-interactive execution, compman never starts Docker Desktop; it exits with a concise error instead. This check does not run for Podman, read-only commands, backup/restore, or stop/down paths.
+
+Expected operational failures, including Docker Desktop readiness failures, are printed as concise messages without Python tracebacks.
+
 ## S3-compatible storage
 
 Uses standard AWS SDK environment variables.
