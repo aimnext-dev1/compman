@@ -75,12 +75,12 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
             sys.stdout.write(f"\033[{len(options)}A")
         for i, option in enumerate(options):
             if i == selected:
-                sys.stdout.write(f"\033[K \033[36m❯ {option}\033[0m\n")
+                sys.stdout.write(f"\033[K \033[36m> {option}\033[0m\n")
             else:
                 sys.stdout.write(f"\033[K   {option}\n")
         sys.stdout.flush()
 
-    typer.echo(f"💡 {title} (Use ↑/↓ arrow keys, Enter to select, ESC to cancel):")
+    typer.echo(f"{title} (Use Up/Down, Enter to select, Esc to cancel):")
     render(redraw=False)
 
     while True:

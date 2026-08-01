@@ -53,10 +53,10 @@ class HelpOnUnknownCommandGroup(TyperGroup):
             return super().main(*args, **kwargs)
         except CommandError as error:
             typer.echo(error.message, err=True)
-            raise _click.exceptions.Exit(error.code)
+            raise SystemExit(error.code)
         except (ConfigError, RuntimeError) as error:
             typer.echo(t("msg.command_failed", error=error), err=True)
-            raise _click.exceptions.Exit(1)
+            raise SystemExit(1)
 
 
 # ---- pre-parse --lang for help text resolution ----

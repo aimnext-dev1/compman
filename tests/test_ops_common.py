@@ -57,10 +57,14 @@ def test_prompt_select_non_tty(temp_dir: pathlib.Path):
         assert res_invalid == 0
 
 
-def test_prompt_select_interactive_arrows(temp_dir: pathlib.Path):
+def test_prompt_select_interactive_arrows(temp_dir: pathlib.Path, capsys: pytest.CaptureFixture[str]):
     with patch("sys.stdin.isatty", return_value=True), patch("compman.ops.common.get_key", side_effect=["down", "up", "enter"]):
         res = common.prompt_select("Title", ["Option 1", "Option 2"])
         assert res == 0
+    output = capsys.readouterr().out
+    assert "Title (Use Up/Down, Enter to select, Esc to cancel):" in output
+    assert "> Option 1" in output
+    assert output.isascii()
 
 
 def test_prompt_select_interactive_esc(temp_dir: pathlib.Path):

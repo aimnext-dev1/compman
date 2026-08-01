@@ -8,7 +8,9 @@ from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
 from compman.cli import app
+from compman.config import ConfigError
 from compman.diagnostics import CheckResult, DoctorReport, ServiceStatus, StatusReport
+from compman.errors import CommandError
 from compman.i18n import set_lang
 
 
@@ -428,6 +430,29 @@ def test_cli_load_runtime_error(runner: CliRunner, temp_dir: pathlib.Path):
     with patch("compman.docker.detect_runtime", side_effect=RuntimeError("no runtime")):
         res = runner.invoke(app, ["stack", "up"])
         assert res.exit_code != 0
+
+
+def test_cli_expected_errors_exit_cleanly(runner: CliRunner):
+    with patch("compman.cli._deploy", side_effect=CommandError("operation failed", code=7)):
+        command_error = runner.invoke(app, ["deploy"])
+    assert command_error.exit_code == 7
+    assert isinstance(command_error.exception, SystemExit)
+    assert command_error.output == "operation failed\n"
+    assert "Traceback" not in command_error.output
+
+    with patch("compman.cli._deploy", side_effect=ConfigError("invalid config")):
+        config_error = runner.invoke(app, ["deploy"])
+    assert config_error.exit_code == 1
+    assert isinstance(config_error.exception, SystemExit)
+    assert config_error.output == "Error: invalid config\n"
+    assert "Traceback" not in config_error.output
+
+    with patch("compman.cli.detect_runtime", side_effect=RuntimeError("missing runtime")):
+        runtime_error = runner.invoke(app, ["clear"])
+    assert runtime_error.exit_code == 1
+    assert isinstance(runtime_error.exception, SystemExit)
+    assert runtime_error.output == "Pruning unused Docker images...\nError: missing runtime\n"
+    assert "Traceback" not in runtime_error.output
 
 
 def test_cli_upgrade_uv_fail_pip_fail(runner: CliRunner):
