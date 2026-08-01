@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import pathlib
 import re
+import sys
 from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from compman.cli import app
+from compman.cli import _run_upgrade_command, app
 from compman.config import ConfigError
 from compman.diagnostics import CheckResult, DoctorReport, ServiceStatus, StatusReport
 from compman.errors import CommandError
@@ -187,11 +188,21 @@ def test_cli_unknown_subcommand_shows_group_help(runner: CliRunner):
     set_lang("en")
 
 
-def test_cli_upgrade(runner: CliRunner):
-    with patch("subprocess.run", return_value=MagicMock(returncode=0)) as run:
+def test_cli_upgrade_uses_uv_tool_upgrade_with_utf8_decoding(runner: CliRunner):
+    result = MagicMock(returncode=0, stdout="", stderr="")
+    with patch("compman.cli._find_uv", return_value="/fake/uv"), patch(
+        "subprocess.run", return_value=result
+    ) as run:
         res = runner.invoke(app, ["upgrade"])
-        assert res.exit_code == 0
-    assert run.call_args.args[0][-1] == "git+https://github.com/allbegray/compman.git"
+    assert res.exit_code == 0
+    assert "compman CLI upgraded successfully!" in res.output
+    run.assert_called_once_with(
+        ["/fake/uv", "tool", "upgrade", "compman", "--reinstall"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
 
 
 def test_cli_completion(runner: CliRunner, temp_dir: pathlib.Path):
@@ -392,26 +403,52 @@ def test_cli_root_no_subcommand(runner: CliRunner):
     assert res.exit_code == 2
 
 
-def test_cli_upgrade_uv_fail_pip_success(runner: CliRunner):
-    mock_uv = MagicMock(returncode=1, stderr="uv fail")
-    mock_pip = MagicMock(returncode=0)
-    with patch("shutil.which", return_value="/fake/uv"), patch("subprocess.run", side_effect=[mock_uv, mock_pip]):
+def test_cli_upgrade_uv_failure_reports_diagnostics_without_fallback(runner: CliRunner):
+    mock_uv = MagicMock(returncode=1, stderr="uv fail", stdout="")
+    with patch("compman.cli._find_uv", return_value="/fake/uv"), patch(
+        "subprocess.run", return_value=mock_uv
+    ) as run:
         res = runner.invoke(app, ["upgrade"])
-        assert res.exit_code == 0
+    assert res.exit_code == 1
+    assert "uv fail" in res.output
+    assert "Traceback" not in res.output
+    run.assert_called_once()
 
 
-def test_cli_upgrade_pip_success(runner: CliRunner):
-    m = MagicMock(returncode=0)
-    with patch("shutil.which", return_value=None), patch("subprocess.run", return_value=m):
+def test_cli_upgrade_missing_uv_falls_back_to_pip_with_custom_repo(runner: CliRunner):
+    pip_result = MagicMock(returncode=0, stdout="", stderr="")
+    repo = "https://example.test/custom/compman.git"
+    with patch("compman.cli._find_uv", return_value="uv"), patch(
+        "subprocess.run", side_effect=[FileNotFoundError(), pip_result]
+    ) as run:
+        res = runner.invoke(app, ["upgrade", "--repo", repo])
+    assert res.exit_code == 0
+    assert "compman CLI upgraded successfully!" in res.output
+    assert run.call_args_list[1].args[0] == [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--upgrade",
+        f"git+{repo}",
+    ]
+    assert run.call_args_list[1].kwargs == {
+        "capture_output": True,
+        "text": True,
+        "encoding": "utf-8",
+        "errors": "replace",
+    }
+
+
+def test_cli_upgrade_missing_uv_pip_failure_handles_replacement_text(runner: CliRunner):
+    failed = MagicMock(returncode=1, stderr="download failed \ufffd", stdout="")
+    with patch("compman.cli._find_uv", return_value="uv"), patch(
+        "subprocess.run", side_effect=[FileNotFoundError(), failed]
+    ):
         res = runner.invoke(app, ["upgrade"])
-        assert res.exit_code == 0
-
-
-def test_cli_upgrade_pip_fail(runner: CliRunner):
-    m = MagicMock(returncode=1)
-    with patch("shutil.which", return_value=None), patch("subprocess.run", return_value=m):
-        res = runner.invoke(app, ["upgrade"])
-        assert res.exit_code != 0
+    assert res.exit_code == 1
+    assert "download failed \ufffd" in res.output
+    assert "Traceback" not in res.output
 
 
 def test_cli_version_pkg_not_found(runner: CliRunner):
@@ -455,11 +492,17 @@ def test_cli_expected_errors_exit_cleanly(runner: CliRunner):
     assert "Traceback" not in runtime_error.output
 
 
-def test_cli_upgrade_uv_fail_pip_fail(runner: CliRunner):
-    mock_fail = MagicMock(returncode=1)
-    with patch("shutil.which", return_value="/fake/uv"), patch("subprocess.run", return_value=mock_fail):
-        res = runner.invoke(app, ["upgrade"])
-        assert res.exit_code != 0
+def test_run_upgrade_command_uses_replacement_safe_utf8_decoding():
+    result = MagicMock(returncode=0, stdout="", stderr="")
+    with patch("subprocess.run", return_value=result) as run:
+        assert _run_upgrade_command(["uv"]) is result
+    run.assert_called_once_with(
+        ["uv"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
 
 
 def test_cli_service_no_services(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):

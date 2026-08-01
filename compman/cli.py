@@ -359,37 +359,35 @@ def _ps_completion_snippet() -> str:
 
 
 # ---- upgrade ----
+def _run_upgrade_command(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+
 @app.command("upgrade", help=t("cmd.upgrade"))
 def upgrade_cmd(
     repo: Annotated[str, typer.Option("--repo", help=t("opt.repo"))] = "https://github.com/allbegray/compman.git",
 ) -> None:
-    import sys
-
     typer.echo(t("msg.upgrade_start", repo=repo))
 
     uv_cmd = _find_uv()
-    cmd = [uv_cmd, "tool", "install", "--reinstall", f"git+{repo}"]
-
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode == 0:
-            typer.echo(t("msg.upgrade_success"))
-            return
-        else:
-            pip_res = subprocess.run([uv_cmd, "pip", "install", "--python", sys.executable, f"git+{repo}"], capture_output=True, text=True)
-            if pip_res.returncode == 0:
-                typer.echo(t("msg.upgrade_success"))
-                return
-            typer.echo(t("msg.upgrade_error", error=res.stderr or res.stdout), err=True)
-            raise SystemExit(1)
+        result = _run_upgrade_command([uv_cmd, "tool", "upgrade", "compman", "--reinstall"])
     except FileNotFoundError:
-        pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{repo}"]
-        res = subprocess.run(pip_cmd, capture_output=True, text=True)
-        if res.returncode == 0:
-            typer.echo(t("msg.upgrade_success"))
-            return
-        typer.echo(t("msg.upgrade_error", error=res.stderr or res.stdout), err=True)
-        raise SystemExit(1)
+        result = _run_upgrade_command(
+            [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{repo}"]
+        )
+
+    if result.returncode == 0:
+        typer.echo(t("msg.upgrade_success"))
+        return
+    typer.echo(t("msg.upgrade_error", error=result.stderr or result.stdout), err=True)
+    raise SystemExit(1)
 
 
 

@@ -73,7 +73,9 @@ def test_cli_init_force_and_completion_existing(runner, temp_dir):
 
 def test_cli_upgrade_and_uv_paths(runner):
     failed = MagicMock(returncode=1, stderr="failed", stdout="")
-    with patch("shutil.which", return_value=None), patch("subprocess.run", side_effect=FileNotFoundError):
+    with patch("shutil.which", return_value=None), patch(
+        "subprocess.run", side_effect=[FileNotFoundError(), failed]
+    ):
         result = runner.invoke(cli.app, ["upgrade"])
     assert result.exit_code != 0
 
