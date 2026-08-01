@@ -14,11 +14,13 @@ from compman.ops import volume
 
 def test_volume_backup(dummy_runtime, temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
-    with patch("tarfile.open"), patch("compman.ops.volume._inspect_mount", return_value={"container": "c1", "volume": "vol1", "destination": "/data"}):
-        volume.backup(dummy_runtime, cfg, no_stop=False)
+    with patch("tarfile.open") as open_tar, patch("compman.ops.volume._inspect_mount", return_value={"container": "c1", "volume": "vol1", "destination": "/data"}):
+        volume.backup(dummy_runtime, cfg, no_stop=False, compression_level=2)
         assert len(dummy_runtime.compose_runs) >= 1
+        assert open_tar.call_args.kwargs["compresslevel"] == 2
 
         volume.backup(dummy_runtime, cfg, no_stop=True)
+        assert open_tar.call_args.kwargs["compresslevel"] == 6
 
 
 def test_volume_backup_no_volumes(dummy_runtime, temp_dir: pathlib.Path):

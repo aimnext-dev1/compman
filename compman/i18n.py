@@ -475,6 +475,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Backup original image instead of committing runtime state",
         "ko": "실행 중인 상태 커밋 대신 원본 이미지를 백업",
     },
+    "opt.compression_level": {
+        "en": "gzip compression level (1=fastest, 9=smallest)",
+        "ko": "gzip 압축 레벨 (1=가장 빠름, 9=가장 작음)",
+    },
     "opt.follow": {
         "en": "Follow log output continuously.",
         "ko": "로그 출력을 실시간으로 계속 추적(스트리밍)합니다.",

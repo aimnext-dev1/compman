@@ -224,12 +224,12 @@ compman service status [--profile PROFILE]
 compman service log [CONTAINER] [-f] [-n 50] [--profile PROFILE]
 compman service connect [CONTAINER] [--profile PROFILE]
 
-compman volume backup [--no-stop] [--profile PROFILE]
+compman volume backup [-z LEVEL] [--no-stop] [--profile PROFILE]
 compman volume restore [TIMESTAMP] [--no-stop] [--profile PROFILE]
 compman volume pull [--profile PROFILE]
 compman volume push [--profile PROFILE]
 
-compman image backup [--source-image] [--profile PROFILE]
+compman image backup [-z LEVEL] [--source-image] [--profile PROFILE]
 compman image restore [TIMESTAMP] [--profile PROFILE]
 
 compman clear
@@ -244,6 +244,7 @@ View all options for a command with `compman <command> --help`.
 - `service connect`: Falls back to `sh` if connecting with `bash` fails.
 - `volume backup/restore`: By default, brings the stack down during the operation and restores it afterward. Use `--no-stop` only when you understand the consistency risk.
 - `image backup`: By default, commits and saves the state of the running container. Use `--source-image` to save the original image.
+- `volume backup` and `image backup`: gzip level defaults to 6. Use `-z 1` for faster backups or `-z 9` for smaller archives.
 - `clear`: Runs `image prune -af` for the selected runtime, so it can delete unused images outside the current project.
 
 ## Diagnostics and status

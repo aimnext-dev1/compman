@@ -21,6 +21,7 @@ def backup(
     config: Config,
     no_stop: bool = False,
     profile: str | None = None,
+    compression_level: int = 6,
 ) -> None:
     context = resolve_compose_context(config, profile)
     if not runtime.stack_exists(config.name, context.files, context.env):
@@ -57,7 +58,7 @@ def backup(
             merged = _merge_mapping(mapping)
             map_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
 
-            with tarfile.open(tarball, "w:gz") as tar:
+            with tarfile.open(tarball, "w:gz", compresslevel=compression_level) as tar:
                 tar.add(backup_dir, arcname=".")
     finally:
         shutil.rmtree(backup_dir, ignore_errors=True)

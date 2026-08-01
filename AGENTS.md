@@ -24,7 +24,7 @@ test/                  # runnable examples and E2E guides (not pytest tests)
 ```
 
 - `compman init` provides an interactive 3-mode menu (1. Skeleton compman.yml, 2. S3 URL deploy, 3. Test seed project). Direct flags `--skeleton`, `--s3 <url>`, and `--seed` are also supported.
-- Current package version: `1.1.4`.
+- Current package version: `1.1.5`.
 - English is the default UI and documentation language. Korean remains supported through `--lang ko` or `COMPMAN_LANG=ko`; keep Korean text isolated to i18n resources and their tests.
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
 - Python >=3.10; runtime deps: typer, PyYAML, boto3, botocore.
@@ -72,6 +72,7 @@ Two modes:
 - Profile mode defaults to the first configured profile when none is supplied; an explicit name must be valid. Simple mode rejects a profile argument.
 - `image backup` defaults to committing runtime container state; `--source-image` flag saves the original image instead.
 - `volume backup/restore` optional `--no-stop` flag skips stack teardown.
+- `volume backup` and `image backup` accept `-z`/`--level` from 1 to 9; the default gzip compression level is 6.
 - `service log` displays last 50 lines by default (`docker logs -n 50`), supports `-f`/`--follow` to stream and `-n`/`--tail N` for line count.
 - `service connect` runs `docker exec -it` with bash fallback to sh.
 - `deploy` uses boto3 (no AWS CLI needed). S3 source path comes from `compman.yml: deploy` (single value, no per-profile) or `--path` override. `AWS_ENDPOINT_URL_S3` or `AWS_ENDPOINT_URL` env redirects the S3 client (e.g. local ministack at `http://localhost:4566`). Creds via standard `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_DEFAULT_REGION` env vars.

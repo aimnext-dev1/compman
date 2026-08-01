@@ -3,6 +3,13 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.1.5] - 2026-08-01
+
+### Added
+
+- Added `-z`/`--level` (1-9) to volume and image backups for controlling gzip
+  speed versus archive size. The default level is 6.
+
 ## [1.1.4] - 2026-08-01
 
 ### Added

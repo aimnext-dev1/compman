@@ -649,9 +649,16 @@ def volume_backup(
     no_stop: Annotated[bool, typer.Option("--no-stop", help=t("opt.no_stop"))] = False,
     profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    level: Annotated[int, typer.Option("-z", "--level", min=1, max=9, help=t("opt.compression_level"))] = 6,
 ) -> None:
     ctx = _load(config)
-    _volume_ops().backup(ctx["runtime"], ctx["config"], no_stop=no_stop, profile=profile)
+    _volume_ops().backup(
+        ctx["runtime"],
+        ctx["config"],
+        no_stop=no_stop,
+        profile=profile,
+        compression_level=level,
+    )
 
 
 @volume_app.command("restore", help=t("cmd.volume.restore"))
@@ -700,9 +707,16 @@ def image_backup(
     source_image: Annotated[bool, typer.Option("--source-image", help=t("opt.source_image"))] = False,
     profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
     config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    level: Annotated[int, typer.Option("-z", "--level", min=1, max=9, help=t("opt.compression_level"))] = 6,
 ) -> None:
     ctx = _load(config)
-    _image_ops().backup(ctx["runtime"], ctx["config"], source_mode=source_image, profile=profile)
+    _image_ops().backup(
+        ctx["runtime"],
+        ctx["config"],
+        source_mode=source_image,
+        profile=profile,
+        compression_level=level,
+    )
 
 
 @image_app.command("restore", help=t("cmd.image.restore"))

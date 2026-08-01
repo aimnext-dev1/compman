@@ -13,7 +13,9 @@ from compman.ops import image
 
 def test_image_backup(dummy_runtime, temp_dir: pathlib.Path):
     cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
-    image.backup(dummy_runtime, cfg, source_mode=False)
+    with patch("tarfile.open") as open_tar:
+        image.backup(dummy_runtime, cfg, source_mode=False, compression_level=3)
+        assert open_tar.call_args.kwargs["compresslevel"] == 3
     assert len(dummy_runtime.commands_run) >= 1
 
     image.backup(dummy_runtime, cfg, source_mode=True)

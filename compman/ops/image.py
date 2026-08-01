@@ -19,6 +19,7 @@ def backup(
     config: Config,
     source_mode: bool = False,
     profile: str | None = None,
+    compression_level: int = 6,
 ) -> None:
     context = resolve_compose_context(config, profile)
     if not runtime.stack_exists(config.name, context.files, context.env):
@@ -63,7 +64,7 @@ def backup(
                 runtime.commit_container(cid, tag)
                 runtime.save_image(tag, backup_dir / f"{container_name}.image.backup.tar")
 
-        with tarfile.open(tarball, "w:gz") as tar:
+        with tarfile.open(tarball, "w:gz", compresslevel=compression_level) as tar:
             tar.add(backup_dir, arcname=".")
     except Exception:
         tarball.unlink(missing_ok=True)

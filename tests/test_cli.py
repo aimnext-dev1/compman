@@ -164,9 +164,10 @@ def test_cli_service_commands(runner: CliRunner, dummy_runtime, temp_dir: pathli
 def test_cli_volume_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
-    with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.ops.volume.backup"), patch("compman.ops.volume.restore"), patch("compman.ops.volume.pull"), patch("compman.ops.volume.push"):
-        res_bak = runner.invoke(app, ["volume", "backup", "--no-stop"])
+    with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.ops.volume.backup") as backup, patch("compman.ops.volume.restore"), patch("compman.ops.volume.pull"), patch("compman.ops.volume.push"):
+        res_bak = runner.invoke(app, ["volume", "backup", "--no-stop", "-z", "2"])
         assert res_bak.exit_code == 0
+        assert backup.call_args.kwargs["compression_level"] == 2
 
         res_res = runner.invoke(app, ["volume", "restore", "20260731_1200", "--no-stop"])
         assert res_res.exit_code == 0
@@ -177,13 +178,17 @@ def test_cli_volume_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib
         res_push = runner.invoke(app, ["volume", "push"])
         assert res_push.exit_code == 0
 
+        invalid = runner.invoke(app, ["volume", "backup", "--level", "10"])
+        assert invalid.exit_code == 2
+
 
 def test_cli_image_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
-    with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.ops.image.backup"), patch("compman.ops.image.restore"):
-        res_bak = runner.invoke(app, ["image", "backup", "--source-image"])
+    with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.ops.image.backup") as backup, patch("compman.ops.image.restore"):
+        res_bak = runner.invoke(app, ["image", "backup", "--source-image", "--level", "4"])
         assert res_bak.exit_code == 0
+        assert backup.call_args.kwargs["compression_level"] == 4
 
         res_res = runner.invoke(app, ["image", "restore", "20260731_1200"])
         assert res_res.exit_code == 0
