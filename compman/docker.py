@@ -315,7 +315,14 @@ def detect_runtime() -> ContainerRuntime:
 
 def _check_cmd(cmd: list[str]) -> tuple[bool, str]:
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        r = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+        )
         return r.returncode == 0, r.stdout
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return False, ""
@@ -333,6 +340,8 @@ def _run(
     if capture:
         kwargs["capture_output"] = True
         kwargs["text"] = True
+        kwargs["encoding"] = "utf-8"
+        kwargs["errors"] = "replace"
     try:
         r = subprocess.run(list(cmd), env=env, **kwargs, timeout=timeout)
     except FileNotFoundError:
@@ -383,8 +392,8 @@ def _raise_probe_failure(result: subprocess.CompletedProcess) -> None:
         _die(getattr(result, "args", ["container runtime"]), result)
 
 
-def _parse_service_status(payload: str) -> list[dict[str, object]]:
-    if not payload.strip():
+def _parse_service_status(payload: str | None) -> list[dict[str, object]]:
+    if not payload or not payload.strip():
         return []
     try:
         parsed = json.loads(payload)

@@ -13,8 +13,10 @@ import pytest
 from compman.config import Config, ConfigError, Profile
 from compman.docker import (
     ContainerRuntime,
+    _check_cmd,
     _die,
     _merged_env,
+    _parse_service_status,
     _passthru,
     _run,
     detect_runtime,
@@ -148,6 +150,27 @@ def test_passthru_and_run(mock_run):
 
     code = _passthru(["docker", "ps"])
     assert code == 0
+    assert mock_run.call_args_list[0].kwargs["encoding"] == "utf-8"
+    assert mock_run.call_args_list[0].kwargs["errors"] == "replace"
+
+
+def test_run_replaces_invalid_utf8_output():
+    result = _run([sys.executable, "-c", "import os; os.write(1, b'\\xe2')"])
+    assert result.stdout == "\ufffd"
+
+
+def test_check_cmd_uses_replacement_safe_utf8_decoding():
+    completed = subprocess.CompletedProcess(["docker"], 0, "ok", "")
+    with patch("subprocess.run", return_value=completed) as run:
+        assert _check_cmd(["docker", "version"]) == (True, "ok")
+    run.assert_called_once_with(
+        ["docker", "version"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=10,
+    )
 
 
 @patch("subprocess.run", side_effect=FileNotFoundError)
@@ -345,6 +368,10 @@ def test_service_status_returns_empty_for_blank_output():
         rows = runtime.service_status("app", [], {})
 
     assert rows == []
+
+
+def test_parse_service_status_returns_empty_for_missing_output():
+    assert _parse_service_status(None) == []
 
 
 def test_service_status_rejects_invalid_json():

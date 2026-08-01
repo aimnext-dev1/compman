@@ -12,13 +12,13 @@ def test_official_repository_urls_use_current_owner():
         assert "allbegray/compman" in content
 
 
-def test_package_version_is_1_1_1():
+def test_package_version_is_1_1_2():
     root = Path(__file__).parents[1]
     project = (root / "pyproject.toml").read_text(encoding="utf-8")
     lock = (root / "uv.lock").read_text(encoding="utf-8")
 
-    assert re.search(r'(?m)^version = "1\.1\.1"$', project)
-    assert re.search(r'(?m)^name = "compman"\r?\nversion = "1\.1\.1"$', lock)
+    assert re.search(r'(?m)^version = "1\.1\.2"$', project)
+    assert re.search(r'(?m)^name = "compman"\r?\nversion = "1\.1\.2"$', lock)
 
 
 def test_english_is_used_outside_korean_localization_resources():
