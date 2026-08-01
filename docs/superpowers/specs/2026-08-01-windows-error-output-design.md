@@ -32,10 +32,10 @@ The container runtime exposes one readiness operation used only by paths that
 start, recreate, or build containers: `stack up`, `update`, and deploy-time
 builds. It first probes the Docker daemon. On Windows, if Docker is selected and
 the probe fails in an interactive terminal, it asks `Docker Desktop is not
-running. Start it now? [y/N]`. The default is No. Only an explicit Yes locates
-and launches Docker Desktop, then polls daemon readiness for up to 60 seconds
-before continuing the original operation once. The launch is hidden and does
-not open an extra console window.
+running. Start it now? [Y/n]`. The default is Yes, so pressing Enter locates and
+launches Docker Desktop, then polls daemon readiness for up to 60 seconds before
+continuing the original operation once. An explicit No declines startup. The
+launch is hidden and does not open an extra console window.
 
 If the user declines, compman exits with status `1` and explains how to start
 Docker Desktop manually. In a non-interactive terminal, compman never prompts
@@ -64,7 +64,7 @@ It does not retry the requested compose operation after that failure.
 - Update prompt tests to assert that the heading is ASCII-only while preserving
   arrow-key, Enter, Escape, and non-TTY behavior.
 - Add runtime tests for an already-ready daemon, successful Windows Docker
-  Desktop startup after explicit consent, declined startup, non-interactive
+  Desktop startup after accepting the default, declined startup, non-interactive
   execution, missing Docker Desktop, startup timeout, explicit Podman, and
   excluded command paths.
 - Add command tests proving startup is requested only for `stack up`, `update`,
