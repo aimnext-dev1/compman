@@ -52,6 +52,20 @@ def test_cli_version(runner: CliRunner):
     assert res.exit_code == 0
     assert "compman" in res.output
 
+    short = runner.invoke(app, ["-v"])
+    assert short.exit_code == 0
+    assert "compman" in short.output
+
+
+def test_cli_short_help_alias(runner: CliRunner):
+    root_help = runner.invoke(app, ["-h"])
+    assert root_help.exit_code == 0
+    assert "Usage: compman" in root_help.output
+
+    stack_help = runner.invoke(app, ["stack", "-h"])
+    assert stack_help.exit_code == 0
+    assert "Usage: compman stack" in stack_help.output
+
 
 def test_cli_lang(runner: CliRunner):
     res = runner.invoke(app, ["lang"])

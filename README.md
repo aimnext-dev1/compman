@@ -48,8 +48,8 @@ curl -fsSL https://raw.githubusercontent.com/allbegray/compman/main/install.sh |
 Open a new terminal, then verify the installation.
 
 ```bash
-compman --version
-compman --help
+compman -v       # --version also works
+compman -h       # --help also works
 ```
 
 ### Install with uv or pipx

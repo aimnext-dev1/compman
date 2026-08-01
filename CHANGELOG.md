@@ -3,6 +3,13 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.1.4] - 2026-08-01
+
+### Added
+
+- Added `compman -v` as a short alias for `compman --version`.
+- Added `-h` as a short alias for `--help` on the root command and command groups.
+
 ## [1.1.3] - 2026-08-01
 
 ### Changed

@@ -99,6 +99,8 @@ def _configure_console_output() -> None:
 
 _configure_console_output()
 
+_CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
+
 
 def _version_callback(value: bool) -> None:
     if value:
@@ -152,6 +154,7 @@ app = typer.Typer(
     help=t("cmd.root"),
     no_args_is_help=True,
     invoke_without_command=True,
+    context_settings=_CONTEXT_SETTINGS,
 )
 
 def _load(config_path: str | None = None):
@@ -177,7 +180,7 @@ def _load(config_path: str | None = None):
 def root(
     ctx: typer.Context,
     lang: Annotated[Optional[str], typer.Option("--lang", "-l", help="Language (en/ko)")] = None,
-    version: Annotated[bool, typer.Option("--version", callback=_version_callback, is_eager=True)] = False,
+    version: Annotated[bool, typer.Option("--version", "-v", callback=_version_callback, is_eager=True)] = False,
 ) -> None:
     if lang:
         set_lang(lang)
@@ -518,7 +521,12 @@ def version_cmd() -> None:
 
 
 # ---- stack group ----
-stack_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.stack"), no_args_is_help=True)
+stack_app = typer.Typer(
+    cls=HelpOnUnknownCommandGroup,
+    help=t("cmd.stack"),
+    no_args_is_help=True,
+    context_settings=_CONTEXT_SETTINGS,
+)
 
 
 @stack_app.command("up", help=t("cmd.stack.up"))
@@ -555,7 +563,12 @@ app.add_typer(stack_app, name="stack")
 
 
 # ---- service group ----
-service_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.service"), no_args_is_help=True)
+service_app = typer.Typer(
+    cls=HelpOnUnknownCommandGroup,
+    help=t("cmd.service"),
+    no_args_is_help=True,
+    context_settings=_CONTEXT_SETTINGS,
+)
 
 
 @service_app.command("start", help=t("cmd.service.start"))
@@ -623,7 +636,12 @@ app.add_typer(service_app, name="service")
 
 
 # ---- volume group ----
-volume_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.volume"), no_args_is_help=True)
+volume_app = typer.Typer(
+    cls=HelpOnUnknownCommandGroup,
+    help=t("cmd.volume"),
+    no_args_is_help=True,
+    context_settings=_CONTEXT_SETTINGS,
+)
 
 
 @volume_app.command("backup", help=t("cmd.volume.backup"))
@@ -669,7 +687,12 @@ app.add_typer(volume_app, name="volume")
 
 
 # ---- image group ----
-image_app = typer.Typer(cls=HelpOnUnknownCommandGroup, help=t("cmd.image"), no_args_is_help=True)
+image_app = typer.Typer(
+    cls=HelpOnUnknownCommandGroup,
+    help=t("cmd.image"),
+    no_args_is_help=True,
+    context_settings=_CONTEXT_SETTINGS,
+)
 
 
 @image_app.command("backup", help=t("cmd.image.backup"))
