@@ -17,7 +17,7 @@ for %%D in (
 )
 
 :: Download install.ps1 to temp with cache-busting header, then execute locally
-curl -fsSL -H "Cache-Control: no-cache" https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 -o "%TEMP%\compman_install.ps1"
+curl -fsSL -H "Cache-Control: no-cache" https://raw.githubusercontent.com/allbegray/compman/main/install.ps1 -o "%TEMP%\compman_install.ps1"
 if %ERRORLEVEL% NEQ 0 (
     echo Error: Failed to download install.ps1.
     exit /b %ERRORLEVEL%

@@ -26,17 +26,17 @@ CI에서는 Python 3.10–3.13을 Ubuntu, macOS, Windows에서 검증합니다. 
 
 ```powershell
 # Windows PowerShell
-irm https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/allbegray/compman/main/install.ps1 | iex
 ```
 
 ```cmd
 :: Windows CMD
-curl -fsSL https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.cmd -o %TEMP%\install.cmd && call %TEMP%\install.cmd
+curl -fsSL https://raw.githubusercontent.com/allbegray/compman/main/install.cmd -o %TEMP%\install.cmd && call %TEMP%\install.cmd
 ```
 
 ```bash
 # Linux / macOS
-curl -fsSL https://raw.githubusercontent.com/aimnext-dev1/compman/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/allbegray/compman/main/install.sh | sh
 ```
 
 새 터미널을 연 뒤 설치를 확인합니다.
@@ -49,9 +49,9 @@ compman --help
 ### uv 또는 pipx로 설치
 
 ```bash
-uv tool install git+https://github.com/aimnext-dev1/compman.git
+uv tool install git+https://github.com/allbegray/compman.git
 # 또는
-pipx install git+https://github.com/aimnext-dev1/compman.git
+pipx install git+https://github.com/allbegray/compman.git
 ```
 
 저장소에서 개발 버전을 설치하려면 다음 명령을 사용합니다.

@@ -361,7 +361,7 @@ def _ps_completion_snippet() -> str:
 # ---- upgrade ----
 @app.command("upgrade", help=t("cmd.upgrade"))
 def upgrade_cmd(
-    repo: Annotated[str, typer.Option("--repo", help=t("opt.repo"))] = "https://github.com/aimnext-dev1/compman.git",
+    repo: Annotated[str, typer.Option("--repo", help=t("opt.repo"))] = "https://github.com/allbegray/compman.git",
 ) -> None:
     import sys
 

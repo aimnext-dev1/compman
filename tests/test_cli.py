@@ -186,9 +186,10 @@ def test_cli_unknown_subcommand_shows_group_help(runner: CliRunner):
 
 
 def test_cli_upgrade(runner: CliRunner):
-    with patch("subprocess.run", return_value=MagicMock(returncode=0)):
+    with patch("subprocess.run", return_value=MagicMock(returncode=0)) as run:
         res = runner.invoke(app, ["upgrade"])
         assert res.exit_code == 0
+    assert run.call_args.args[0][-1] == "git+https://github.com/allbegray/compman.git"
 
 
 def test_cli_completion(runner: CliRunner, temp_dir: pathlib.Path):
