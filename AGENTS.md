@@ -28,7 +28,7 @@ test/                  # runnable examples and E2E guides (not pytest tests)
 - English is the default UI and documentation language. Korean remains supported through `--lang ko` or `COMPMAN_LANG=ko`; keep Korean text isolated to i18n resources and their tests.
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
 - Python >=3.10; runtime deps: typer, PyYAML, boto3, botocore.
-- Quality gates: 262 pytest tests, 100% statement/branch coverage, Ruff, mypy.
+- Quality gates: 263 pytest tests, 100% statement/branch coverage, Ruff, mypy.
 - CI tests Python 3.10-3.13 on Linux/macOS/Windows and has packaging and Docker/Ministack integration jobs.
 
 ## Config: `compman.yml`
