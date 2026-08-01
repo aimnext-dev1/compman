@@ -636,3 +636,22 @@ def test_ensure_ready_for_start_skips_probe_when_sleep_reaches_deadline(monkeypa
 
     sleep.assert_called_once_with(1.0)
     run_cli.assert_called_once_with(["info"], capture=True, check=False, timeout=5.0)
+
+
+def test_ensure_ready_for_start_times_out_before_poll_when_no_time_remains(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)) as run_cli,
+        patch.object(shutil, "which", return_value="Docker Desktop.exe"),
+        patch.object(subprocess, "Popen"),
+        patch.object(time, "monotonic", return_value=0.0),
+        patch.object(time, "sleep") as sleep,
+        pytest.raises(RuntimeError, match="within 0 seconds"),
+    ):
+        runtime.ensure_ready_for_start(lambda: True, timeout=0.0)
+
+    sleep.assert_not_called()
+    run_cli.assert_called_once_with(["info"], capture=True, check=False, timeout=5.0)

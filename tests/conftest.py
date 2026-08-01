@@ -22,6 +22,7 @@ class DummyRuntime(ContainerRuntime):
         args: Any,
         capture: bool = True,
         check: bool = True,
+        timeout: float = 300.0,
     ) -> MagicMock:
         self.commands_run.append(list(args))
         m = MagicMock()
