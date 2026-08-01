@@ -2,6 +2,12 @@
 
 `compman` manages Docker or Podman Compose stacks—including execution, service operations, volume and image backup, and S3-based deployment—from one CLI.
 
+## Who Is This For?
+
+This tool is dedicated to the brave, slightly unfortunate souls who cannot use a web GUI, cannot get past the firewall, cannot install heavyweight management software, and have somehow been left alone with nothing but raw Docker commands.
+
+If every convenient option has been answered with "not allowed," `compman` is for you.
+
 ## Key features
 
 - Automatically detects Docker Compose and Podman Compose runtimes
