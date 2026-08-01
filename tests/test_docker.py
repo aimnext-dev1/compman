@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shutil
 import subprocess
-from unittest.mock import MagicMock, patch
+import sys
+import time
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -364,3 +367,176 @@ def test_service_status_raises_on_failed_probe():
     with patch.object(runtime, "run_compose", return_value=result):
         with pytest.raises(RuntimeError, match="Command failed"):
             runtime.service_status("app", [], {})
+
+
+def test_ensure_ready_for_start_returns_when_docker_is_ready(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    confirm_start = MagicMock()
+
+    with patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 0)) as run_cli:
+        runtime.ensure_ready_for_start(confirm_start)
+
+    run_cli.assert_called_once_with(["info"], capture=True, check=False)
+    confirm_start.assert_not_called()
+
+
+def test_ensure_ready_for_start_skips_podman(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    runtime = ContainerRuntime("podman", ["podman"], ["podman", "compose"])
+    confirm_start = MagicMock()
+
+    with patch.object(runtime, "run_cli") as run_cli:
+        runtime.ensure_ready_for_start(confirm_start)
+
+    run_cli.assert_not_called()
+    confirm_start.assert_not_called()
+
+
+def test_ensure_ready_for_start_skips_non_windows(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "linux")
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    confirm_start = MagicMock()
+
+    with patch.object(runtime, "run_cli") as run_cli:
+        runtime.ensure_ready_for_start(confirm_start)
+
+    run_cli.assert_not_called()
+    confirm_start.assert_not_called()
+
+
+def test_ensure_ready_for_start_rejects_noninteractive_start(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    confirm_start = MagicMock()
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)),
+        patch.object(subprocess, "Popen") as popen,
+        pytest.raises(RuntimeError, match="non-interactive"),
+    ):
+        runtime.ensure_ready_for_start(confirm_start)
+
+    confirm_start.assert_not_called()
+    popen.assert_not_called()
+
+
+def test_ensure_ready_for_start_rejects_declined_start(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    confirm_start = MagicMock(return_value=False)
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)),
+        patch.object(subprocess, "Popen") as popen,
+        pytest.raises(RuntimeError, match="declined"),
+    ):
+        runtime.ensure_ready_for_start(confirm_start)
+
+    confirm_start.assert_called_once_with()
+    popen.assert_not_called()
+
+
+def test_ensure_ready_for_start_launches_desktop_and_waits_for_ready(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    confirm_start = MagicMock(return_value=True)
+    desktop = r"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"
+
+    with (
+        patch.object(
+            runtime,
+            "run_cli",
+            side_effect=[subprocess.CompletedProcess([], 1), subprocess.CompletedProcess([], 0)],
+        ) as run_cli,
+        patch.object(shutil, "which", return_value=desktop),
+        patch.object(subprocess, "Popen") as popen,
+        patch.object(time, "monotonic", side_effect=[0.0, 0.0]),
+        patch.object(time, "sleep") as sleep,
+    ):
+        runtime.ensure_ready_for_start(confirm_start)
+
+    confirm_start.assert_called_once_with()
+    popen.assert_called_once_with([desktop], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    sleep.assert_called_once_with(1.0)
+    assert run_cli.call_count == 2
+
+
+def test_ensure_ready_for_start_uses_program_files_fallback(monkeypatch, tmp_path):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setenv("ProgramFiles", str(tmp_path))
+    desktop = tmp_path / "Docker" / "Docker" / "Docker Desktop.exe"
+    desktop.parent.mkdir(parents=True)
+    desktop.touch()
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with (
+        patch.object(
+            runtime,
+            "run_cli",
+            side_effect=[subprocess.CompletedProcess([], 1), subprocess.CompletedProcess([], 0)],
+        ),
+        patch.object(shutil, "which", return_value=None),
+        patch.object(subprocess, "Popen") as popen,
+        patch.object(time, "monotonic", side_effect=[0.0, 0.0]),
+        patch.object(time, "sleep"),
+    ):
+        runtime.ensure_ready_for_start(lambda: True)
+
+    popen.assert_called_once_with([str(desktop)], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+
+def test_ensure_ready_for_start_reports_missing_desktop_executable(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.delenv("ProgramFiles", raising=False)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)),
+        patch.object(shutil, "which", return_value=None),
+        patch.object(subprocess, "Popen") as popen,
+        pytest.raises(RuntimeError, match="executable"),
+    ):
+        runtime.ensure_ready_for_start(lambda: True)
+
+    popen.assert_not_called()
+
+
+def test_ensure_ready_for_start_reports_desktop_launch_error(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)),
+        patch.object(shutil, "which", return_value="Docker Desktop.exe"),
+        patch.object(subprocess, "Popen", side_effect=OSError("blocked")),
+        pytest.raises(RuntimeError, match="start Docker Desktop"),
+    ):
+        runtime.ensure_ready_for_start(lambda: True)
+
+
+def test_ensure_ready_for_start_times_out_after_default_sixty_seconds(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    times = [0.0, *[float(second) for second in range(61)]]
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)) as run_cli,
+        patch.object(shutil, "which", return_value="Docker Desktop.exe"),
+        patch.object(subprocess, "Popen"),
+        patch.object(time, "monotonic", side_effect=times),
+        patch.object(time, "sleep") as sleep,
+        pytest.raises(RuntimeError, match="within 60 seconds"),
+    ):
+        runtime.ensure_ready_for_start(lambda: True)
+
+    assert sleep.call_count == 60
+    assert sleep.call_args_list == [call(1.0)] * 60
+    assert run_cli.call_count == 61

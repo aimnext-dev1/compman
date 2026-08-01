@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
+import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Callable, Sequence
 
 from compman.config import Config, ConfigError
 
@@ -23,6 +26,55 @@ class ContainerRuntime:
         check: bool = True,
     ) -> subprocess.CompletedProcess:
         return _run(self.cli + list(args), capture=capture, check=check)
+
+    def ensure_ready_for_start(
+        self, confirm_start: Callable[[], bool], timeout: float = 60.0
+    ) -> None:
+        """Ensure Docker Desktop is ready before an interactive stack start."""
+        if self.name != "docker" or sys.platform != "win32":
+            return
+        if self._docker_is_ready():
+            return
+        if not sys.stdin.isatty():
+            raise RuntimeError(
+                "Docker Desktop is not ready and cannot be started from a non-interactive session."
+            )
+        if not confirm_start():
+            raise RuntimeError("Docker Desktop startup was declined.")
+
+        desktop = shutil.which("Docker Desktop.exe")
+        if not desktop:
+            program_files = os.environ.get("ProgramFiles")
+            if program_files:
+                candidate = Path(program_files) / "Docker" / "Docker" / "Docker Desktop.exe"
+                if candidate.is_file():
+                    desktop = str(candidate)
+        if not desktop:
+            raise RuntimeError("Docker Desktop executable was not found.")
+
+        try:
+            subprocess.Popen(
+                [desktop], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            )
+        except OSError as exc:
+            raise RuntimeError(f"Could not start Docker Desktop: {exc}") from exc
+
+        deadline = time.monotonic() + timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            time.sleep(min(1.0, remaining))
+            if self._docker_is_ready():
+                return
+        raise RuntimeError(f"Docker Desktop did not become ready within {timeout:g} seconds.")
+
+    def _docker_is_ready(self) -> bool:
+        try:
+            result = self.run_cli(["info"], capture=True, check=False)
+        except RuntimeError:
+            return False
+        return result.returncode == 0
 
     def run_compose(
         self,
