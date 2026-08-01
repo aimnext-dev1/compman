@@ -4,6 +4,7 @@ import importlib
 import json
 import pathlib
 import runpy
+import shutil
 import subprocess
 import sys
 from unittest.mock import MagicMock, patch
@@ -316,6 +317,46 @@ def test_deploy_update_line_branches(temp_dir):
         pass
     else:
         deploy._swap(src, dst)
+
+
+@pytest.mark.parametrize("new_item_is_dir", [False, True])
+def test_deploy_swap_rolls_back_partially_moved_source(temp_dir, new_item_is_dir):
+    src = temp_dir / "source"
+    src.mkdir()
+    new_item = src / "a-new"
+    if new_item_is_dir:
+        new_item.mkdir()
+    else:
+        new_item.write_text("new", encoding="utf-8")
+    trigger = src / "b-trigger"
+    trigger.write_text("trigger", encoding="utf-8")
+
+    dst = temp_dir / "target"
+    dst.mkdir()
+    old_item = dst / "old"
+    old_item.write_text("old", encoding="utf-8")
+
+    real_move = shutil.move
+    real_iterdir = pathlib.Path.iterdir
+
+    def fail_on_trigger(source, destination):
+        if pathlib.Path(source) == trigger:
+            raise OSError("simulated move failure")
+        return real_move(source, destination)
+
+    def ordered_source(path):
+        if path == src:
+            return iter((new_item, trigger))
+        return real_iterdir(path)
+
+    with patch.object(type(src), "iterdir", autospec=True, side_effect=ordered_source), patch(
+        "compman.deploy.shutil.move", side_effect=fail_on_trigger
+    ):
+        with pytest.raises(OSError, match="simulated move failure"):
+            deploy._swap(src, dst)
+
+    assert old_item.read_text(encoding="utf-8") == "old"
+    assert not (dst / new_item.name).exists()
 
 
 def test_service_empty_and_multiple(dummy_runtime, temp_dir):

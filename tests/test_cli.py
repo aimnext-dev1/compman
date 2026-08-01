@@ -7,6 +7,7 @@ import subprocess
 import sys
 from unittest.mock import MagicMock, patch
 
+from typer._click.utils import strip_ansi
 from typer.testing import CliRunner
 
 from compman.cli import _run_upgrade_command, app
@@ -58,13 +59,13 @@ def test_cli_version(runner: CliRunner):
 
 
 def test_cli_short_help_alias(runner: CliRunner):
-    root_help = runner.invoke(app, ["-h"])
+    root_help = runner.invoke(app, ["-h"], color=True)
     assert root_help.exit_code == 0
-    assert "Usage: compman" in root_help.output
+    assert "Usage: compman" in strip_ansi(root_help.output)
 
-    stack_help = runner.invoke(app, ["stack", "-h"])
+    stack_help = runner.invoke(app, ["stack", "-h"], color=True)
     assert stack_help.exit_code == 0
-    assert "Usage: compman stack" in stack_help.output
+    assert "Usage: compman stack" in strip_ansi(stack_help.output)
 
 
 def test_cli_lang(runner: CliRunner):
