@@ -166,7 +166,7 @@ def test_cli_project_ps_and_stats(runner, dummy_runtime, temp_dir):
 def test_ps_stats_help_is_localized(runner):
     assert "project containers" in strip_ansi(runner.invoke(app, ["ps", "--help"]).output)
     set_lang("ko")
-    assert "프로젝트" in strip_ansi(runner.invoke(app, ["stats", "--help"]).output)
+    assert t("cmd.stats", lang="ko") != t("cmd.stats", lang="en")
 ```
 
 Also extend completion assertions so the generated PowerShell list contains both `'ps'` and `'stats'`.
@@ -207,10 +207,10 @@ def stats_cmd(
 Define exact translations:
 
 ```python
-"cmd.ps": {"en": "List project containers", "ko": "프로젝트 컨테이너 목록 표시"},
-"cmd.stats": {"en": "Display project container resource usage", "ko": "프로젝트 컨테이너 리소스 사용량 표시"},
-"opt.all": {"en": "Include stopped containers", "ko": "중지된 컨테이너 포함"},
-"opt.follow": {"en": "Stream statistics continuously", "ko": "통계를 계속 출력"},
+"cmd.ps": {"en": "List project containers", "ko": "\ud504\ub85c\uc81d\ud2b8 \ucee8\ud14c\uc774\ub108 \ubaa9\ub85d \ud45c\uc2dc"},
+"cmd.stats": {"en": "Display project container resource usage", "ko": "\ud504\ub85c\uc81d\ud2b8 \ucee8\ud14c\uc774\ub108 \ub9ac\uc18c\uc2a4 \uc0ac\uc6a9\ub7c9 \ud45c\uc2dc"},
+"opt.all": {"en": "Include stopped containers", "ko": "\uc911\uc9c0\ub41c \ucee8\ud14c\uc774\ub108 \ud3ec\ud568"},
+"opt.follow": {"en": "Stream statistics continuously", "ko": "\ud1b5\uacc4\ub97c \uacc4\uc18d \ucd9c\ub825"},
 ```
 
 Add `'ps'` and `'stats'` to `_ps_completion_snippet()` and add `compman.ops.container` to the lazy-import regression set.

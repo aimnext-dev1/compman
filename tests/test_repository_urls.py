@@ -12,14 +12,14 @@ def test_official_repository_urls_use_current_owner():
         assert "allbegray/compman" in content
 
 
-def test_package_version_is_1_2_0():
+def test_package_version_is_1_3_0():
     root = Path(__file__).parents[1]
     project = (root / "pyproject.toml").read_text(encoding="utf-8")
     lock = (root / "uv.lock").read_text(encoding="utf-8")
 
-    assert re.search(r'(?m)^version = "1\.2\.0"$', project)
-    assert re.search(r'(?m)^name = "compman"\r?\nversion = "1\.2\.0"$', lock)
-    assert "## [1.2.0]" in (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert re.search(r'(?m)^version = "1\.3\.0"$', project)
+    assert re.search(r'(?m)^name = "compman"\r?\nversion = "1\.3\.0"$', lock)
+    assert "## [1.3.0]" in (root / "CHANGELOG.md").read_text(encoding="utf-8")
 
 
 def test_successful_main_ci_run_creates_version_tag_once():
@@ -62,6 +62,8 @@ def test_github_pages_homepage_contract():
         'id="deploy"',
         'id="faq"',
         "compman init --scaffold",
+        "compman ps",
+        "compman stats -f",
         "s3://my-bucket/releases/app.tar.gz",
         "https://example.com/releases/app.zip",
         "https://github.com/allbegray/compman",

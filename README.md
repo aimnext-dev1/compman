@@ -14,6 +14,7 @@ If every convenient option has been answered with "not allowed," `compman` is fo
 
 - Automatically detects Docker Compose and Podman Compose runtimes
 - Supports a single Compose file and environment-specific profile configurations
+- Lists and monitors only the current project's containers with `ps` and `stats`
 - Deploys from an S3 prefix/archive or a public HTTP/HTTPS `.tar.gz`/`.tgz`/`.zip` archive
 - Automatically creates `compman.yml` and `docker-compose.yml` when deploying into an empty directory
 - Creates and restores timestamped backups of volumes and container images
@@ -221,6 +222,8 @@ compman deploy [--path SOURCE_URI] [--build] [--tag TAG]
 compman update [PROFILE]
 compman doctor [--profile PROFILE] [-c|--config PATH] [--json]
 compman status [--profile PROFILE] [-c|--config PATH] [--json]
+compman ps [PROFILE] [-a|--all] [-c|--config PATH]
+compman stats [PROFILE] [-f|--follow] [-c|--config PATH]
 compman upgrade
 compman version
 compman lang [ko|en]
@@ -254,6 +257,8 @@ View all options for a command with `compman <command> --help`.
 
 - `update`: When `deploy` is configured, it downloads the S3 or HTTP source, builds images, and starts the stack. Otherwise, it updates the local Compose project with `up -d --build`.
 - `service log`: Displays the last 50 lines by default and streams output with `-f`.
+- `ps`: Lists running containers in the selected compman project. Use `-a` to include stopped containers.
+- `stats`: Prints one resource-usage snapshot for the selected project's running containers. Use `-f` to stream continuously.
 - `service connect`: Falls back to `sh` if connecting with `bash` fails.
 - `volume backup/restore`: By default, brings the stack down during the operation and restores it afterward. Use `--no-stop` only when you understand the consistency risk.
 - `image backup`: By default, commits and saves the state of the running container. Use `--source-image` to save the original image.
@@ -275,6 +280,8 @@ compman status -c /path/to/compman.yml
 ```
 
 `doctor` checks configuration, Compose files, container-runtime availability and connectivity, managed directories, and AWS credentials. `status` displays the service state of the running stack. `--json` outputs structured JSON suitable for automation.
+
+`ps` and `stats` are deliberately project-scoped. Use `docker ps`, `docker stats`, or the Podman equivalents directly when you need runtime-wide results.
 
 If a required `doctor` check fails, it returns exit code `1`. `status` returns exit code `1` when the target stack does not exist or status retrieval itself fails. If the stack exists and retrieval succeeds, it returns exit code `0` even if every service is stopped or exited. Missing AWS environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are non-failing warnings, so `doctor` returns exit code `0` if all other required checks pass.
 

@@ -3,6 +3,14 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.3.0] - 2026-08-01
+
+### Added
+
+- Added project-scoped `compman ps` container listings with `-a`/`--all`.
+- Added project-scoped `compman stats` resource snapshots with `-f`/`--follow`
+  streaming.
+
 ## [1.2.0] - 2026-08-01
 
 ### Changed

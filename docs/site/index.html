@@ -87,7 +87,9 @@ uv tool install git+https://github.com/allbegray/compman.git
 <span># In your Compose project</span>
 compman init --scaffold
 compman stack up
-compman status</code></pre>
+compman status
+compman ps
+compman stats -f</code></pre>
         </div>
       </div>
     </section>
@@ -98,7 +100,7 @@ compman status</code></pre>
         <h2>Predictable commands, grouped by what you manage.</h2>
       </div>
       <div class="command-grid">
-        <div><h3>Observe</h3><code>status</code><code>doctor</code><code>service status</code><code>service log</code></div>
+        <div><h3>Observe</h3><code>status</code><code>doctor</code><code>ps</code><code>stats -f</code><code>service status</code><code>service log</code></div>
         <div><h3>Operate</h3><code>stack up</code><code>stack down</code><code>stack update</code><code>service connect</code></div>
         <div><h3>Protect</h3><code>volume backup</code><code>volume restore</code><code>image backup</code><code>image restore</code></div>
         <div><h3>Deliver</h3><code>deploy</code><code>update</code><code>init</code><code>completion</code></div>

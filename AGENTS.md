@@ -21,7 +21,7 @@ compman/               # Python package
   s3_source.py         # S3 prefix/archive download
   scaffold.py          # deploy-time compman/compose generation
   ops/                 # business logic per domain
-    stack.py, service.py, volume.py, image.py, seed.py
+    stack.py, service.py, container.py, volume.py, image.py, seed.py
 tests/                 # pytest unit/regression suite
 test/                  # runnable examples and E2E guides (not pytest tests)
 docs/site/             # dependency-free GitHub Pages homepage
@@ -72,6 +72,8 @@ Two modes:
 
 - `doctor` checks configuration, compose files, container runtime, and deploy prerequisites. `--json` emits schema version `1`; failed required checks exit with status 1, while missing optional AWS environment variables are warnings.
 - Top-level `status` reports normalized stack/service state across Docker and Podman. `--json` emits schema version `1`; a missing stack or runtime query error exits with status 1, while an existing stopped stack is successful.
+- Top-level `ps` lists containers only in the selected compman project; `-a`/`--all` includes stopped containers.
+- Top-level `stats` prints one resource snapshot for running containers in the selected project; `-f`/`--follow` streams continuously.
 - `stack down` requires `--yes` confirmation (`typer.confirm`).
 - Profile mode defaults to the first configured profile when none is supplied; an explicit name must be valid. Simple mode rejects a profile argument.
 - `image backup` defaults to committing runtime container state; `--source-image` flag saves the original image instead.
