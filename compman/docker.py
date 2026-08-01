@@ -24,8 +24,9 @@ class ContainerRuntime:
         args: Sequence[str],
         capture: bool = True,
         check: bool = True,
+        timeout: float = 300.0,
     ) -> subprocess.CompletedProcess:
-        return _run(self.cli + list(args), capture=capture, check=check)
+        return _run(self.cli + list(args), capture=capture, check=check, timeout=timeout)
 
     def ensure_ready_for_start(
         self, confirm_start: Callable[[], bool], timeout: float = 60.0
@@ -37,7 +38,8 @@ class ContainerRuntime:
             return
         if not sys.stdin.isatty():
             raise RuntimeError(
-                "Docker Desktop is not ready and cannot be started from a non-interactive session."
+                "Docker Desktop is not ready and cannot be started from a non-interactive session. "
+                "Start Docker Desktop manually and retry."
             )
         if not confirm_start():
             raise RuntimeError(
@@ -66,15 +68,19 @@ class ContainerRuntime:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            time.sleep(min(1.0, remaining))
-            if self._docker_is_ready():
+            sleep_for = min(1.0, remaining)
+            time.sleep(sleep_for)
+            probe_timeout = min(5.0, deadline - time.monotonic())
+            if probe_timeout <= 0:
+                break
+            if self._docker_is_ready(probe_timeout):
                 return
         raise RuntimeError(f"Docker Desktop did not become ready within {timeout:g} seconds.")
 
-    def _docker_is_ready(self) -> bool:
+    def _docker_is_ready(self, timeout: float = 5.0) -> bool:
         try:
-            result = self.run_cli(["info"], capture=True, check=False)
-        except RuntimeError:
+            result = self.run_cli(["info"], capture=True, check=False, timeout=timeout)
+        except (RuntimeError, subprocess.TimeoutExpired):
             return False
         return result.returncode == 0
 
@@ -320,6 +326,7 @@ def _run(
     extra_env: dict[str, str] | None = None,
     capture: bool = True,
     check: bool = True,
+    timeout: float = 300.0,
 ) -> subprocess.CompletedProcess:
     env = _merged_env(extra_env)
     kwargs: dict = {}
@@ -327,7 +334,7 @@ def _run(
         kwargs["capture_output"] = True
         kwargs["text"] = True
     try:
-        r = subprocess.run(list(cmd), env=env, **kwargs, timeout=300)
+        r = subprocess.run(list(cmd), env=env, **kwargs, timeout=timeout)
     except FileNotFoundError:
         raise RuntimeError(f"Command not found: {cmd[0]}")
     if check and r.returncode != 0:

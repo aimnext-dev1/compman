@@ -377,7 +377,7 @@ def test_ensure_ready_for_start_returns_when_docker_is_ready(monkeypatch):
     with patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 0)) as run_cli:
         runtime.ensure_ready_for_start(confirm_start)
 
-    run_cli.assert_called_once_with(["info"], capture=True, check=False)
+    run_cli.assert_called_once_with(["info"], capture=True, check=False, timeout=5.0)
     confirm_start.assert_not_called()
 
 
@@ -414,10 +414,14 @@ def test_ensure_ready_for_start_rejects_noninteractive_start(monkeypatch):
     with (
         patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)),
         patch.object(subprocess, "Popen") as popen,
-        pytest.raises(RuntimeError, match="non-interactive"),
     ):
-        runtime.ensure_ready_for_start(confirm_start)
+        with pytest.raises(RuntimeError) as exc_info:
+            runtime.ensure_ready_for_start(confirm_start)
 
+    assert str(exc_info.value) == (
+        "Docker Desktop is not ready and cannot be started from a non-interactive session. "
+        "Start Docker Desktop manually and retry."
+    )
     confirm_start.assert_not_called()
     popen.assert_not_called()
 
@@ -457,7 +461,7 @@ def test_ensure_ready_for_start_launches_desktop_and_waits_for_ready(monkeypatch
         ) as run_cli,
         patch.object(shutil, "which", return_value=desktop),
         patch.object(subprocess, "Popen") as popen,
-        patch.object(time, "monotonic", side_effect=[0.0, 0.0]),
+        patch.object(time, "monotonic", side_effect=[0.0, 0.0, 1.0]),
         patch.object(time, "sleep") as sleep,
     ):
         runtime.ensure_ready_for_start(confirm_start)
@@ -485,7 +489,7 @@ def test_ensure_ready_for_start_uses_program_files_fallback(monkeypatch, tmp_pat
         ),
         patch.object(shutil, "which", return_value=None),
         patch.object(subprocess, "Popen") as popen,
-        patch.object(time, "monotonic", side_effect=[0.0, 0.0]),
+        patch.object(time, "monotonic", side_effect=[0.0, 0.0, 1.0]),
         patch.object(time, "sleep"),
     ):
         runtime.ensure_ready_for_start(lambda: True)
@@ -545,7 +549,9 @@ def test_ensure_ready_for_start_times_out_after_default_sixty_seconds(monkeypatc
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
     runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
-    times = [0.0, *[float(second) for second in range(61)]]
+    times = [0.0]
+    for second in range(60):
+        times.extend([float(second), float(second + 1)])
 
     with (
         patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)) as run_cli,
@@ -559,7 +565,7 @@ def test_ensure_ready_for_start_times_out_after_default_sixty_seconds(monkeypatc
 
     assert sleep.call_count == 60
     assert sleep.call_args_list == [call(1.0)] * 60
-    assert run_cli.call_count == 61
+    assert run_cli.call_count == 60
 
 
 def test_docker_is_ready_returns_false_when_info_command_fails():
@@ -568,4 +574,65 @@ def test_docker_is_ready_returns_false_when_info_command_fails():
     with patch.object(runtime, "run_cli", side_effect=RuntimeError("docker unavailable")) as run_cli:
         assert not runtime._docker_is_ready()
 
-    run_cli.assert_called_once_with(["info"], capture=True, check=False)
+    run_cli.assert_called_once_with(["info"], capture=True, check=False, timeout=5.0)
+
+
+def test_docker_is_ready_treats_probe_timeout_as_not_ready():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+    expired = subprocess.TimeoutExpired(["docker", "info"], 2.5)
+
+    with patch.object(runtime, "run_cli", side_effect=expired) as run_cli:
+        assert not runtime._docker_is_ready(2.5)
+
+    run_cli.assert_called_once_with(["info"], capture=True, check=False, timeout=2.5)
+
+
+def test_run_cli_applies_requested_timeout():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with patch("subprocess.run", return_value=subprocess.CompletedProcess([], 0)) as run:
+        runtime.run_cli(["info"], timeout=2.5)
+
+    assert run.call_args.kwargs["timeout"] == 2.5
+
+
+def test_ensure_ready_for_start_caps_probes_at_remaining_deadline(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)) as run_cli,
+        patch.object(shutil, "which", return_value="Docker Desktop.exe"),
+        patch.object(subprocess, "Popen"),
+        patch.object(time, "monotonic", side_effect=[0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 2.5]),
+        patch.object(time, "sleep") as sleep,
+        pytest.raises(RuntimeError, match="within 2.5 seconds"),
+    ):
+        runtime.ensure_ready_for_start(lambda: True, timeout=2.5)
+
+    assert sleep.call_args_list == [call(1.0), call(1.0), call(0.5)]
+    assert run_cli.call_args_list == [
+        call(["info"], capture=True, check=False, timeout=5.0),
+        call(["info"], capture=True, check=False, timeout=1.5),
+        call(["info"], capture=True, check=False, timeout=0.5),
+    ]
+
+
+def test_ensure_ready_for_start_skips_probe_when_sleep_reaches_deadline(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with (
+        patch.object(runtime, "run_cli", return_value=subprocess.CompletedProcess([], 1)) as run_cli,
+        patch.object(shutil, "which", return_value="Docker Desktop.exe"),
+        patch.object(subprocess, "Popen"),
+        patch.object(time, "monotonic", side_effect=[0.0, 0.0, 2.5]),
+        patch.object(time, "sleep") as sleep,
+        pytest.raises(RuntimeError, match="within 2.5 seconds"),
+    ):
+        runtime.ensure_ready_for_start(lambda: True, timeout=2.5)
+
+    sleep.assert_called_once_with(1.0)
+    run_cli.assert_called_once_with(["info"], capture=True, check=False, timeout=5.0)
