@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from compman.config import Config
+from compman.i18n import set_lang
 from compman.ops import container
 
 
@@ -54,6 +55,7 @@ def test_stats_follow_streams_continuously(dummy_runtime, config):
 
 
 def test_stats_empty_project_does_not_run_global_stats(dummy_runtime, config, capsys):
+    set_lang("en")
     dummy_runtime.compose_stdout = "\n"
     before = list(dummy_runtime.commands_run)
 

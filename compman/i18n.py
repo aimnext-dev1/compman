@@ -455,10 +455,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Include stopped containers",
         "ko": "중지된 컨테이너 포함",
     },
-    "opt.follow": {
-        "en": "Stream statistics continuously",
-        "ko": "통계를 계속 출력",
-    },
     "opt.json": {
         "en": "Output as JSON",
         "ko": "JSON으로 출력",
@@ -496,8 +492,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "gzip 압축 레벨 (1=가장 빠름, 9=가장 작음)",
     },
     "opt.follow": {
-        "en": "Follow log output continuously.",
-        "ko": "로그 출력을 실시간으로 계속 추적(스트리밍)합니다.",
+        "en": "Stream output continuously.",
+        "ko": "출력을 실시간으로 계속 표시합니다.",
     },
     "opt.tail": {
         "en": "Number of lines to show from the end of logs (default: 50).",

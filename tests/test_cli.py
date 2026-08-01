@@ -171,6 +171,7 @@ def test_cli_project_ps_and_stats(runner: CliRunner, dummy_runtime, temp_dir: pa
 
 
 def test_ps_stats_help_and_korean_translations(runner: CliRunner):
+    set_lang("en")
     ps_help = strip_ansi(runner.invoke(app, ["ps", "--help"], color=True).output)
     stats_help = strip_ansi(runner.invoke(app, ["stats", "--help"], color=True).output)
 
@@ -179,6 +180,7 @@ def test_ps_stats_help_and_korean_translations(runner: CliRunner):
     assert "Display project container resource usage" in stats_help
     assert "--follow" in stats_help
     assert "-f" in stats_help
+    assert t("opt.follow", lang="en") == "Stream output continuously."
     assert "--no-stream" not in stats_help
     assert t("cmd.ps", lang="ko") == "프로젝트 컨테이너 목록 표시"
     assert t("cmd.stats", lang="ko") == "프로젝트 컨테이너 리소스 사용량 표시"
