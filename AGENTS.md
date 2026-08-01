@@ -24,7 +24,7 @@ test/                  # runnable examples and E2E guides (not pytest tests)
 ```
 
 - `compman init` provides an interactive 3-mode menu (1. Skeleton compman.yml, 2. S3 URL deploy, 3. Test seed project). Direct flags `--skeleton`, `--s3 <url>`, and `--seed` are also supported.
-- Current package version: `1.1.0`.
+- Current package version: `1.1.1`.
 - English is the default UI and documentation language. Korean remains supported through `--lang ko` or `COMPMAN_LANG=ko`; keep Korean text isolated to i18n resources and their tests.
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
 - Python >=3.10; runtime deps: typer, PyYAML, boto3, botocore.
@@ -76,6 +76,7 @@ Two modes:
 - `service connect` runs `docker exec -it` with bash fallback to sh.
 - `deploy` uses boto3 (no AWS CLI needed). S3 source path comes from `compman.yml: deploy` (single value, no per-profile) or `--path` override. `AWS_ENDPOINT_URL_S3` or `AWS_ENDPOINT_URL` env redirects the S3 client (e.g. local ministack at `http://localhost:4566`). Creds via standard `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_DEFAULT_REGION` env vars.
 - Deploy accepts an S3 **prefix** or `.tar.gz`/`.tgz`/`.zip` archive. Archives reject absolute/traversal paths and links; a single top-level directory is flattened.
+- `compman upgrade` refreshes the uv tool from its stored source with `uv tool upgrade compman --reinstall`. To recover a damaged installation, run `uv tool uninstall compman`, then `uv tool install git+https://github.com/allbegray/compman.git@v1.1.1`, and verify with `compman --version`.
 - The fetched tree replaces the contents of the managed `dirs.project` directory, preserving `.git` and `.gitkeep`. Root `compman.yml` and `docker-compose.yml` are scaffolded or updated separately.
 - File swap rollback is atomic at the managed-tree step, but the full fetch -> scaffold -> build operation is not transactional: a later scaffold/build failure leaves the new source tree in place.
 - `update` rebuilds and force-recreates containers; it is not a zero-downtime rolling deployment.

@@ -60,10 +60,23 @@ To install a development version from the repository, run:
 uv tool install .
 ```
 
-Update an installed CLI to the latest `main` version with:
+Update an installed CLI using uv's stored tool source with:
 
 ```bash
 compman upgrade
+```
+
+This runs `uv tool upgrade compman --reinstall`.
+
+### Recover a damaged installation
+
+If `compman upgrade` cannot run because the installation is damaged, reinstall the
+released version:
+
+```bash
+uv tool uninstall compman
+uv tool install git+https://github.com/allbegray/compman.git@v1.1.1
+compman --version
 ```
 
 ## Quick start
