@@ -713,3 +713,25 @@ def test_resolve_compose_context_secrets_simple_mode(mock_resolve, temp_dir: pat
     )
     context = resolve_compose_context(cfg)
     assert context.env == {"DB_URL": "sec"}
+
+
+@patch("compman.docker.resolve_secrets", return_value={"DB_USER": "admin", "DB_PASS": "s3cret"})
+def test_resolve_compose_context_interpolates_secrets_in_profile_env(
+    mock_resolve, temp_dir: pathlib.Path
+):
+    (temp_dir / "docker-compose.dev.yml").touch()
+    cfg = Config(
+        name="test",
+        root_dir=temp_dir,
+        source_path=temp_dir / "compman.yml",
+        compose_base="docker-compose.dev.yml",
+        profiles={
+            "dev": Profile(
+                file="docker-compose.dev.yml",
+                env={"DATABASE_URL": "postgres://${secrets:DB_USER}:${secrets:DB_PASS}@host"},
+            )
+        },
+        secrets={"DB_USER": SecretRef(arn="arn:app", key="user"), "DB_PASS": SecretRef(arn="arn:app", key="pass")},
+    )
+    context = resolve_compose_context(cfg, "dev")
+    assert context.env == {"DATABASE_URL": "postgres://admin:s3cret@host", "DB_USER": "admin", "DB_PASS": "s3cret"}

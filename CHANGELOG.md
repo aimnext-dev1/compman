@@ -13,6 +13,10 @@ first.
   referenced key's value is used. Secrets are resolved lazily when a compose
   context is built and merged with the profile `env` (profile values win).
   The same ARN is fetched only once per command invocation.
+- Profile `env` values may reference injected secrets with `${secrets:NAME}`
+  markers (partial interpolation supported). Markers referencing an undeclared
+  name fail with a clear error; other `${VAR}` markers are left untouched for
+  docker compose to resolve.
 - `compman doctor` reports a `secrets` warning check when secrets are
   configured but AWS credentials or region are missing.
 

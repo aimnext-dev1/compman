@@ -65,8 +65,10 @@ Two modes:
   Secrets Manager. Each entry maps an env var name to `{ arn, key }`; the secret's
   JSON `SecretString` is fetched lazily when a compose context is built and the
   referenced `key` is used. Secrets merge with the profile `env` (profile wins);
-  the same ARN is fetched once per command invocation. System environment
-  variables are inherited by docker compose directly and need no config entry.
+  the same ARN is fetched once per command invocation. Profile `env` values may
+  also reference declared secrets with `${secrets:NAME}` markers (partial
+  interpolation supported; undeclared names fail). System environment variables
+  are inherited by docker compose directly and need no config entry.
 
 ## Runtime
 

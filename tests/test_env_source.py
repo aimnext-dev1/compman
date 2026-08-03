@@ -7,7 +7,7 @@ import pytest
 from botocore.exceptions import ClientError, NoRegionError
 
 from compman.config import SecretRef
-from compman.env_source import resolve_secrets
+from compman.env_source import interpolate_secrets, resolve_secrets
 from compman.errors import ConfigError
 
 
@@ -131,3 +131,34 @@ def test_resolve_secrets_default_client_used(mock_client):
     resolved = resolve_secrets(refs)
     assert resolved == {"DB_URL": "db.example.com"}
     mock_client.assert_called_once_with("secretsmanager")
+
+
+def test_interpolate_secrets_full_reference():
+    resolved = {"DB_URL": "db.example.com"}
+    values = {"DATABASE_URL": "${secrets:DB_URL}"}
+    assert interpolate_secrets(values, resolved) == {"DATABASE_URL": "db.example.com"}
+
+
+def test_interpolate_secrets_partial_reference():
+    resolved = {"DB_USER": "admin", "DB_PASS": "s3cret"}
+    values = {"DATABASE_URL": "postgres://${secrets:DB_USER}:${secrets:DB_PASS}@host"}
+    assert interpolate_secrets(values, resolved) == {
+        "DATABASE_URL": "postgres://admin:s3cret@host"
+    }
+
+
+def test_interpolate_secrets_plain_values_unchanged():
+    resolved = {"DB_URL": "db.example.com"}
+    values = {"LOG_LEVEL": "debug", "HOST": "localhost:5432"}
+    assert interpolate_secrets(values, resolved) == values
+
+
+def test_interpolate_secrets_unknown_name():
+    resolved = {"DB_URL": "db.example.com"}
+    values = {"DATABASE_URL": "${secrets:NOPE}"}
+    with pytest.raises(ConfigError, match="NOPE"):
+        interpolate_secrets(values, resolved)
+
+
+def test_interpolate_secrets_empty():
+    assert interpolate_secrets({}, {"DB_URL": "x"}) == {}

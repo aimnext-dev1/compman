@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Mapping
 
 import boto3
@@ -11,6 +12,8 @@ from botocore.exceptions import (
 
 from compman.config import SecretRef
 from compman.errors import ConfigError
+
+_SECRET_MARKER = re.compile(r"\$\{secrets:([^}]+)\}")
 
 
 def resolve_secrets(
@@ -39,6 +42,36 @@ def resolve_secrets(
                 f"Secret {ref.arn} has no key '{ref.key}'."
             ) from None
     return resolved
+
+
+def interpolate_secrets(
+    values: Mapping[str, str],
+    resolved: Mapping[str, str],
+) -> dict[str, str]:
+    """Replace ${secrets:NAME} markers in env values with resolved secret values.
+
+    Partially-interpolated strings are supported, e.g.
+    ``postgres://${secrets:DB_USER}:${secrets:DB_PASS}@host``. A referenced
+    name that is not present in ``resolved`` raises ConfigError.
+    """
+    result: dict[str, str] = {}
+    for name, value in values.items():
+        if "${secrets:" not in value:
+            result[name] = value
+            continue
+
+        def _replace(match: re.Match[str]) -> str:
+            secret_name = match.group(1)
+            try:
+                return resolved[secret_name]
+            except KeyError:
+                raise ConfigError(
+                    f"env '{name}' references '{secret_name}' which is not "
+                    "declared under 'secrets'."
+                ) from None
+
+        result[name] = _SECRET_MARKER.sub(_replace, value)
+    return result
 
 
 def _client() -> Any:

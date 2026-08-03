@@ -35,7 +35,7 @@ injected value. A plain `environment:` entry without `${...}` stays literal.
 | [04](compman-config/04-profile-env.md) | Profile env injection | Per-profile `env` consumed via `${VAR}` |
 | [05](compman-config/05-deploy.md) | Deploy sources | S3 prefix, S3 archive, HTTP archive |
 | [06](compman-config/06-secrets.md) | AWS Secrets Manager | `secrets` declaration and compose usage |
-| [07](compman-config/07-secrets-profile.md) | Secrets + profiles | Merge with profile `env`; profile wins |
+| [07](compman-config/07-secrets-profile.md) | Secrets + profiles | Merge with profile `env`; profile wins; `${secrets:NAME}` markers |
 | [08](compman-config/08-full.md) | Full example | Everything combined |
 
 Run any example from the directory that contains its `compman.yml`:

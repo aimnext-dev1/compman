@@ -250,6 +250,37 @@ compman:
   variables; `compman doctor` reports a warning when secrets are configured but
   credentials or region are missing.
 
+**Referencing secrets from a profile `env`:** instead of declaring a
+`DB_URL`/`DB_PASSWORD` pair in `secrets` and echoing it in `docker-compose.yml`,
+you can build env values with `${secrets:NAME}` markers. `NAME` must be a name
+declared in the `secrets` block. Partial interpolation is supported, and the
+marker can sit next to system-variable references (which are left untouched for
+docker compose to resolve):
+
+```yaml
+compman:
+  name: my-stack
+  compose:
+    local: docker-compose.local.yml
+    dev:
+      file: docker-compose.dev.yml
+      env:
+        DATABASE_URL: postgres://${secrets:DB_USER}:${secrets:DB_PASSWORD}@db.example.com
+        LOG_LEVEL: ${LOG_LEVEL:-info}          # system var, resolved by compose
+  secrets:
+    DB_USER:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: dtx/db/user
+    DB_PASSWORD:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: dtx/db/password
+```
+
+The interpolation happens before the profile `env` is merged with the resolved
+secrets, so a plain (marker-free) profile value still overrides a secret of the
+same name. A marker that references an undeclared name fails the command with a
+clear error.
+
 **Using the injected variables:** declaring them is not enough. compman passes
 the merged values into the `docker compose` process environment, so
 `docker-compose.yml` must reference them with `${VAR}` interpolation:
