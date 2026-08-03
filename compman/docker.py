@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Callable, Sequence
 
 from compman.config import Config, ConfigError
+from compman.env_source import resolve_secrets
 
 
 @dataclass
@@ -495,6 +496,8 @@ def resolve_compose_context(config: Config, profile: str | None = None) -> Compo
         else:
             files = [config.project_dir / name for name in (config.compose_files or [])]
         env = {}
+    if config.secrets:
+        env = {**resolve_secrets(config.secrets), **env}
     return ComposeContext(config.name, tuple(files), env)
 
 

@@ -61,6 +61,12 @@ Two modes:
 - Optional `base` key -> prepended as `-f` before profile compose files.
 - Profile `file` is optional: omitted -> fallback to `base` or `docker-compose.yml`.
   Useful when all profiles share one compose file with different env vars only.
+- Optional top-level `secrets` key -> injects environment variables from AWS
+  Secrets Manager. Each entry maps an env var name to `{ arn, key }`; the secret's
+  JSON `SecretString` is fetched lazily when a compose context is built and the
+  referenced `key` is used. Secrets merge with the profile `env` (profile wins);
+  the same ARN is fetched once per command invocation. System environment
+  variables are inherited by docker compose directly and need no config entry.
 
 ## Runtime
 
@@ -70,7 +76,7 @@ Two modes:
 
 ## CLI quirks
 
-- `doctor` checks configuration, compose files, container runtime, and deploy prerequisites. `--json` emits schema version `1`; failed required checks exit with status 1, while missing optional AWS environment variables are warnings.
+- `doctor` checks configuration, compose files, container runtime, and deploy prerequisites. `--json` emits schema version `1`; failed required checks exit with status 1, while missing optional AWS environment variables (including secrets prerequisites) are warnings.
 - Top-level `status` reports normalized stack/service state across Docker and Podman. `--json` emits schema version `1`; a missing stack or runtime query error exits with status 1, while an existing stopped stack is successful.
 - Top-level `ps` lists containers only in the selected compman project; `-a`/`--all` includes stopped containers.
 - Top-level `stats` prints one resource snapshot for running containers in the selected project; `-f`/`--follow` streams continuously.

@@ -163,6 +163,54 @@ def test_load_config_no_name_uses_cwd(temp_dir: pathlib.Path):
     assert cfg.compose_files == ["docker-compose.yml"]
 
 
+def test_load_config_secrets_valid(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n"
+        "  name: app\n"
+        "  compose:\n"
+        "    - docker-compose.yml\n"
+        "  secrets:\n"
+        "    DB_URL:\n"
+        "      arn: arn:aws:secretsmanager:ap-northeast-2:123:secret:app\n"
+        "      key: dtx/db/url\n"
+        "    API_KEY:\n"
+        "      arn: arn:aws:secretsmanager:ap-northeast-2:123:secret:app2\n"
+        "      key: api-key\n",
+        encoding="utf-8",
+    )
+    cfg = load_config(str(config_file))
+    assert cfg.secrets["DB_URL"].arn.endswith("secret:app")
+    assert cfg.secrets["DB_URL"].key == "dtx/db/url"
+    assert cfg.secrets["API_KEY"].key == "api-key"
+
+
+def test_load_config_secrets_not_mapping(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n  name: app\n  secrets: []\n", encoding="utf-8"
+    )
+    with pytest.raises(ConfigError, match="secrets"):
+        load_config(str(config_file))
+
+
+def test_load_config_secrets_value_missing_arn_key(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n  name: app\n  secrets:\n    DB_URL: arn:foo\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="DB_URL"):
+        load_config(str(config_file))
+
+    config_file.write_text(
+        "compman:\n  name: app\n  secrets:\n    DB_URL:\n      arn: foo\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="key"):
+        load_config(str(config_file))
+
+
 def test_load_config_resolves_paths_from_config_directory(tmp_path: pathlib.Path):
     project = tmp_path / "project"
     project.mkdir()

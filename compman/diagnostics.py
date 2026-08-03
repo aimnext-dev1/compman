@@ -88,6 +88,8 @@ def collect_doctor(config_path: str | None, profile: str | None = None) -> Docto
     if config is not None:
         _collect_managed_dirs(config, checks)
     _collect_aws(checks)
+    if config is not None:
+        _collect_secrets(config, checks)
     return DoctorReport(tuple(checks))
 
 
@@ -225,3 +227,20 @@ def _collect_aws(checks: list[CheckResult]) -> None:
     )
     message = "AWS credentials are available." if credentials_present else "AWS credentials are not configured."
     checks.append(CheckResult("aws", "warning", credentials_present, message))
+
+
+def _collect_secrets(config: Config, checks: list[CheckResult]) -> None:
+    if not config.secrets:
+        return
+    credentials_present = bool(os.environ.get("AWS_ACCESS_KEY_ID")) and bool(
+        os.environ.get("AWS_SECRET_ACCESS_KEY")
+    )
+    region_present = bool(os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION"))
+    ok = credentials_present and region_present
+    message = (
+        f"Secrets configured for {len(config.secrets)} env vars; "
+        "AWS credentials and region are available."
+        if ok
+        else "Secrets configured but AWS credentials or region are missing."
+    )
+    checks.append(CheckResult("secrets", "warning", ok, message))

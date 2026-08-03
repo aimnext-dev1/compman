@@ -58,6 +58,63 @@ def test_warning_does_not_fail_doctor(tmp_path, monkeypatch, dummy_runtime):
     assert next(check for check in report.checks if check.id == "aws").severity == "warning"
 
 
+def test_secrets_check_skipped_without_secrets(tmp_path, monkeypatch, dummy_runtime):
+    write_simple_project(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
+
+    report = collect_doctor(None)
+
+    assert all(check.id != "secrets" for check in report.checks)
+
+
+def test_secrets_check_reports_missing_credentials(tmp_path, monkeypatch, dummy_runtime):
+    (tmp_path / "compman.yml").write_text(
+        "compman:\n"
+        "  compose:\n"
+        "    - docker-compose.yml\n"
+        "  secrets:\n"
+        "    DB_URL:\n"
+        "      arn: arn:aws:secretsmanager:ap-northeast-2:123:secret:app\n"
+        "      key: url\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
+    monkeypatch.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
+    monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
+    monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
+
+    report = collect_doctor(None)
+
+    secrets = next(check for check in report.checks if check.id == "secrets")
+    assert secrets.severity == "warning"
+    assert secrets.ok is False
+
+
+def test_secrets_check_ok_with_credentials_and_region(tmp_path, monkeypatch, dummy_runtime):
+    (tmp_path / "compman.yml").write_text(
+        "compman:\n"
+        "  compose:\n"
+        "    - docker-compose.yml\n"
+        "  secrets:\n"
+        "    DB_URL:\n"
+        "      arn: arn:aws:secretsmanager:ap-northeast-2:123:secret:app\n"
+        "      key: url\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "key")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "ap-northeast-2")
+    monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
+
+    report = collect_doctor(None)
+
+    secrets = next(check for check in report.checks if check.id == "secrets")
+    assert secrets.ok is True
+
+
 @pytest.mark.parametrize("config_contents", [None, "invalid: : ["])
 def test_invalid_or_missing_config_is_a_failed_required_check(tmp_path, monkeypatch, dummy_runtime, config_contents):
     if config_contents is not None:

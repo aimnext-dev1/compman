@@ -215,6 +215,39 @@ compman:
 
 Managed paths cannot escape the directory containing `compman.yml`. `--path` overrides the configured `deploy` value for one invocation only.
 
+### Environment variables from AWS Secrets Manager
+
+Use the top-level `secrets` key to inject environment variables from AWS Secrets
+Manager. Each entry maps an env var name to `{ arn, key }`. At compose-command
+time compman fetches the secret's JSON `SecretString` and uses the value at
+`key`.
+
+```yaml
+compman:
+  name: my-stack
+  compose:
+    - docker-compose.yml
+  secrets:
+    DB_URL:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: dtx/db/url
+    DB_PASSWORD:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: dtx/db/password
+```
+
+- The `key` names the JSON key inside the secret (slash keys like `dtx/db/url`
+  are supported); the env var name on the left is the resulting variable.
+- The same ARN is fetched once per command invocation, even when multiple env
+  vars reference it.
+- Secrets are merged with the profile `env`; a profile value overrides a secret
+  of the same name. System environment variables are inherited by docker compose
+  as usual and need no configuration here.
+- A missing secret, unresolvable region, or invalid secret body fails the command
+  with a clear error. Use the standard AWS credential and region environment
+  variables; `compman doctor` reports a warning when secrets are configured but
+  credentials or region are missing.
+
 ## Commands
 
 ```text

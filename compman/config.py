@@ -31,6 +31,12 @@ class Profile:
 
 
 @dataclass
+class SecretRef:
+    arn: str
+    key: str
+
+
+@dataclass
 class Config:
     name: str
     root_dir: Path = field(default_factory=Path.cwd)
@@ -42,6 +48,7 @@ class Config:
     compose_base: str | None = None
     compose_files: list[str] | None = None
     profiles: dict[str, Profile] = field(default_factory=dict)
+    secrets: dict[str, SecretRef] = field(default_factory=dict)
     deploy: str | None = None
 
     @property
@@ -144,6 +151,20 @@ def load_config(config_path: str | None = None) -> Config:
     if raw_deploy is not None and not isinstance(raw_deploy, str):
         raise ConfigError("'deploy' must be a string (e.g. 's3://bucket/app').")
 
+    raw_secrets = root.get("secrets", {})
+    if not isinstance(raw_secrets, dict):
+        raise ConfigError("'secrets' must be a mapping.")
+    secrets: dict[str, SecretRef] = {}
+    for env_name, raw_ref in raw_secrets.items():
+        if not isinstance(raw_ref, dict) or not isinstance(raw_ref.get("arn"), str):
+            raise ConfigError(
+                f"'secrets.{env_name}' must be a mapping with an 'arn' string."
+            )
+        raw_key = raw_ref.get("key")
+        if not isinstance(raw_key, str) or not raw_key:
+            raise ConfigError(f"'secrets.{env_name}' is missing a 'key' string.")
+        secrets[str(env_name)] = SecretRef(arn=str(raw_ref["arn"]), key=raw_key)
+
     config = Config(
         name=name,
         root_dir=path.parent,
@@ -153,6 +174,7 @@ def load_config(config_path: str | None = None) -> Config:
         compose_base=compose_base,
         compose_files=compose_files,
         profiles=profiles,
+        secrets=secrets,
         deploy=raw_deploy,
     )
     # Resolve all paths while loading so unsafe configuration fails before a

@@ -3,6 +3,19 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.4.0] - 2026-08-03
+
+### Added
+
+- `compman.yml` supports an optional top-level `secrets` mapping that injects
+  environment variables from AWS Secrets Manager. Each entry maps an env var
+  name to `{ arn, key }`; the secret's JSON `SecretString` is fetched and the
+  referenced key's value is used. Secrets are resolved lazily when a compose
+  context is built and merged with the profile `env` (profile values win).
+  The same ARN is fetched only once per command invocation.
+- `compman doctor` reports a `secrets` warning check when secrets are
+  configured but AWS credentials or region are missing.
+
 ## [1.3.3] - 2026-08-03
 
 ### Fixed

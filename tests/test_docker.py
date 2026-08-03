@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from compman.config import Config, ConfigError, Profile
+from compman.config import Config, ConfigError, Profile, SecretRef
 from compman.docker import (
     ContainerRuntime,
     _check_cmd,
@@ -20,6 +20,7 @@ from compman.docker import (
     _passthru,
     _run,
     detect_runtime,
+    resolve_compose_context,
     resolve_compose_files,
     resolve_simple_files,
 )
@@ -682,3 +683,33 @@ def test_ensure_ready_for_start_times_out_before_poll_when_no_time_remains(monke
 
     sleep.assert_not_called()
     run_cli.assert_called_once_with(["info"], capture=True, check=False, timeout=5.0)
+
+
+@patch("compman.docker.resolve_secrets", return_value={"DB_URL": "sec", "SHARED": "sec"})
+def test_resolve_compose_context_merges_secrets_profile_env_wins(mock_resolve, temp_dir: pathlib.Path):
+    (temp_dir / "docker-compose.dev.yml").touch()
+    cfg = Config(
+        name="test",
+        root_dir=temp_dir,
+        source_path=temp_dir / "compman.yml",
+        compose_base="docker-compose.dev.yml",
+        profiles={"dev": Profile(file="docker-compose.dev.yml", env={"SHARED": "prof"})},
+        secrets={"DB_URL": SecretRef(arn="arn:app", key="url")},
+    )
+    context = resolve_compose_context(cfg, "dev")
+    assert context.env == {"DB_URL": "sec", "SHARED": "prof"}
+    mock_resolve.assert_called_once_with(cfg.secrets)
+
+
+@patch("compman.docker.resolve_secrets", return_value={"DB_URL": "sec"})
+def test_resolve_compose_context_secrets_simple_mode(mock_resolve, temp_dir: pathlib.Path):
+    (temp_dir / "docker-compose.yml").touch()
+    cfg = Config(
+        name="test",
+        root_dir=temp_dir,
+        source_path=temp_dir / "compman.yml",
+        compose_files=["docker-compose.yml"],
+        secrets={"DB_URL": SecretRef(arn="arn:app", key="url")},
+    )
+    context = resolve_compose_context(cfg)
+    assert context.env == {"DB_URL": "sec"}
