@@ -385,11 +385,14 @@ def test_common_remaining_branches(temp_dir):
         with patch("compman.ops.common.get_key", side_effect=["other", "enter"]):
             assert common.prompt_select("x", ["a"]) == 0
 
-    with patch("sys.platform", "linux"), patch.dict("sys.modules", {"termios": MagicMock(), "tty": MagicMock(), "select": MagicMock()}):
+    mock_select3 = MagicMock()
+    with patch("sys.platform", "linux"), patch.dict("sys.modules", {"termios": MagicMock(), "tty": MagicMock(), "select": mock_select3}):
         import compman.ops.common as ops_common
-        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch("os.read", side_effect=[b"\x1b", b"x"]), patch("select.select", return_value=([True], [], [])):
+        mock_select3.select.side_effect = [([0], [], []), ([], [], [])]
+        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch("os.read", side_effect=[b"\x1b", b"x"]):
             assert ops_common.get_key() == "esc"
-        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch("os.read", side_effect=[b"\x1b", b"[", b"x"]), patch("select.select", return_value=([True], [], [])):
+        mock_select3.select.side_effect = [([0], [], []), ([0], [], []), ([], [], [])]
+        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch("os.read", side_effect=[b"\x1b", b"[", b"x"]):
             assert ops_common.get_key() == "esc"
 
 

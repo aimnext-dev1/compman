@@ -62,7 +62,7 @@ def test_prompt_select_interactive_arrows(temp_dir: pathlib.Path, capsys: pytest
         res = common.prompt_select("Title", ["Option 1", "Option 2"])
         assert res == 0
     output = capsys.readouterr().out
-    assert "Title (Use Up/Down, Enter to select, Esc to cancel):" in output
+    assert "Title (Use Up/Down or number keys, Enter to select, Esc to cancel):" in output
     assert "> Option 1" in output
     assert output.isascii()
 
@@ -71,6 +71,14 @@ def test_prompt_select_interactive_esc(temp_dir: pathlib.Path):
     with patch("sys.stdin.isatty", return_value=True), patch("compman.ops.common.get_key", return_value="esc"):
         with pytest.raises(SystemExit):
             common.prompt_select("Title", ["Option 1", "Option 2"])
+
+
+def test_prompt_select_interactive_number(temp_dir: pathlib.Path):
+    with patch("sys.stdin.isatty", return_value=True), patch(
+        "compman.ops.common.get_key", side_effect=["5", "2"]
+    ):
+        res = common.prompt_select("Title", ["a", "b", "c"])
+        assert res == 1
 
 
 def test_prompt_select_interactive_sigint(temp_dir: pathlib.Path):
@@ -92,14 +100,24 @@ def test_get_key_posix():
                 with pytest.raises(KeyboardInterrupt):
                     common.get_key()
 
-            with patch("os.read", side_effect=[b"\x1b", b"[", b"A"]), patch("select.select", return_value=([True], [], [])):
+            mock_select.select.side_effect = [([0], [], []), ([0], [], []), ([], [], [])]
+            with patch("os.read", side_effect=[b"\x1b", b"[", b"A"]):
                 assert common.get_key() == "up"
 
-            with patch("os.read", side_effect=[b"\x1b", b"[", b"B"]), patch("select.select", return_value=([True], [], [])):
+            mock_select.select.side_effect = [([0], [], []), ([0], [], []), ([], [], [])]
+            with patch("os.read", side_effect=[b"\x1b", b"[", b"B"]):
                 assert common.get_key() == "down"
 
-            with patch("os.read", side_effect=[b"\x1b"]), patch("select.select", return_value=([], [], [])):
+            mock_select.select.side_effect = [([], [], [])]
+            with patch("os.read", side_effect=[b"\x1b"]):
                 assert common.get_key() == "esc"
+
+            mock_select.select.side_effect = [([0], [], [])] * 7
+            with patch("os.read", side_effect=[b"\x1b"] + [b"x"] * 7):
+                assert common.get_key() == "esc"
+
+            with patch("os.read", return_value=b"7"):
+                assert common.get_key() == "7"
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only test")
@@ -122,3 +140,6 @@ def test_get_key_win32():
     with patch("sys.platform", "win32"), patch("msvcrt.getch", side_effect=[b"\x03"]):
         with pytest.raises(KeyboardInterrupt):
             common.get_key()
+
+    with patch("sys.platform", "win32"), patch("msvcrt.getch", side_effect=[b"4"]):
+        assert common.get_key() == "4"

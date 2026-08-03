@@ -3,6 +3,22 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.3.2] - 2026-08-03
+
+### Fixed
+
+- Fixed interactive Up/Down arrow selection being cancelled when the CLI is
+  used through a high-latency remote session such as AWS Systems Manager
+  Session Manager (`aws ssm start-session`). The strict 50ms escape-sequence
+  window was too short for the tunneling round-trip, so the arrow started with
+  ESC and was misread as cancel. Arrow keys are now read by accumulating bytes
+  until the sequence completes, tolerating slow transports.
+
+### Added
+
+- Interactive menus now accept number keys (1-9) to select an option directly,
+  as a fallback for terminals that cannot send arrow keys.
+
 ## [1.3.1] - 2026-08-03
 
 ### Fixed

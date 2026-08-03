@@ -37,6 +37,8 @@ def get_key() -> str:
             return "esc"
         elif ch == b"\x03":
             raise KeyboardInterrupt()
+        elif ch in b"123456789":
+            return ch.decode()
         return "other"
     else:
         import os
@@ -50,20 +52,23 @@ def get_key() -> str:
             tty.setraw(fd)
             ch = os.read(fd, 1)
             if ch == b"\x1b":
-                rlist, _, _ = select.select([fd], [], [], 0.05)
-                if rlist:
-                    ch2 = os.read(fd, 1)
-                    if ch2 == b"[":
-                        ch3 = os.read(fd, 1)
-                        if ch3 == b"A":
-                            return "up"
-                        elif ch3 == b"B":
-                            return "down"
+                seq = b"\x1b"
+                while len(seq) < 8:
+                    rlist, _, _ = select.select([fd], [], [], 0.2)
+                    if not rlist:
+                        break
+                    seq += os.read(fd, 1)
+                if seq.startswith(b"\x1b[A"):
+                    return "up"
+                if seq.startswith(b"\x1b[B"):
+                    return "down"
                 return "esc"
             elif ch in (b"\r", b"\n"):
                 return "enter"
             elif ch == b"\x03":
                 raise KeyboardInterrupt()
+            elif ch in b"123456789":
+                return ch.decode()
             return "other"
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
@@ -89,7 +94,7 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
                 sys.stdout.write(f"\033[K   {option}\n")
         sys.stdout.flush()
 
-    typer.echo(f"{title} (Use Up/Down, Enter to select, Esc to cancel):")
+    typer.echo(f"{title} (Use Up/Down or number keys, Enter to select, Esc to cancel):")
     render(redraw=False)
 
     while True:
@@ -101,6 +106,9 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
             elif key == "down":
                 selected = (selected + 1) % len(options)
                 render(redraw=True)
+            elif key.isdigit() and 1 <= int(key) <= len(options):
+                selected = int(key) - 1
+                break
             elif key == "enter":
                 break
             elif key == "esc":
