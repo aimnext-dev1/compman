@@ -66,7 +66,17 @@ uv run --project C:\path\to\compman compman stack down --yes
 # uv run --project C:\path\to\compman compman stack up dev
 # docker logs deploy-e2e-app-1   # verify deploy-e2e: hello-from-dev
 # uv run --project C:\path\to\compman compman stack down --yes
-```
+#
+# 4b. Secrets from AWS Secrets Manager (reference only — needs a real secret):
+# Add to compman.yml:
+#   secrets:
+#     MESSAGE:
+#       arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:app
+#       key: message
+# The secret value is fetched at compose-command time and merged with the
+# profile env (profile wins on a collision).
+# ```
+
 
 ## init
 

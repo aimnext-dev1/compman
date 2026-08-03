@@ -146,6 +146,36 @@ compman stack down --yes
 
 ---
 
+## 🔐 Injecting Environment Variables from AWS Secrets Manager
+
+compman can inject environment variables from AWS Secrets Manager for any compose
+context (simple or profile mode) via the top-level `secrets` key. Reference only —
+ministack does not emulate Secrets Manager, so run this against real AWS.
+
+```yaml
+compman:
+  name: my-app
+  compose:
+    - docker-compose.yml
+  secrets:
+    DATABASE_URL:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: dtx/db/url
+    DB_PASSWORD:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: dtx/db/password
+```
+
+- Each entry maps an env var name to `{ arn, key }`. At compose-command time the
+  secret's JSON `SecretString` is fetched and the referenced `key`'s value is used.
+- The same ARN is fetched once per command invocation.
+- Secrets merge with the profile `env`; a profile value overrides a secret of the
+  same name. System environment variables are inherited by docker compose as usual.
+- Credentials and region use the standard AWS environment variables
+  (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`).
+
+---
+
 ## 📌 Key Takeaways
 
 | Category | Command | Core behavior |
@@ -156,3 +186,4 @@ compman stack down --yes
 | **Deploy + build** | `compman deploy --build` | Download from S3 + automatically build a Docker image based on `project/Dockerfile` |
 | **Start stack** | `compman stack up` | Start containers based on the root `docker-compose.yml` (recreate when the image changes) |
 | **Stop stack** | `compman stack down --yes` | Safely clean up running containers and networks |
+| **Secrets injection** | `compman.secrets` in `compman.yml` | Inject env vars from AWS Secrets Manager at compose-command time; merges with profile `env` (profile wins) |

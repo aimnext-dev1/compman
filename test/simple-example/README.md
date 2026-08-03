@@ -31,3 +31,18 @@ compose:
 ```
 
 If the `compose` key is omitted entirely, it defaults to `docker-compose.yml`.
+
+Simple mode also supports the top-level `secrets` key, which injects environment
+variables from AWS Secrets Manager (same syntax as profile mode). Reference only —
+running this requires a real secret:
+
+```yaml
+compman:
+  name: my-app
+  compose:
+    - docker-compose.yml
+  secrets:
+    DB_URL:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: dtx/db/url
+```

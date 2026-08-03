@@ -69,6 +69,7 @@ Deploy completed</code></pre>
         <article class="card"><span class="card-icon">02</span><h3>Safe backups</h3><p>Back up and restore named volumes or container images with configurable gzip compression.</p></article>
         <article class="card"><span class="card-icon">03</span><h3>Useful diagnostics</h3><p>Get human-readable or JSON health reports with <code>status</code> and <code>doctor</code>.</p></article>
         <article class="card"><span class="card-icon">04</span><h3>Simple deployments</h3><p>Fetch an S3 prefix or archive, or a public HTTP archive, then optionally build and recreate.</p></article>
+        <article class="card"><span class="card-icon">05</span><h3>Secret-safe config</h3><p>Inject environment variables from AWS Secrets Manager instead of hardcoding secrets in <code>compman.yml</code>.</p></article>
       </div>
     </section>
 
@@ -131,6 +132,7 @@ compman stats -f</code></pre>
       <div class="faq-grid">
         <details><summary>Docker only?</summary><p>No. compman auto-detects Docker Compose, Podman Compose, legacy docker-compose, and podman-compose.</p></details>
         <details><summary>Where is configuration stored?</summary><p>A project-local <code>compman.yml</code> describes the stack, Compose files, profiles, managed directories, and optional deploy source.</p></details>
+        <details><summary>How are secrets handled?</summary><p>compman can inject environment variables from AWS Secrets Manager at command time, so secrets never need to live in <code>compman.yml</code>.</p></details>
         <details><summary>Are archive deployments safe?</summary><p>Archive extraction rejects absolute paths, traversal, and links. Managed-tree replacement rolls back if its file swap fails.</p></details>
         <details><summary>Is there a daemon or server?</summary><p>No. compman is an on-demand CLI that delegates container operations to the detected local runtime.</p></details>
       </div>

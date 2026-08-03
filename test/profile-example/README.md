@@ -44,3 +44,24 @@ compose:
     env:
       DATABASE_URL: dev.db.example.com              # automatic environment-variable injection
 ```
+
+## Secrets from AWS Secrets Manager
+
+The top-level `secrets` key injects environment variables from AWS Secrets
+Manager and merges them with the profile `env` (the profile value wins on a
+name collision). Reference only — running this requires real credentials:
+
+```yaml
+compman:
+  name: my-app
+  compose:
+    base: docker-compose.yml
+    dev:
+      file: docker-compose.dev.yml
+      env:
+        DATABASE_URL: dev.db.example.com
+  secrets:
+    DB_PASSWORD:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: password
+```

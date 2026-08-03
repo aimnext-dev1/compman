@@ -37,3 +37,26 @@ compose:
       DATABASE_URL: prod.example.com
       LOG_LEVEL: warn
 ```
+
+### Secrets from AWS Secrets Manager
+
+The top-level `secrets` key injects environment variables from AWS Secrets
+Manager for the shared Compose file. It merges with the profile `env`, and the
+profile value wins on a name collision. Reference only — running this requires
+real credentials:
+
+```yaml
+compman:
+  name: single-compose-app
+  compose:
+    dev:
+      env:
+        LOG_LEVEL: debug
+    prod:
+      env:
+        LOG_LEVEL: warn
+  secrets:
+    DATABASE_URL:
+      arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+      key: dtx/db/url
+```
