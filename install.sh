@@ -4,14 +4,11 @@ set -e
 
 echo "🚀 Installing compman CLI..."
 
-if command -v uv >/dev/null 2>&1; then
-    uv tool install --reinstall git+https://github.com/allbegray/compman.git
-elif command -v pip >/dev/null 2>&1; then
-    pip install --upgrade git+https://github.com/allbegray/compman.git
-else
-    echo "Error: Neither 'uv' nor 'pip' was found. Please install Python or uv first." >&2
-    exit 1
+if ! command -v uv >/dev/null 2>&1; then
+    echo "Installing uv (Python package manager)..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
+uv tool install --reinstall --managed-python git+https://github.com/allbegray/compman.git
 
 BIN_DIR="$HOME/.local/bin"
 case ":$PATH:" in

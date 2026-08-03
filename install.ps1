@@ -27,16 +27,13 @@ $newUserPath = ($binDir + ";" + ($pathParts -join ";")).TrimEnd(";")
 $env:PATH = "$binDir;$env:PATH"
 Write-Host "✅ Ensured '$binDir' is at the front of User PATH." -ForegroundColor Green
 
-# 3. Install compman via uv or pip
-if (Get-Command uv -ErrorAction SilentlyContinue) {
-    # uv tool install places shims in ~/.local/bin (already set at front of PATH above)
-    uv tool install --reinstall git+https://github.com/allbegray/compman.git
-} elseif (Get-Command pip -ErrorAction SilentlyContinue) {
-    pip install --upgrade git+https://github.com/allbegray/compman.git --target "$binDir"
-} else {
-    Write-Error "Neither 'uv' nor 'pip' was found. Please install Python or uv first."
-    exit 1
+# 3. Install compman via uv (uv manages its own Python, so older system Python is fine)
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    Write-Host "Installing uv (Python package manager)..." -ForegroundColor Yellow
+    irm https://astral.sh/uv/install.ps1 | iex
 }
+# uv tool install places shims in ~/.local/bin (already set at front of PATH above)
+uv tool install --reinstall --managed-python git+https://github.com/allbegray/compman.git
 
 # 4. Automatically register PowerShell Tab auto-completion & execution policy
 if (Get-Command compman -ErrorAction SilentlyContinue) {

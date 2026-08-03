@@ -60,12 +60,13 @@ compman -v       # --version also works
 compman -h       # --help also works
 ```
 
-### Install with uv or pipx
+### Install with uv
+
+Let uv manage the Python interpreter for compman (it downloads a managed Python,
+so even a system running an older Python like 3.9 works):
 
 ```bash
-uv tool install git+https://github.com/allbegray/compman.git
-# Or
-pipx install git+https://github.com/allbegray/compman.git
+uv tool install --managed-python git+https://github.com/allbegray/compman.git
 ```
 
 To install a development version from the repository, run:
@@ -80,7 +81,7 @@ Update an installed CLI using uv's stored tool source with:
 compman upgrade
 ```
 
-This runs `uv tool upgrade compman --reinstall`.
+This runs `uv tool upgrade compman --reinstall --managed-python`.
 
 ### Recover a damaged installation
 
@@ -90,7 +91,7 @@ commands continue moving to newer releases:
 
 ```bash
 uv tool uninstall compman
-uv tool install git+https://github.com/allbegray/compman.git
+uv tool install --managed-python git+https://github.com/allbegray/compman.git
 compman --version
 ```
 
