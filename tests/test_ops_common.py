@@ -85,20 +85,20 @@ def test_get_key_posix():
     mock_select = MagicMock()
     with patch.dict("sys.modules", {"termios": mock_termios, "tty": mock_tty, "select": mock_select}):
         with patch("sys.platform", "linux"), patch("sys.stdin.fileno", return_value=0):
-            with patch("sys.stdin.read", return_value="\r"):
+            with patch("os.read", return_value=b"\r"):
                 assert common.get_key() == "enter"
 
-            with patch("sys.stdin.read", return_value="\x03"):
+            with patch("os.read", return_value=b"\x03"):
                 with pytest.raises(KeyboardInterrupt):
                     common.get_key()
 
-            with patch("sys.stdin.read", side_effect=["\x1b", "[", "A"]), patch("select.select", return_value=([True], [], [])):
+            with patch("os.read", side_effect=[b"\x1b", b"[", b"A"]), patch("select.select", return_value=([True], [], [])):
                 assert common.get_key() == "up"
 
-            with patch("sys.stdin.read", side_effect=["\x1b", "[", "B"]), patch("select.select", return_value=([True], [], [])):
+            with patch("os.read", side_effect=[b"\x1b", b"[", b"B"]), patch("select.select", return_value=([True], [], [])):
                 assert common.get_key() == "down"
 
-            with patch("sys.stdin.read", side_effect=["\x1b"]), patch("select.select", return_value=([], [], [])):
+            with patch("os.read", side_effect=[b"\x1b"]), patch("select.select", return_value=([], [], [])):
                 assert common.get_key() == "esc"
 
 

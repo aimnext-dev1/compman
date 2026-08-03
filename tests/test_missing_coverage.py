@@ -378,7 +378,7 @@ def test_service_empty_and_multiple(dummy_runtime, temp_dir):
 def test_common_remaining_branches(temp_dir):
     with patch("sys.platform", "linux"), patch.dict("sys.modules", {"termios": MagicMock(), "tty": MagicMock(), "select": MagicMock()}):
         import compman.ops.common as ops_common
-        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch.object(ops_common.sys.stdin, "read", return_value="x"):
+        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch("os.read", return_value=b"x"):
             assert ops_common.get_key() == "other"
 
     with patch("sys.stdin.isatty", return_value=True), patch("compman.ops.common.get_key", return_value="other"):
@@ -387,9 +387,9 @@ def test_common_remaining_branches(temp_dir):
 
     with patch("sys.platform", "linux"), patch.dict("sys.modules", {"termios": MagicMock(), "tty": MagicMock(), "select": MagicMock()}):
         import compman.ops.common as ops_common
-        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch.object(ops_common.sys.stdin, "read", side_effect=["\x1b", "x"]), patch("select.select", return_value=([True], [], [])):
+        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch("os.read", side_effect=[b"\x1b", b"x"]), patch("select.select", return_value=([True], [], [])):
             assert ops_common.get_key() == "esc"
-        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch.object(ops_common.sys.stdin, "read", side_effect=["\x1b", "[", "x"]), patch("select.select", return_value=([True], [], [])):
+        with patch.object(ops_common.sys.stdin, "fileno", return_value=0), patch("os.read", side_effect=[b"\x1b", b"[", b"x"]), patch("select.select", return_value=([True], [], [])):
             assert ops_common.get_key() == "esc"
 
 

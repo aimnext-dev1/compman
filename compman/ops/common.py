@@ -39,6 +39,7 @@ def get_key() -> str:
             raise KeyboardInterrupt()
         return "other"
     else:
+        import os
         import select
         import termios
         import tty
@@ -47,21 +48,21 @@ def get_key() -> str:
         old_settings = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
-            ch = sys.stdin.read(1)
-            if ch == "\x1b":
-                rlist, _, _ = select.select([sys.stdin], [], [], 0.05)
+            ch = os.read(fd, 1)
+            if ch == b"\x1b":
+                rlist, _, _ = select.select([fd], [], [], 0.05)
                 if rlist:
-                    ch2 = sys.stdin.read(1)
-                    if ch2 == "[":
-                        ch3 = sys.stdin.read(1)
-                        if ch3 == "A":
+                    ch2 = os.read(fd, 1)
+                    if ch2 == b"[":
+                        ch3 = os.read(fd, 1)
+                        if ch3 == b"A":
                             return "up"
-                        elif ch3 == "B":
+                        elif ch3 == b"B":
                             return "down"
                 return "esc"
-            elif ch in ("\r", "\n"):
+            elif ch in (b"\r", b"\n"):
                 return "enter"
-            elif ch == "\x03":
+            elif ch == b"\x03":
                 raise KeyboardInterrupt()
             return "other"
         finally:

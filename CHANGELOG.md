@@ -3,6 +3,14 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.3.1] - 2026-08-03
+
+### Fixed
+
+- Fixed interactive Up/Down arrow selection being cancelled on POSIX
+  terminals such as Amazon Linux. Terminal read buffering caused arrow-key
+  escape sequences to be misinterpreted as an Esc/cancel.
+
 ## [1.3.0] - 2026-08-01
 
 ### Added
