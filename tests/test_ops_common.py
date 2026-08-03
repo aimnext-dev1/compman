@@ -108,6 +108,14 @@ def test_get_key_posix():
             with patch("os.read", side_effect=[b"\x1b", b"[", b"B"]):
                 assert common.get_key() == "down"
 
+            mock_select.select.side_effect = [([0], [], []), ([0], [], []), ([], [], [])]
+            with patch("os.read", side_effect=[b"\x1b", b"O", b"A"]):
+                assert common.get_key() == "up"
+
+            mock_select.select.side_effect = [([0], [], []), ([0], [], []), ([], [], [])]
+            with patch("os.read", side_effect=[b"\x1b", b"O", b"B"]):
+                assert common.get_key() == "down"
+
             mock_select.select.side_effect = [([], [], [])]
             with patch("os.read", side_effect=[b"\x1b"]):
                 assert common.get_key() == "esc"

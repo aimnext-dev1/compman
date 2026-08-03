@@ -58,9 +58,9 @@ def get_key() -> str:
                     if not rlist:
                         break
                     seq += os.read(fd, 1)
-                if seq.startswith(b"\x1b[A"):
+                if seq.startswith(b"\x1b[A") or seq.startswith(b"\x1bOA"):
                     return "up"
-                if seq.startswith(b"\x1b[B"):
+                if seq.startswith(b"\x1b[B") or seq.startswith(b"\x1bOB"):
                     return "down"
                 return "esc"
             elif ch in (b"\r", b"\n"):

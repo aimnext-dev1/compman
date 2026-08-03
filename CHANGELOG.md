@@ -3,6 +3,15 @@
 Major user-visible changes to compman are recorded here, with the newest release
 first.
 
+## [1.3.3] - 2026-08-03
+
+### Fixed
+
+- Fixed Up/Down arrow selection still being cancelled over AWS Systems
+  Manager Session Manager. Some terminals report application-mode cursor keys,
+  which encode Up and Down as `ESC O A` / `ESC O B` instead of the standard
+  `ESC [ A` / `ESC [ B`. Both forms are now recognized.
+
 ## [1.3.2] - 2026-08-03
 
 ### Fixed
