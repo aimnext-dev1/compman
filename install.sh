@@ -8,7 +8,7 @@ if ! command -v uv >/dev/null 2>&1; then
     echo "Installing uv (Python package manager)..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
-uv tool install --reinstall --managed-python git+https://github.com/allbegray/compman.git
+uv tool install --force --reinstall --managed-python git+https://github.com/allbegray/compman.git
 
 BIN_DIR="$HOME/.local/bin"
 case ":$PATH:" in

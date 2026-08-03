@@ -33,7 +33,7 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     irm https://astral.sh/uv/install.ps1 | iex
 }
 # uv tool install places shims in ~/.local/bin (already set at front of PATH above)
-uv tool install --reinstall --managed-python git+https://github.com/allbegray/compman.git
+uv tool install --force --reinstall --managed-python git+https://github.com/allbegray/compman.git
 
 # 4. Automatically register PowerShell Tab auto-completion & execution policy
 if (Get-Command compman -ErrorAction SilentlyContinue) {

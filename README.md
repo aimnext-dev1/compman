@@ -66,7 +66,7 @@ Let uv manage the Python interpreter for compman (it downloads a managed Python,
 so even a system running an older Python like 3.9 works):
 
 ```bash
-uv tool install --managed-python git+https://github.com/allbegray/compman.git
+uv tool install --force --managed-python git+https://github.com/allbegray/compman.git
 ```
 
 To install a development version from the repository, run:
@@ -91,7 +91,7 @@ commands continue moving to newer releases:
 
 ```bash
 uv tool uninstall compman
-uv tool install --managed-python git+https://github.com/allbegray/compman.git
+uv tool install --force --managed-python git+https://github.com/allbegray/compman.git
 compman --version
 ```
 
