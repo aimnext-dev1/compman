@@ -226,8 +226,8 @@ def test_probe_failure_and_compose_context_error_paths(temp_dir):
     assert files == [compose]
     assert env == {}
 
-    with pytest.raises(ConfigError, match="Remove profile"):
-        resolve_compose_context(Config(name="app", compose_files=[]), "dev")
+    with pytest.raises(ConfigError, match="Unknown profile"):
+        resolve_compose_context(Config(name="app", profiles={}), "dev")
 
 
 def test_stack_paused_restart_failure_paths(temp_dir, capsys):
@@ -247,7 +247,7 @@ def test_stack_paused_restart_failure_paths(temp_dir, capsys):
 
 
 def test_image_backup_removes_partial_archive_on_failure(dummy_runtime, temp_dir):
-    cfg = Config("app", compose_files=["docker-compose.yml"])
+    cfg = Config("app", profiles={"default": Profile(file="docker-compose.yml")})
     dummy_runtime.run_compose = MagicMock(return_value=MagicMock(stdout="cid"))
     dummy_runtime.commit_container = MagicMock()
     dummy_runtime.save_image = MagicMock(side_effect=RuntimeError("save failed"))
@@ -267,7 +267,7 @@ def test_seed_rejects_out_of_range_ports(temp_dir, port):
 
 
 def test_volume_backup_uses_collision_timestamp(dummy_runtime, temp_dir):
-    cfg = Config("app", compose_files=["docker-compose.yml"])
+    cfg = Config("app", profiles={"default": Profile(file="docker-compose.yml")})
     fixed = MagicMock()
     fixed.strftime.side_effect = ["20260731_120000", "20260731_120000_123456"]
     existing = cfg.backup_dir / "app.volume.20260731_120000.tar.gz"

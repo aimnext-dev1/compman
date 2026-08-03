@@ -1,7 +1,8 @@
 # Case 06 — AWS Secrets Manager injection
 
-Inject environment variables from AWS Secrets Manager so secrets never live in
-`compman.yml`. This case is simple mode.
+Reference shared secrets from profile `env` values with `${secrets:NAME}`
+markers. compman fetches each secret from AWS Secrets Manager once per command
+invocation and substitutes the value at `key`.
 
 ## `compman.yml`
 
@@ -9,20 +10,26 @@ Inject environment variables from AWS Secrets Manager so secrets never live in
 compman:
   name: my-stack
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
+      env:
+        DATABASE_URL: postgres://${secrets:DB_USER}:${secrets:DB_PASSWORD}@db.example.com
   secrets:
-    DB_URL:
+    DB_USER:
       arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
-      key: dtx/db/url
+      key: dtx/db/user
     DB_PASSWORD:
       arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
       key: dtx/db/password
 ```
 
-- Each entry maps an env var name to `{ arn, key }`.
+- Each entry maps a marker name to `{ arn, key }`.
 - `key` names a JSON key inside the secret's `SecretString`; slash keys like
-  `dtx/db/url` are supported.
+  `dtx/db/user` are supported.
 - The same ARN is fetched once per command invocation.
+- A marker that references an undeclared name fails the command.
+- Secrets are never passed to compose as standalone variables; only `env`
+  values that reference them are injected.
 
 ## Secret shape
 
@@ -30,22 +37,22 @@ The `db` secret's `SecretString` is JSON:
 
 ```json
 {
-  "dtx/db/url": "db.example.com",
+  "dtx/db/user": "admin",
   "dtx/db/password": "s3cret"
 }
 ```
 
 ## `docker-compose.yml`
 
-Consume the injected values with `${VAR}` interpolation:
+The interpolated `DATABASE_URL` reaches the compose process environment, so the
+Compose file consumes it with `${VAR}` interpolation:
 
 ```yaml
 services:
   app:
     image: my-app
     environment:
-      - DB_URL=${DB_URL}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
 ```
 
 ## Credentials

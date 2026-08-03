@@ -7,10 +7,10 @@ use it.
 ## How environment variables reach your containers
 
 The single most common confusion: **declaring variables in `compman.yml` is not
-enough**. Whether they come from a profile `env`, the top-level `secrets` block,
-or the host environment, compman passes the merged values to the `docker
-compose` process environment, and your `docker-compose.yml` must reference them
-with `${VAR}` interpolation:
+enough**. Values come from a profile `env` (with optional `${secrets:NAME}`
+markers) or the host environment. compman passes the interpolated profile `env`
+to the `docker compose` process environment, and your `docker-compose.yml` must
+reference them with `${VAR}` interpolation:
 
 ```yaml
 # docker-compose.yml
@@ -29,13 +29,13 @@ injected value. A plain `environment:` entry without `${...}` stays literal.
 
 | # | Case | Shows |
 |---|------|-------|
-| [01](compman-config/01-simple.md) | Simple mode | `compose` omitted or as a list; one `docker-compose.yml` |
+| [01](compman-config/01-simple.md) | Single profile | One profile, one `docker-compose.yml` |
 | [02](compman-config/02-folder-dirs.md) | Folder and managed dirs | `folder`, `dirs.project` / `backup` / `volume` |
 | [03](compman-config/03-profile.md) | Profile mode basics | `base` + file-only profiles |
 | [04](compman-config/04-profile-env.md) | Profile env injection | Per-profile `env` consumed via `${VAR}` |
 | [05](compman-config/05-deploy.md) | Deploy sources | S3 prefix, S3 archive, HTTP archive |
-| [06](compman-config/06-secrets.md) | AWS Secrets Manager | `secrets` declaration and compose usage |
-| [07](compman-config/07-secrets-profile.md) | Secrets + profiles | Merge with profile `env`; profile wins; `${secrets:NAME}` markers |
+| [06](compman-config/06-secrets.md) | AWS Secrets Manager | `${secrets:NAME}` markers in profile `env` |
+| [07](compman-config/07-secrets-profile.md) | Secrets + profiles | Per-profile `secrets` override; `${secrets:NAME}` markers |
 | [08](compman-config/08-full.md) | Full example | Everything combined |
 
 Run any example from the directory that contains its `compman.yml`:

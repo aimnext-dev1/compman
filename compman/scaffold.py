@@ -20,7 +20,8 @@ def generate(root: Path, project_subfolder: str, s3_path: str, image: str) -> No
             f"  dirs:\n"
             f"    project: {project_subfolder}\n"
             f"  compose:\n"
-            f"    - docker-compose.yml\n"
+            f"    default:\n"
+            f"      file: docker-compose.yml\n"
         )
         compman_yml.write_text(content, encoding="utf-8")
         typer.echo("Created compman.yml:")

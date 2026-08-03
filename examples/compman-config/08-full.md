@@ -33,15 +33,17 @@ compman:
     dev:
       file: docker-compose.dev.yml
       env:
+        DATABASE_URL: postgres://${secrets:DB_USER}:${secrets:DB_PASSWORD}@db.example.com
         LOG_LEVEL: debug
     prod:
       file: docker-compose.prod.yml
       env:
+        DATABASE_URL: postgres://${secrets:DB_USER}:${secrets:DB_PASSWORD}@db.example.com
         LOG_LEVEL: warn
   secrets:
-    DATABASE_URL:
+    DB_USER:
       arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
-      key: dtx/db/url
+      key: dtx/db/user
     DB_PASSWORD:
       arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
       key: dtx/db/password
@@ -57,7 +59,6 @@ services:
       - "8080:80"
     environment:
       - DATABASE_URL=${DATABASE_URL}
-      - DB_PASSWORD=${DB_PASSWORD}
       - LOG_LEVEL=${LOG_LEVEL:-info}
 ```
 
@@ -85,8 +86,7 @@ compman stack down --profile dev --yes
 
 | Variable | Source |
 |----------|--------|
-| `DATABASE_URL` | Secrets Manager (`db` / `dtx/db/url`) |
-| `DB_PASSWORD` | Secrets Manager (`db` / `dtx/db/password`) |
+| `DATABASE_URL` | `dev` profile env (`postgres://...` built from Secrets Manager) |
 | `LOG_LEVEL` | `dev` profile env (`debug`) |
 | `EXTRA_FEATURE` | `docker-compose.dev.yml` |
 

@@ -28,47 +28,42 @@ docs/site/             # dependency-free GitHub Pages homepage
 ```
 
 - `compman init` provides an interactive 3-mode menu (1. Scaffold compman.yml, 2. S3 URL deploy, 3. Test seed project). Direct flags `--scaffold`, `--s3 <url>`, and `--seed` are also supported.
-- Current package version: `1.2.0`.
+- Current package version: `1.4.0`.
 - English is the default UI and documentation language. Korean remains supported through `--lang ko` or `COMPMAN_LANG=ko`; keep Korean text isolated to i18n resources and their tests.
 - Build/running is `uv`-based (`pyproject.toml` has `[tool.uv] package = true`).
 - Python >=3.10; runtime deps: typer, PyYAML, boto3, botocore.
-- Quality gates: 298 pytest tests, 100% statement/branch coverage, Ruff, mypy.
+- Quality gates: 330 pytest tests, 100% statement/branch coverage, Ruff, mypy.
 - CI tests Python 3.10-3.13 on Linux/macOS/Windows and has packaging and Docker/Ministack integration jobs.
 
 ## Config: `compman.yml`
 
-Two modes:
+Profile-based only; there is no simple (list) mode.
 
-1. **Simple** (no profiles, single compose file or list):
-   ```yaml
-   compose:
-     - docker-compose.yml
-   ```
+```yaml
+compose:
+  default:
+    file: docker-compose.yml
+  dev:
+    file: docker-compose.dev.yml
+    env:
+      DATABASE_URL: dev.db.example.com
+```
 
-2. **Profile-based** (per-environment compose + env vars):
-   ```yaml
-   compose:
-     local: docker-compose.local.yml
-     dev:
-       file: docker-compose.dev.yml
-       env:
-         DATABASE_URL: dev.db.example.com
-   ```
-
-- `compose` key omitted -> defaults to `docker-compose.yml`.
+- `compose` is required and must be a mapping of profiles; omitting it or using a
+  list/string raises `ConfigError`. Breaking change vs. pre-1.4.0 configs.
 - Optional `folder` key -> compose files live under that relative subdirectory.
 - `folder` and `dirs.*` are resolved relative to the config directory. Managed backup/volume/project paths may not escape it; destructive managed directories may not equal the config root.
 - Optional `base` key -> prepended as `-f` before profile compose files.
 - Profile `file` is optional: omitted -> fallback to `base` or `docker-compose.yml`.
   Useful when all profiles share one compose file with different env vars only.
-- Optional top-level `secrets` key -> injects environment variables from AWS
-  Secrets Manager. Each entry maps an env var name to `{ arn, key }`; the secret's
-  JSON `SecretString` is fetched lazily when a compose context is built and the
-  referenced `key` is used. Secrets merge with the profile `env` (profile wins);
-  the same ARN is fetched once per command invocation. Profile `env` values may
-  also reference declared secrets with `${secrets:NAME}` markers (partial
-  interpolation supported; undeclared names fail). System environment variables
-  are inherited by docker compose directly and need no config entry.
+- Top-level `secrets` maps a marker name to `{ arn, key }`. Secrets are injected
+  only through `${secrets:NAME}` markers inside profile `env` values; they are
+  never passed to compose as standalone variables. A profile `secrets` block
+  merges over the top-level one (profile wins on a name clash). Each ARN is
+  fetched once per command invocation, lazily when a compose context is built.
+  Partial interpolation is supported; undeclared marker names fail. System
+  environment variables are inherited by docker compose directly and need no
+  config entry.
 
 ## Runtime
 
@@ -83,7 +78,7 @@ Two modes:
 - Top-level `ps` lists containers only in the selected compman project; `-a`/`--all` includes stopped containers.
 - Top-level `stats` prints one resource snapshot for running containers in the selected project; `-f`/`--follow` streams continuously.
 - `stack down` requires `--yes` confirmation (`typer.confirm`).
-- Profile mode defaults to the first configured profile when none is supplied; an explicit name must be valid. Simple mode rejects a profile argument.
+- The default profile is the first configured profile when none is supplied; an explicit name must be valid (unknown names fail).
 - `image backup` defaults to committing runtime container state; `--source-image` flag saves the original image instead.
 - `volume backup/restore` optional `--no-stop` flag skips stack teardown.
 - `volume backup` and `image backup` accept `-z`/`--level` from 1 to 9; the default gzip compression level is 6.

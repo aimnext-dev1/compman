@@ -13,7 +13,8 @@ compman:
   dirs:
     project: project
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
 ```
 
 - `dirs.project` names the managed directory the source is swapped into

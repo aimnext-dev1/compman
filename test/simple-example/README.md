@@ -1,6 +1,6 @@
 # simple-example
 
-`compman` simple Compose-file list example — Compose up without profiles.
+`compman` single-profile example — Compose up without profiles.
 
 ## Structure
 
@@ -22,25 +22,31 @@ compman stack down --yes
 
 ## Explanation
 
-For a simple setup that does not need profiles, specify `compose` as a list.
-Only Compose files are passed with `-f`, without `base` or per-profile environment variables.
+`compose` is required and must be a mapping of profiles. A single profile
+(`default`) is enough when you do not need per-environment settings. `compose`
+is never a plain list; omitting it or using a list fails with a `ConfigError`.
 
 ```yaml
 compose:
-  - docker-compose.yml
+  default:
+    file: docker-compose.yml
 ```
 
-If the `compose` key is omitted entirely, it defaults to `docker-compose.yml`.
+With one configured profile, commands run without a profile argument and
+select it automatically.
 
-Simple mode also supports the top-level `secrets` key, which injects environment
-variables from AWS Secrets Manager (same syntax as profile mode). Reference only —
-running this requires a real secret:
+The top-level `secrets` key is supported the same way as in multi-profile
+configs: profile `env` values reference secret values with `${secrets:NAME}`
+markers. Reference only — running this requires a real secret:
 
 ```yaml
 compman:
   name: my-app
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
+      env:
+        DATABASE_URL: postgres://${secrets:DB_URL}@db.example.com
   secrets:
     DB_URL:
       arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db

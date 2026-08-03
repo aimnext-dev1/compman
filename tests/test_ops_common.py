@@ -6,14 +6,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from compman.config import Config
+from compman.config import Config, Profile
 from compman.docker import ComposeContext
 from compman.errors import CommandError
 from compman.ops import common
 
 
 def test_select_backup_timestamp_single(temp_dir: pathlib.Path):
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     backup_dir = cfg.backup_dir
     backup_dir.mkdir(parents=True, exist_ok=True)
 
@@ -35,13 +35,13 @@ def test_stack_paused_restores_after_failure(temp_dir: pathlib.Path):
 
 
 def test_select_backup_timestamp_none(temp_dir: pathlib.Path):
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     with pytest.raises(CommandError):
         common.select_backup_timestamp(cfg, "volume")
 
 
 def test_select_backup_timestamp_empty_dir(temp_dir: pathlib.Path):
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     cfg.backup_dir.mkdir(parents=True, exist_ok=True)
     with pytest.raises(CommandError):
         common.select_backup_timestamp(cfg, "volume")

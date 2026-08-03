@@ -133,7 +133,7 @@ def test_cli_deploy(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
 
 
 def test_cli_update(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
         res = runner.invoke(app, ["update"])
@@ -142,7 +142,7 @@ def test_cli_update(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
 
 def test_cli_project_ps_and_stats(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "compman.yml").write_text(
-        "compman:\n  name: app\n  compose:\n    - docker-compose.yml\n",
+        "compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n",
         encoding="utf-8",
     )
     (temp_dir / "docker-compose.yml").touch()
@@ -187,7 +187,7 @@ def test_ps_stats_help_and_korean_translations(runner: CliRunner):
 
 
 def test_cli_stack_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
         res_up = runner.invoke(app, ["stack", "up"])
@@ -201,7 +201,7 @@ def test_cli_stack_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib.
 
 
 def test_cli_service_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
         for cmd in ["start", "stop", "restart"]:
@@ -219,7 +219,7 @@ def test_cli_service_commands(runner: CliRunner, dummy_runtime, temp_dir: pathli
 
 
 def test_cli_volume_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.ops.volume.backup") as backup, patch("compman.ops.volume.restore"), patch("compman.ops.volume.pull"), patch("compman.ops.volume.push"):
         res_bak = runner.invoke(app, ["volume", "backup", "--no-stop", "-z", "2"])
@@ -240,7 +240,7 @@ def test_cli_volume_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib
 
 
 def test_cli_image_commands(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.ops.image.backup") as backup, patch("compman.ops.image.restore"):
         res_bak = runner.invoke(app, ["image", "backup", "--source-image", "--level", "4"])
@@ -505,7 +505,7 @@ def test_cli_init_s3_interactive(runner: CliRunner, temp_dir: pathlib.Path):
 
 
 def test_cli_update_deploy_path(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  deploy: s3://b/k.tar.gz\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  deploy: s3://b/k.tar.gz\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime), patch("compman.cli._deploy") as deploy:
         res = runner.invoke(app, ["update"])
@@ -516,7 +516,7 @@ def test_cli_update_deploy_path(runner: CliRunner, dummy_runtime, temp_dir: path
 
 
 def test_cli_stack_down_no_yes_abort(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
         res = runner.invoke(app, ["stack", "down"], input="y\n")
@@ -588,7 +588,7 @@ def test_cli_lang_callback_set(runner: CliRunner):
 
 
 def test_cli_load_runtime_error(runner: CliRunner, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     with patch("compman.docker.detect_runtime", side_effect=RuntimeError("no runtime")):
         res = runner.invoke(app, ["stack", "up"])
         assert res.exit_code != 0
@@ -627,7 +627,7 @@ def test_run_upgrade_command_replaces_invalid_utf8_from_real_subprocess():
 
 
 def test_cli_service_no_services(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n", encoding="utf-8")
     (temp_dir / "docker-compose.yml").touch()
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
         for cmd in ["start", "stop", "restart"]:

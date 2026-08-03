@@ -24,7 +24,7 @@ def test_ensure_runtime_ready_prompts_to_start_docker_desktop(dummy_runtime):
 
 def test_stack_up_checks_readiness_immediately_before_compose(dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "docker-compose.yml").touch()
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     calls: list[str] = []
     original_passthru = dummy_runtime.passthru_compose
 
@@ -46,7 +46,7 @@ def test_stack_up_checks_readiness_immediately_before_compose(dummy_runtime, tem
 
 def test_stack_update_checks_readiness_immediately_before_compose(dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "docker-compose.yml").touch()
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     calls: list[str] = []
     original_passthru = dummy_runtime.passthru_compose
 
@@ -68,7 +68,7 @@ def test_stack_update_checks_readiness_immediately_before_compose(dummy_runtime,
 
 def test_stack_up_simple(dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "docker-compose.yml").touch()
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     stack.up(dummy_runtime, cfg)
     assert len(dummy_runtime.compose_runs) == 1
     assert dummy_runtime.compose_runs[0]["args"] == ["up", "-d", "--force-recreate"]
@@ -108,7 +108,7 @@ def test_stack_up_profiles_default(dummy_runtime, temp_dir: pathlib.Path):
 
 def test_stack_down(dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "docker-compose.yml").touch()
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     dummy_runtime.ensure_ready_for_start = MagicMock()
     stack.down(dummy_runtime, cfg)
     assert len(dummy_runtime.compose_runs) == 1
@@ -119,7 +119,7 @@ def test_stack_down(dummy_runtime, temp_dir: pathlib.Path):
 def test_stack_down_not_running(dummy_runtime, temp_dir: pathlib.Path):
     dummy_runtime.ensure_ready_for_start = MagicMock()
     dummy_runtime.stack_exists = MagicMock(return_value=False)
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     stack.down(dummy_runtime, cfg)
     assert len(dummy_runtime.compose_runs) == 0
     dummy_runtime.ensure_ready_for_start.assert_not_called()
@@ -127,7 +127,7 @@ def test_stack_down_not_running(dummy_runtime, temp_dir: pathlib.Path):
 
 def test_stack_update_simple(dummy_runtime, temp_dir: pathlib.Path):
     (temp_dir / "docker-compose.yml").touch()
-    cfg = Config(name="my_stack", compose_files=["docker-compose.yml"])
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
     stack.update(dummy_runtime, cfg)
     assert len(dummy_runtime.compose_runs) == 1
     assert dummy_runtime.compose_runs[0]["args"] == ["up", "-d", "--build", "--force-recreate"]

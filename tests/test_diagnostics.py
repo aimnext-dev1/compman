@@ -14,7 +14,8 @@ def write_simple_project(path: Path) -> None:
         "compman:\n"
         "  name: test-app\n"
         "  compose:\n"
-        "    - docker-compose.yml\n",
+        "    default:\n"
+        "      file: docker-compose.yml\n",
         encoding="utf-8",
     )
     (path / "docker-compose.yml").write_text("services: {}\n", encoding="utf-8")
@@ -72,7 +73,8 @@ def test_secrets_check_reports_missing_credentials(tmp_path, monkeypatch, dummy_
     (tmp_path / "compman.yml").write_text(
         "compman:\n"
         "  compose:\n"
-        "    - docker-compose.yml\n"
+        "    default:\n"
+        "      file: docker-compose.yml\n"
         "  secrets:\n"
         "    DB_URL:\n"
         "      arn: arn:aws:secretsmanager:ap-northeast-2:123:secret:app\n"
@@ -96,7 +98,8 @@ def test_secrets_check_ok_with_credentials_and_region(tmp_path, monkeypatch, dum
     (tmp_path / "compman.yml").write_text(
         "compman:\n"
         "  compose:\n"
-        "    - docker-compose.yml\n"
+        "    default:\n"
+        "      file: docker-compose.yml\n"
         "  secrets:\n"
         "    DB_URL:\n"
         "      arn: arn:aws:secretsmanager:ap-northeast-2:123:secret:app\n"
@@ -132,7 +135,8 @@ def test_invalid_or_missing_config_is_a_failed_required_check(tmp_path, monkeypa
 
 def test_missing_compose_file_is_a_failed_required_check(tmp_path, monkeypatch, dummy_runtime):
     (tmp_path / "compman.yml").write_text(
-        "compman:\n  compose:\n    - docker-compose.yml\n", encoding="utf-8"
+        "compman:\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
@@ -197,7 +201,8 @@ def test_nested_missing_managed_directories_use_nearest_existing_ancestor(
         "compman:\n"
         "  name: test-app\n"
         "  compose:\n"
-        "    - docker-compose.yml\n"
+        "    default:\n"
+        "      file: docker-compose.yml\n"
         "  dirs:\n"
         "    backup: writable/missing/backup\n"
         "    volume: writable/missing/volume\n"
@@ -350,7 +355,7 @@ def test_collect_status_uses_first_profile_by_default(tmp_path, dummy_runtime, m
     assert report.compose_files == (str(tmp_path / "docker-compose.dev.yml"),)
 
 
-def test_collect_status_rejects_profile_for_simple_config(tmp_path, dummy_runtime, monkeypatch):
+def test_collect_status_rejects_unknown_profile(tmp_path, dummy_runtime, monkeypatch):
     write_simple_project(tmp_path)
     monkeypatch.setattr("compman.diagnostics.detect_runtime", lambda: dummy_runtime)
 
@@ -358,7 +363,7 @@ def test_collect_status_rejects_profile_for_simple_config(tmp_path, dummy_runtim
 
     assert report.ok is False
     assert report.error is not None
-    assert "No profiles configured" in report.error
+    assert "Unknown profile" in report.error
 
 
 def test_collect_status_reports_invalid_config(tmp_path):

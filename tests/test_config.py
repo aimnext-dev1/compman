@@ -34,7 +34,7 @@ def test_config_properties(temp_dir: pathlib.Path):
     assert cfg.deploy_dir == temp_dir / "proj"
 
 
-def test_load_config_simple(temp_dir: pathlib.Path):
+def test_load_config_simple_list_rejected(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
     config_file.write_text(
         "compman:\n"
@@ -43,10 +43,15 @@ def test_load_config_simple(temp_dir: pathlib.Path):
         "    - docker-compose.yml\n",
         encoding="utf-8",
     )
-    cfg = load_config(str(config_file))
-    assert cfg.name == "test-app"
-    assert not cfg.has_profiles()
-    assert cfg.compose_files == ["docker-compose.yml"]
+    with pytest.raises(ConfigError, match="compose"):
+        load_config(str(config_file))
+
+
+def test_load_config_compose_omitted_rejected(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text("compman:\n  name: test-app\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="compose"):
+        load_config(str(config_file))
 
 
 def test_load_config_profiles(temp_dir: pathlib.Path):
@@ -54,8 +59,8 @@ def test_load_config_profiles(temp_dir: pathlib.Path):
     config_file.write_text(
         "compman:\n"
         "  name: test-app\n"
-        "  base: docker-compose.base.yml\n"
         "  compose:\n"
+        "    base: docker-compose.base.yml\n"
         "    dev:\n"
         "      file: docker-compose.dev.yml\n"
         "      env:\n"
@@ -63,10 +68,10 @@ def test_load_config_profiles(temp_dir: pathlib.Path):
         encoding="utf-8",
     )
     cfg = load_config(str(config_file))
-    assert cfg.has_profiles()
     assert "dev" in cfg.profiles
     assert cfg.profiles["dev"].file == "docker-compose.dev.yml"
     assert cfg.profiles["dev"].env == {"FOO": "BAR"}
+    assert cfg.compose_base == "docker-compose.base.yml"
 
 
 def test_load_config_single_compose_str(temp_dir: pathlib.Path):
@@ -115,14 +120,20 @@ def test_load_config_missing_root_key(temp_dir: pathlib.Path):
 
 def test_load_config_default_name(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
-    config_file.write_text("compman:\n  name: default-test\n", encoding="utf-8")
+    config_file.write_text(
+        "compman:\n  name: default-test\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
     cfg = load_config(str(config_file))
     assert cfg.name == "default-test"
 
 
 def test_load_config_deploy_not_string(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
-    config_file.write_text("compman:\n  name: app\n  deploy: 123\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    config_file.write_text(
+        "compman:\n  name: app\n  deploy: 123\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
     with pytest.raises(ConfigError):
         load_config(str(config_file))
 
@@ -154,13 +165,15 @@ def test_load_config_invalid_nested_types(temp_dir: pathlib.Path):
     with pytest.raises(ConfigError, match="env"):
         load_config(str(config_file))
 
-
 def test_load_config_no_name_uses_cwd(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
-    config_file.write_text("compman:\n  compose:\n    - docker-compose.yml\n", encoding="utf-8")
+    config_file.write_text(
+        "compman:\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
     cfg = load_config(str(config_file))
     assert cfg.name == sanitize_project_name(temp_dir.name)
-    assert cfg.compose_files == ["docker-compose.yml"]
+    assert cfg.profiles["default"].file == "docker-compose.yml"
 
 
 def test_load_config_secrets_valid(temp_dir: pathlib.Path):
@@ -169,7 +182,8 @@ def test_load_config_secrets_valid(temp_dir: pathlib.Path):
         "compman:\n"
         "  name: app\n"
         "  compose:\n"
-        "    - docker-compose.yml\n"
+        "    default:\n"
+        "      file: docker-compose.yml\n"
         "  secrets:\n"
         "    DB_URL:\n"
         "      arn: arn:aws:secretsmanager:ap-northeast-2:123:secret:app\n"
@@ -185,10 +199,30 @@ def test_load_config_secrets_valid(temp_dir: pathlib.Path):
     assert cfg.secrets["API_KEY"].key == "api-key"
 
 
+def test_load_config_profile_secrets_valid(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n"
+        "  name: app\n"
+        "  compose:\n"
+        "    dev:\n"
+        "      file: docker-compose.dev.yml\n"
+        "      secrets:\n"
+        "        DB_PASS:\n"
+        "          arn: arn:aws:secretsmanager:ap-northeast-2:123:secret:db\n"
+        "          key: dtx/db/password\n",
+        encoding="utf-8",
+    )
+    cfg = load_config(str(config_file))
+    assert cfg.profiles["dev"].secrets["DB_PASS"].arn.endswith("secret:db")
+    assert cfg.profiles["dev"].secrets["DB_PASS"].key == "dtx/db/password"
+
+
 def test_load_config_secrets_not_mapping(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
     config_file.write_text(
-        "compman:\n  name: app\n  secrets: []\n", encoding="utf-8"
+        "compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n  secrets: []\n",
+        encoding="utf-8",
     )
     with pytest.raises(ConfigError, match="secrets"):
         load_config(str(config_file))
@@ -197,17 +231,27 @@ def test_load_config_secrets_not_mapping(temp_dir: pathlib.Path):
 def test_load_config_secrets_value_missing_arn_key(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
     config_file.write_text(
-        "compman:\n  name: app\n  secrets:\n    DB_URL: arn:foo\n",
+        "compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n  secrets:\n    DB_URL: arn:foo\n",
         encoding="utf-8",
     )
     with pytest.raises(ConfigError, match="DB_URL"):
         load_config(str(config_file))
 
     config_file.write_text(
-        "compman:\n  name: app\n  secrets:\n    DB_URL:\n      arn: foo\n",
+        "compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n  secrets:\n    DB_URL:\n      arn: foo\n",
         encoding="utf-8",
     )
     with pytest.raises(ConfigError, match="key"):
+        load_config(str(config_file))
+
+
+def test_load_config_profile_secrets_not_mapping(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n  name: app\n  compose:\n    dev:\n      secrets: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="secrets"):
         load_config(str(config_file))
 
 
@@ -222,7 +266,10 @@ def test_load_config_resolves_paths_from_config_directory(tmp_path: pathlib.Path
         "  dirs:\n"
         "    backup: backups\n"
         "    volume: volumes\n"
-        "    project: source\n",
+        "    project: source\n"
+        "  compose:\n"
+        "    default:\n"
+        "      file: docker-compose.yml\n",
         encoding="utf-8",
     )
     cfg = load_config(str(config_file))
@@ -250,7 +297,11 @@ def test_load_config_rejects_managed_paths_outside_project(
     project = tmp_path / "project"
     project.mkdir()
     config_file = project / "compman.yml"
-    config_file.write_text(f"compman:\n  name: app\n  {yaml_value}\n", encoding="utf-8")
+    config_file.write_text(
+        f"compman:\n  name: app\n  {yaml_value}\n"
+        "  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
 
     with pytest.raises(ConfigError, match=field):
         load_config(str(config_file))

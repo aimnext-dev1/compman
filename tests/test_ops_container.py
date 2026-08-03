@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from compman.config import Config
+from compman.config import Config, Profile
 from compman.i18n import set_lang
 from compman.ops import container
 
@@ -13,7 +13,7 @@ def config(temp_dir):
     return Config(
         name="my_stack",
         root_dir=temp_dir,
-        compose_files=["docker-compose.yml"],
+        profiles={"default": Profile(file="docker-compose.yml")},
     )
 
 

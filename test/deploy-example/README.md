@@ -26,7 +26,8 @@ compman:
   name: <cwd dirname>
   deploy: s3://<path-used>     # the next deploy works without --path
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
 ```
 ```yaml
 # docker-compose.yml
@@ -55,7 +56,7 @@ Running containers are not touched.
 ## Usage
 
 ```bash
-compman init                        # create a simple compman.yml (name = cwd dirname; full options are commented)
+compman init                        # create a single-profile compman.yml (name = cwd dirname; full options are commented)
 compman deploy                     # fetch from the deploy path in compman.yml
 compman deploy --path s3://...     # override the path
 compman deploy --build --tag myapp # fetch, then docker build -t myapp .

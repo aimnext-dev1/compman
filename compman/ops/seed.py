@@ -93,7 +93,8 @@ def generate_seed(
         "compman:\n"
         f"  name: {project_name}\n"
         "  compose:\n"
-        "    - docker-compose.yml\n"
+        "    default:\n"
+        "      file: docker-compose.yml\n"
     )
     compman_yml.write_text(compman_content, encoding="utf-8")
 

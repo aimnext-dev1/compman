@@ -100,7 +100,7 @@ def collect_status(config_path: str | None, profile: str | None = None) -> Statu
         return StatusReport(False, None, None, None, (), (), str(exc))
 
     effective_profile = profile
-    if config.has_profiles() and effective_profile is None:
+    if effective_profile is None:
         effective_profile = next(iter(config.profiles))
     try:
         context = resolve_compose_context(config, effective_profile)

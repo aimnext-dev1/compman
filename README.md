@@ -13,7 +13,7 @@ If every convenient option has been answered with "not allowed," `compman` is fo
 ## Key features
 
 - Automatically detects Docker Compose and Podman Compose runtimes
-- Supports a single Compose file and environment-specific profile configurations
+- Uses a profile-based `compose` configuration with per-profile env vars and secrets
 - Lists and monitors only the current project's containers with `ps` and `stats`
 - Deploys from an S3 prefix/archive or a public HTTP/HTTPS `.tar.gz`/`.tgz`/`.zip` archive
 - Automatically creates `compman.yml` and `docker-compose.yml` when deploying into an empty directory
@@ -156,18 +156,21 @@ Put all configuration under the `compman` key in `compman.yml`.
 
 For case-by-case examples, see [`examples/compman-config/`](examples/compman-config/) (index in [`examples/README.md`](examples/README.md)).
 
-### Single Compose configuration
+### Profile-based Compose configuration
+
+`compose` is required and must be a mapping of profiles. A single profile is
+enough for one Compose file:
 
 ```yaml
 compman:
   name: my-stack
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
 ```
 
-When `compose` is omitted, `docker-compose.yml` is used. When multiple files are listed, they are passed as `-f` options in declaration order.
-
-### Environment-specific profile configuration
+Multiple profiles select a Compose file and environment variables per
+environment:
 
 ```yaml
 compman:
@@ -206,7 +209,8 @@ compman:
     backup: backup
     volume: volume
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
 ```
 
 - `folder`: Relative subdirectory containing Compose files
@@ -219,16 +223,17 @@ Managed paths cannot escape the directory containing `compman.yml`. `--path` ove
 
 ### Environment variables from AWS Secrets Manager
 
-Use the top-level `secrets` key to inject environment variables from AWS Secrets
-Manager. Each entry maps an env var name to `{ arn, key }`. At compose-command
-time compman fetches the secret's JSON `SecretString` and uses the value at
-`key`.
+Use the top-level `secrets` key to provide shared secret values. Each entry maps
+a name to `{ arn, key }`. Profile `env` values reference these names with
+`${secrets:NAME}` markers; compman fetches the secret's JSON `SecretString` and
+substitutes the value at `key` when a compose context is built.
 
 ```yaml
 compman:
   name: my-stack
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
   secrets:
     DB_URL:
       arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
@@ -238,13 +243,14 @@ compman:
       key: dtx/db/password
 ```
 
+- Secrets are injected only where a profile `env` value contains a
+  `${secrets:NAME}` marker; they are never passed to compose as standalone
+  variables. A profile `secrets` block merges over the top-level one (profile
+  wins on a name clash).
 - The `key` names the JSON key inside the secret (slash keys like `dtx/db/url`
-  are supported); the env var name on the left is the resulting variable.
+  are supported).
 - The same ARN is fetched once per command invocation, even when multiple env
   vars reference it.
-- Secrets are merged with the profile `env`; a profile value overrides a secret
-  of the same name. System environment variables are inherited by docker compose
-  as usual and need no configuration here.
 - A missing secret, unresolvable region, or invalid secret body fails the command
   with a clear error. Use the standard AWS credential and region environment
   variables; `compman doctor` reports a warning when secrets are configured but
@@ -276,14 +282,13 @@ compman:
       key: dtx/db/password
 ```
 
-The interpolation happens before the profile `env` is merged with the resolved
-secrets, so a plain (marker-free) profile value still overrides a secret of the
-same name. A marker that references an undeclared name fails the command with a
-clear error.
+A marker that references an undeclared name fails the command with a clear
+error.
 
 **Using the injected variables:** declaring them is not enough. compman passes
-the merged values into the `docker compose` process environment, so
-`docker-compose.yml` must reference them with `${VAR}` interpolation:
+the interpolated profile `env` values into the `docker compose` process
+environment, so `docker-compose.yml` must reference them with `${VAR}`
+interpolation:
 
 ```yaml
 # docker-compose.yml

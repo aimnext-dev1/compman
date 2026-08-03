@@ -28,6 +28,7 @@ def sanitize_project_name(name: str) -> str:
 class Profile:
     file: str | None = None
     env: dict[str, str] = field(default_factory=dict)
+    secrets: dict[str, SecretRef] = field(default_factory=dict)
 
 
 @dataclass
@@ -46,7 +47,6 @@ class Config:
         default_factory=lambda: {"backup": "backup", "volume": "volume", "project": "project"}
     )
     compose_base: str | None = None
-    compose_files: list[str] | None = None
     profiles: dict[str, Profile] = field(default_factory=dict)
     secrets: dict[str, SecretRef] = field(default_factory=dict)
     deploy: str | None = None
@@ -76,11 +76,23 @@ class Config:
             )
         return target
 
-    def has_profiles(self) -> bool:
-        return bool(self.profiles)
 
-    def has_simple_files(self) -> bool:
-        return self.compose_files is not None
+def _parse_secrets(raw: object, field_name: str) -> dict[str, SecretRef]:
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ConfigError(f"'{field_name}' must be a mapping.")
+    secrets: dict[str, SecretRef] = {}
+    for env_name, raw_ref in raw.items():
+        if not isinstance(raw_ref, dict) or not isinstance(raw_ref.get("arn"), str):
+            raise ConfigError(
+                f"'{field_name}.{env_name}' must be a mapping with an 'arn' string."
+            )
+        raw_key = raw_ref.get("key")
+        if not isinstance(raw_key, str) or not raw_key:
+            raise ConfigError(f"'{field_name}.{env_name}' is missing a 'key' string.")
+        secrets[str(env_name)] = SecretRef(arn=str(raw_ref["arn"]), key=raw_key)
+    return secrets
 
 
 def load_config(config_path: str | None = None) -> Config:
@@ -115,37 +127,37 @@ def load_config(config_path: str | None = None) -> Config:
     }
 
     compose_base: str | None = None
-    compose_files: list[str] | None = None
     profiles: dict[str, Profile] = {}
 
     raw_compose = root.get("compose")
     if raw_compose is None:
-        compose_files = ["docker-compose.yml"]
-    elif isinstance(raw_compose, list):
-        compose_files = [str(f) for f in raw_compose]
-    elif isinstance(raw_compose, dict):
-        for key, val in raw_compose.items():
-            if key == "base":
-                compose_base = str(val)
-            elif isinstance(val, str):
-                profiles[key] = Profile(file=str(val))
-            elif isinstance(val, dict):
-                f = val.get("file")
-                raw_env = val.get("env", {})
-                if not isinstance(raw_env, dict):
-                    raise ConfigError(f"'compose.{key}.env' must be a mapping.")
-                profiles[key] = Profile(
-                    file=str(f) if f else None,
-                    env={str(k): str(v) for k, v in raw_env.items()},
-                )
-            else:
-                raise ConfigError(
-                    f"Invalid value for 'compose.{key}': expected string or object."
-                )
-    else:
         raise ConfigError(
-            "'compose' must be a list, dict, or omitted."
+            "'compose' is required and must be a mapping of profiles."
         )
+    if not isinstance(raw_compose, dict):
+        raise ConfigError(
+            "'compose' must be a mapping of profiles, e.g. "
+            "'compose:\n  default:\n    file: docker-compose.yml'."
+        )
+    for key, val in raw_compose.items():
+        if key == "base":
+            compose_base = str(val)
+        elif isinstance(val, str):
+            profiles[key] = Profile(file=str(val))
+        elif isinstance(val, dict):
+            f = val.get("file")
+            raw_env = val.get("env", {})
+            if not isinstance(raw_env, dict):
+                raise ConfigError(f"'compose.{key}.env' must be a mapping.")
+            profiles[key] = Profile(
+                file=str(f) if f else None,
+                env={str(k): str(v) for k, v in raw_env.items()},
+                secrets=_parse_secrets(val.get("secrets"), f"compose.{key}.secrets"),
+            )
+        else:
+            raise ConfigError(
+                f"Invalid value for 'compose.{key}': expected string or object."
+            )
 
     raw_deploy = root.get("deploy")
     if raw_deploy is not None and not isinstance(raw_deploy, str):
@@ -154,16 +166,7 @@ def load_config(config_path: str | None = None) -> Config:
     raw_secrets = root.get("secrets", {})
     if not isinstance(raw_secrets, dict):
         raise ConfigError("'secrets' must be a mapping.")
-    secrets: dict[str, SecretRef] = {}
-    for env_name, raw_ref in raw_secrets.items():
-        if not isinstance(raw_ref, dict) or not isinstance(raw_ref.get("arn"), str):
-            raise ConfigError(
-                f"'secrets.{env_name}' must be a mapping with an 'arn' string."
-            )
-        raw_key = raw_ref.get("key")
-        if not isinstance(raw_key, str) or not raw_key:
-            raise ConfigError(f"'secrets.{env_name}' is missing a 'key' string.")
-        secrets[str(env_name)] = SecretRef(arn=str(raw_ref["arn"]), key=raw_key)
+    secrets = _parse_secrets(raw_secrets, "secrets")
 
     config = Config(
         name=name,
@@ -172,7 +175,6 @@ def load_config(config_path: str | None = None) -> Config:
         folder=folder,
         dirs=dirs,
         compose_base=compose_base,
-        compose_files=compose_files,
         profiles=profiles,
         secrets=secrets,
         deploy=raw_deploy,
@@ -191,17 +193,15 @@ def dump_default_config(name: str) -> str:
     return f"""compman:
   name: {sanitized}
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
   # --- optional features ---
   # folder: my-project             # _project/ subdirectory
   # deploy: s3://bucket/app        # S3 or HTTP archive source (--path overrides)
   # dirs:
   #   backup: backup
   #   volume: volume
-  # profile mode (alternative to the compose list above):
-  # compose:
-  #   base: docker-compose.yml
-  #   local: docker-compose.local.yml
+  # per-profile env (consumed via ${{VAR}} in compose files):
   #   dev:
   #     file: docker-compose.dev.yml
   #     env:
@@ -210,4 +210,10 @@ def dump_default_config(name: str) -> str:
   #     file: docker-compose.prod.yml
   #     env:
   #       DATABASE_URL: prod.example.com:5432
+  # shared secrets (common to all profiles):
+  # secrets:
+  #   DB_URL:
+  #     arn: arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:db
+  #     key: dtx/db/url
+  # profile env can reference secrets: ${{secrets:DB_URL}}
 """

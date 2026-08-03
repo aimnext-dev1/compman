@@ -22,26 +22,7 @@ from compman.docker import (
     detect_runtime,
     resolve_compose_context,
     resolve_compose_files,
-    resolve_simple_files,
 )
-
-
-def test_resolve_simple_files(temp_dir: pathlib.Path):
-    comp_file = temp_dir / "docker-compose.yml"
-    comp_file.touch()
-    cfg = Config(name="test", compose_files=["docker-compose.yml"])
-    files = resolve_simple_files(cfg)
-    assert len(files) == 1
-    assert files[0].name == "docker-compose.yml"
-
-    # Missing file
-    cfg_missing = Config(name="test", compose_files=["nonexistent.yml"])
-    with pytest.raises(ConfigError):
-        resolve_simple_files(cfg_missing)
-
-    cfg_none = Config(name="test", compose_files=None)
-    with pytest.raises(ConfigError):
-        resolve_simple_files(cfg_none)
 
 
 def test_resolve_compose_files(temp_dir: pathlib.Path):
@@ -58,11 +39,6 @@ def test_resolve_compose_files(temp_dir: pathlib.Path):
     files, env = resolve_compose_files(cfg, "dev")
     assert len(files) == 2
     assert env == {"ENV": "DEV"}
-
-    # No profiles configured
-    cfg_no_prof = Config(name="test", compose_files=["docker-compose.yml"])
-    with pytest.raises(ConfigError):
-        resolve_compose_files(cfg_no_prof, "dev")
 
     # Unknown profile
     with pytest.raises(ConfigError):
@@ -685,8 +661,10 @@ def test_ensure_ready_for_start_times_out_before_poll_when_no_time_remains(monke
     run_cli.assert_called_once_with(["info"], capture=True, check=False, timeout=5.0)
 
 
-@patch("compman.docker.resolve_secrets", return_value={"DB_URL": "sec", "SHARED": "sec"})
-def test_resolve_compose_context_merges_secrets_profile_env_wins(mock_resolve, temp_dir: pathlib.Path):
+@patch("compman.docker.resolve_secrets")
+def test_resolve_compose_context_secrets_not_injected_without_markers(
+    mock_resolve, temp_dir: pathlib.Path
+):
     (temp_dir / "docker-compose.dev.yml").touch()
     cfg = Config(
         name="test",
@@ -697,22 +675,25 @@ def test_resolve_compose_context_merges_secrets_profile_env_wins(mock_resolve, t
         secrets={"DB_URL": SecretRef(arn="arn:app", key="url")},
     )
     context = resolve_compose_context(cfg, "dev")
-    assert context.env == {"DB_URL": "sec", "SHARED": "prof"}
-    mock_resolve.assert_called_once_with(cfg.secrets)
+    assert context.env == {"SHARED": "prof"}
+    mock_resolve.assert_not_called()
 
 
 @patch("compman.docker.resolve_secrets", return_value={"DB_URL": "sec"})
-def test_resolve_compose_context_secrets_simple_mode(mock_resolve, temp_dir: pathlib.Path):
+def test_resolve_compose_context_default_profile(mock_resolve, temp_dir: pathlib.Path):
     (temp_dir / "docker-compose.yml").touch()
     cfg = Config(
         name="test",
         root_dir=temp_dir,
         source_path=temp_dir / "compman.yml",
-        compose_files=["docker-compose.yml"],
+        profiles={
+            "default": Profile(file="docker-compose.yml", env={"DATABASE_URL": "${secrets:DB_URL}"})
+        },
         secrets={"DB_URL": SecretRef(arn="arn:app", key="url")},
     )
     context = resolve_compose_context(cfg)
-    assert context.env == {"DB_URL": "sec"}
+    assert context.env == {"DATABASE_URL": "sec"}
+    mock_resolve.assert_called_once_with(cfg.secrets)
 
 
 @patch("compman.docker.resolve_secrets", return_value={"DB_USER": "admin", "DB_PASS": "s3cret"})
@@ -734,4 +715,35 @@ def test_resolve_compose_context_interpolates_secrets_in_profile_env(
         secrets={"DB_USER": SecretRef(arn="arn:app", key="user"), "DB_PASS": SecretRef(arn="arn:app", key="pass")},
     )
     context = resolve_compose_context(cfg, "dev")
-    assert context.env == {"DATABASE_URL": "postgres://admin:s3cret@host", "DB_USER": "admin", "DB_PASS": "s3cret"}
+    assert context.env == {"DATABASE_URL": "postgres://admin:s3cret@host"}
+    mock_resolve.assert_called_once_with(cfg.secrets)
+
+
+@patch(
+    "compman.docker.resolve_secrets",
+    return_value={"DB_USER": "common", "DB_PASS": "profile-pass"},
+)
+def test_resolve_compose_context_profile_secrets_override_common(
+    mock_resolve, temp_dir: pathlib.Path
+):
+    (temp_dir / "docker-compose.dev.yml").touch()
+    cfg = Config(
+        name="test",
+        root_dir=temp_dir,
+        source_path=temp_dir / "compman.yml",
+        profiles={
+            "dev": Profile(
+                file="docker-compose.dev.yml",
+                env={"DATABASE_URL": "postgres://${secrets:DB_USER}:${secrets:DB_PASS}@host"},
+                secrets={"DB_PASS": SecretRef(arn="arn:prof", key="pass")},
+            )
+        },
+        secrets={"DB_USER": SecretRef(arn="arn:common", key="user"), "DB_PASS": SecretRef(arn="arn:common", key="pass")},
+    )
+    context = resolve_compose_context(cfg, "dev")
+    assert context.env == {"DATABASE_URL": "postgres://common:profile-pass@host"}
+    merged = {
+        "DB_USER": cfg.secrets["DB_USER"],
+        "DB_PASS": cfg.profiles["dev"].secrets["DB_PASS"],
+    }
+    mock_resolve.assert_called_once_with(merged)

@@ -5,18 +5,28 @@ first.
 
 ## [1.4.0] - 2026-08-03
 
+### Breaking
+
+- `compman.yml` is now profile-based only: `compose` is required and must be a
+  mapping of profiles. Omitting it or using a list/string raises a `ConfigError`.
+  A single profile (`default`) is the minimal valid config. Simple-mode configs
+  must be converted (e.g. `compose: [docker-compose.yml]` becomes
+  `compose:\n  default:\n    file: docker-compose.yml`).
+
 ### Added
 
-- `compman.yml` supports an optional top-level `secrets` mapping that injects
-  environment variables from AWS Secrets Manager. Each entry maps an env var
-  name to `{ arn, key }`; the secret's JSON `SecretString` is fetched and the
+- `compman.yml` supports an optional top-level `secrets` mapping providing
+  shared secret values from AWS Secrets Manager. Each entry maps a marker name
+  to `{ arn, key }`; the secret's JSON `SecretString` is fetched and the
   referenced key's value is used. Secrets are resolved lazily when a compose
-  context is built and merged with the profile `env` (profile values win).
-  The same ARN is fetched only once per command invocation.
-- Profile `env` values may reference injected secrets with `${secrets:NAME}`
-  markers (partial interpolation supported). Markers referencing an undeclared
-  name fail with a clear error; other `${VAR}` markers are left untouched for
-  docker compose to resolve.
+  context is built. The same ARN is fetched only once per command invocation.
+- A per-profile `secrets` block merges over the top-level one; the profile wins
+  on a name clash.
+- Secrets are injected only through `${secrets:NAME}` markers inside profile
+  `env` values (partial interpolation supported); they are never passed to
+  compose as standalone variables. Markers referencing an undeclared name fail
+  with a clear error; other `${VAR}` markers are left untouched for docker
+  compose to resolve.
 - `compman doctor` reports a `secrets` warning check when secrets are
   configured but AWS credentials or region are missing.
 

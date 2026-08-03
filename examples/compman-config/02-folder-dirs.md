@@ -14,7 +14,8 @@ compman:
     backup: backup
     volume: volume
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
 ```
 
 - `folder`: relative subdirectory that holds the Compose files. With

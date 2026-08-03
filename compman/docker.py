@@ -446,9 +446,6 @@ def _parse_service_status(payload: str | None) -> list[dict[str, object]]:
 def resolve_compose_files(
     config: Config, profile: str
 ) -> tuple[list[Path], dict[str, str]]:
-    if not config.has_profiles():
-        raise ConfigError("No profiles configured. Use 'compman stack up' without env.")
-
     prof = config.profiles.get(profile)
     if not prof:
         known = ", ".join(config.profiles)
@@ -478,39 +475,21 @@ class ComposeContext:
 
 
 def resolve_compose_context(config: Config, profile: str | None = None) -> ComposeContext:
-    if config.has_profiles():
-        if profile is None:
-            profile = next(iter(config.profiles))
-        if config.source_path:
-            files, env = resolve_compose_files(config, profile)
-        else:
-            prof = config.profiles[profile]
-            file_name = prof.file or config.compose_base or "docker-compose.yml"
-            files = [config.project_dir / file_name]
-            env = dict(prof.env)
+    if profile is None:
+        profile = next(iter(config.profiles))
+    prof = config.profiles.get(profile)
+    if not prof:
+        known = ", ".join(config.profiles)
+        raise ConfigError(f"Unknown profile: {profile}. Known: {known}")
+
+    if config.source_path:
+        files, env = resolve_compose_files(config, profile)
     else:
-        if profile:
-            raise ConfigError("No profiles configured. Remove profile argument.")
-        if config.source_path:
-            files = resolve_simple_files(config)
-        else:
-            files = [config.project_dir / name for name in (config.compose_files or [])]
-        env = {}
-    if config.secrets:
-        resolved = resolve_secrets(config.secrets)
-        env = {**resolved, **interpolate_secrets(env, resolved)}
+        file_name = prof.file or config.compose_base or "docker-compose.yml"
+        files = [config.project_dir / file_name]
+        env = dict(prof.env)
+
+    if any("${secrets:" in v for v in env.values()):
+        merged = {**config.secrets, **prof.secrets}
+        env = interpolate_secrets(env, resolve_secrets(merged))
     return ComposeContext(config.name, tuple(files), env)
-
-
-def resolve_simple_files(config: Config) -> list[Path]:
-    if not config.has_simple_files():
-        raise ConfigError("No compose files configured.")
-    compose_files = config.compose_files or []
-    project_dir = config.project_dir
-    files: list[Path] = []
-    for name in compose_files:
-        f = project_dir / name
-        if not f.is_file():
-            raise ConfigError(f"Compose file not found: {f}")
-        files.append(f)
-    return files

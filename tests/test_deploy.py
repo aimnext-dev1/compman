@@ -135,8 +135,21 @@ def test_deploy_empty_dir_help_exit(temp_dir: pathlib.Path):
         deploy.deploy(s3_path=None)
 
 
+def test_deploy_config_without_path_exits(temp_dir: pathlib.Path, capsys):
+    (temp_dir / "compman.yml").write_text(
+        "compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(SystemExit):
+        deploy.deploy(s3_path=None)
+    assert "not configured" in capsys.readouterr().err
+
+
 def test_deploy_existing_config_s3(dummy_runtime, temp_dir: pathlib.Path):
-    (temp_dir / "compman.yml").write_text("compman:\n  name: app\n  deploy: s3://b/k.tar.gz\n", encoding="utf-8")
+    (temp_dir / "compman.yml").write_text(
+        "compman:\n  name: app\n  deploy: s3://b/k.tar.gz\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
     mock_s3 = MagicMock()
     tar_path = temp_dir / "k.tar.gz"
     with tarfile.open(tar_path, "w:gz"):

@@ -1,6 +1,6 @@
-# Case 01 — Simple mode
+# Case 01 — Single profile
 
-Single Compose file, no profiles.
+One profile with one Compose file.
 
 ## `compman.yml`
 
@@ -8,27 +8,21 @@ Single Compose file, no profiles.
 compman:
   name: my-stack
   compose:
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
 ```
 
-The `compose` key is optional. When omitted it defaults to `docker-compose.yml`:
-
-```yaml
-compman:
-  name: my-stack
-```
-
-To combine multiple Compose files, list them in order:
+Multiple Compose files for the same profile use the `base` key plus the profile
+`file`; both are passed as `-f` options in order:
 
 ```yaml
 compman:
   name: my-stack
   compose:
-    - docker-compose.base.yml
-    - docker-compose.yml
+    default:
+      file: docker-compose.yml
+    base: docker-compose.base.yml
 ```
-
-They are passed as `-f` options in declaration order.
 
 ## `docker-compose.yml`
 
@@ -48,4 +42,5 @@ compman service status
 compman stack down --yes
 ```
 
-Simple mode rejects a profile argument (`compman stack up dev` fails).
+With a single configured profile, the profile argument is optional and the
+profile is chosen automatically. Passing an unknown profile name fails.

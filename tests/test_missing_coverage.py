@@ -14,7 +14,7 @@ import typer
 
 import compman.cli as cli
 import compman.deploy as deploy
-from compman.config import Config, ConfigError, load_config
+from compman.config import Config, ConfigError, Profile, load_config
 from compman.docker import ContainerRuntime, _run
 from compman.errors import CommandError
 from compman.ops import common, image, service, volume
@@ -161,8 +161,8 @@ def test_config_remaining_branches(temp_dir):
         load_config(str(config))
 
     config.write_text("compman:\n  name: app\n  compose:\n    - base.yml\n", encoding="utf-8")
-    cfg = load_config(str(config))
-    assert cfg.has_simple_files()
+    with pytest.raises(ConfigError):
+        load_config(str(config))
 
 
 def test_cli_upgrade_fallback_failure_and_find_uv():
@@ -360,7 +360,7 @@ def test_deploy_swap_rolls_back_partially_moved_source(temp_dir, new_item_is_dir
 
 
 def test_service_empty_and_multiple(dummy_runtime, temp_dir):
-    cfg = Config("app", compose_files=["docker-compose.yml"])
+    cfg = Config("app", profiles={"default": Profile(file="docker-compose.yml")})
     dummy_runtime.list_containers = MagicMock(return_value=[])
     with pytest.raises(CommandError):
         service.log(dummy_runtime, cfg, None)
@@ -403,7 +403,7 @@ def test_common_win32_branch():
 
 
 def test_image_remaining_branches(dummy_runtime, temp_dir):
-    cfg = Config("app", compose_files=["docker-compose.yml"])
+    cfg = Config("app", profiles={"default": Profile(file="docker-compose.yml")})
     dummy_runtime.run_compose = MagicMock(return_value=MagicMock(stdout="cid1\n \nX"))
     dummy_runtime.run_cli = MagicMock(return_value=MagicMock(stdout="/name\n"))
     image.backup(dummy_runtime, cfg, source_mode=True)
@@ -422,7 +422,7 @@ def test_image_remaining_branches(dummy_runtime, temp_dir):
 
 
 def test_volume_remaining_branches(dummy_runtime, temp_dir):
-    cfg = Config("app", compose_files=["docker-compose.yml"])
+    cfg = Config("app", profiles={"default": Profile(file="docker-compose.yml")})
     bad = MagicMock(returncode=1, stdout="")
     empty = MagicMock(returncode=0, stdout="[]")
     with patch.object(dummy_runtime, "run_cli", return_value=bad):
@@ -442,7 +442,7 @@ def test_volume_remaining_branches(dummy_runtime, temp_dir):
 
 
 def test_volume_all_remaining_paths(dummy_runtime, temp_dir):
-    cfg = Config("app", compose_files=["docker-compose.yml"])
+    cfg = Config("app", profiles={"default": Profile(file="docker-compose.yml")})
     dummy_runtime.list_volumes = MagicMock(return_value=["v"])
     dummy_runtime.list_containers = MagicMock(return_value=["c"])
     with patch("compman.ops.volume._inspect_mount", return_value=None):
