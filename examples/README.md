@@ -1,0 +1,49 @@
+# compman configuration examples
+
+Case-by-case `compman.yml` examples. Each case shows the declaration in
+`compman.yml`, the matching `docker-compose.yml` usage, and the commands that
+use it.
+
+## How environment variables reach your containers
+
+The single most common confusion: **declaring variables in `compman.yml` is not
+enough**. Whether they come from a profile `env`, the top-level `secrets` block,
+or the host environment, compman passes the merged values to the `docker
+compose` process environment, and your `docker-compose.yml` must reference them
+with `${VAR}` interpolation:
+
+```yaml
+# docker-compose.yml
+services:
+  app:
+    image: my-app
+    environment:
+      - DB_URL=${DB_URL}          # interpolated from the compose process env
+      - LOG_LEVEL=${LOG_LEVEL:-info}  # with a default fallback
+```
+
+Only `environment:` / Compose-file values that reference `${VAR}` receive the
+injected value. A plain `environment:` entry without `${...}` stays literal.
+
+## Index
+
+| # | Case | Shows |
+|---|------|-------|
+| [01](compman-config/01-simple.md) | Simple mode | `compose` omitted or as a list; one `docker-compose.yml` |
+| [02](compman-config/02-folder-dirs.md) | Folder and managed dirs | `folder`, `dirs.project` / `backup` / `volume` |
+| [03](compman-config/03-profile.md) | Profile mode basics | `base` + file-only profiles |
+| [04](compman-config/04-profile-env.md) | Profile env injection | Per-profile `env` consumed via `${VAR}` |
+| [05](compman-config/05-deploy.md) | Deploy sources | S3 prefix, S3 archive, HTTP archive |
+| [06](compman-config/06-secrets.md) | AWS Secrets Manager | `secrets` declaration and compose usage |
+| [07](compman-config/07-secrets-profile.md) | Secrets + profiles | Merge with profile `env`; profile wins |
+| [08](compman-config/08-full.md) | Full example | Everything combined |
+
+Run any example from the directory that contains its `compman.yml`:
+
+```bash
+compman stack up
+compman service status
+compman stack down --yes
+```
+
+For profile-mode examples, pass the profile: `compman stack up dev`.

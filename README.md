@@ -154,6 +154,8 @@ Only the deployment target with the same name is replaced; other user files are 
 
 Put all configuration under the `compman` key in `compman.yml`.
 
+For case-by-case examples, see [`examples/compman-config/`](examples/compman-config/) (index in [`examples/README.md`](examples/README.md)).
+
 ### Single Compose configuration
 
 ```yaml
@@ -247,6 +249,20 @@ compman:
   with a clear error. Use the standard AWS credential and region environment
   variables; `compman doctor` reports a warning when secrets are configured but
   credentials or region are missing.
+
+**Using the injected variables:** declaring them is not enough. compman passes
+the merged values into the `docker compose` process environment, so
+`docker-compose.yml` must reference them with `${VAR}` interpolation:
+
+```yaml
+# docker-compose.yml
+services:
+  app:
+    image: my-app
+    environment:
+      - DB_URL=${DB_URL}                  # injected from secrets
+      - LOG_LEVEL=${LOG_LEVEL:-info}      # with a default fallback
+```
 
 ## Commands
 
