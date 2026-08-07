@@ -50,6 +50,48 @@ def test_volume_restore(dummy_runtime, temp_dir: pathlib.Path):
     with patch("compman.ops.common.prompt_select", return_value=0), patch("compman.ops.volume._inspect_mount", return_value={"container": "c1", "volume": "vol1", "destination": "/data"}):
         volume.restore(dummy_runtime, cfg, timestamp="20260731_1200", no_stop=False)
         volume.restore(dummy_runtime, cfg, timestamp="20260731_1200", no_stop=True)
+        assert not any(call[0] == "exec" for call in dummy_runtime.commands_run)
+
+
+def test_volume_restore_replace_clears_destination(dummy_runtime, temp_dir: pathlib.Path):
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
+    backup_dir = cfg.backup_dir
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    backup_file = backup_dir / "my_stack.volume.20260731_1200.tar.gz"
+
+    map_file = temp_dir / "volume-map.json"
+    map_file.write_text('{"container1": {"volume": "vol1", "destination": "/data"}}', encoding="utf-8")
+    (temp_dir / "vol1").mkdir()
+    (temp_dir / "vol1" / "data.txt").write_text("hello", encoding="utf-8")
+    with tarfile.open(backup_file, "w:gz") as tar:
+        tar.add(map_file, arcname="volume-map.json")
+        tar.add(temp_dir / "vol1", arcname="vol1")
+
+    with patch("compman.ops.common.prompt_select", return_value=0), patch("compman.ops.volume._inspect_mount", return_value={"container": "c1", "volume": "vol1", "destination": "/data"}):
+        volume.restore(dummy_runtime, cfg, timestamp="20260731_1200", replace=True)
+
+    exec_call = ["exec", "container1", "sh", "-c", 'rm -rf -- "$1"/* "$1"/.[!.]* "$1"/..?* 2>/dev/null || true', "_", "/data"]
+    assert exec_call in dummy_runtime.commands_run
+    exec_idx = dummy_runtime.commands_run.index(exec_call)
+    cp_idx = next(i for i, call in enumerate(dummy_runtime.commands_run) if call[0] == "cp" and call[2] == "container1:/data")
+    assert exec_idx < cp_idx
+
+
+def test_volume_restore_replace_skips_missing_source(dummy_runtime, temp_dir: pathlib.Path):
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
+    backup_dir = cfg.backup_dir
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    backup_file = backup_dir / "my_stack.volume.20260731_1200.tar.gz"
+
+    map_file = temp_dir / "volume-map.json"
+    map_file.write_text('{"container1": {"volume": "vol1", "destination": "/data"}}', encoding="utf-8")
+    with tarfile.open(backup_file, "w:gz") as tar:
+        tar.add(map_file, arcname="volume-map.json")
+
+    with patch("compman.ops.common.prompt_select", return_value=0):
+        volume.restore(dummy_runtime, cfg, timestamp="20260731_1200", replace=True)
+
+    assert not any(call[0] == "exec" for call in dummy_runtime.commands_run)
 
 
 def test_volume_restore_invalid_timestamp(dummy_runtime, temp_dir: pathlib.Path):
@@ -87,6 +129,32 @@ def test_volume_pull_push(dummy_runtime, temp_dir: pathlib.Path):
         vol_dir.mkdir(parents=True, exist_ok=True)
         volume.push(dummy_runtime, cfg)
         assert len(dummy_runtime.commands_run) >= 1
+
+
+def test_volume_push_replace_clears_destination(dummy_runtime, temp_dir: pathlib.Path):
+    cfg = Config(name="my_stack", profiles={"default": Profile(file="docker-compose.yml")})
+    volume_dir = cfg.volume_dir
+    (volume_dir / "vol1").mkdir(parents=True, exist_ok=True)
+    (volume_dir / "volume-map.json").write_text(
+        json.dumps([{"container": "c1", "volume": "vol1", "destination": "/data"}]), encoding="utf-8"
+    )
+    volume.push(dummy_runtime, cfg, replace=True)
+
+    assert ["exec", "c1", "sh", "-c", 'rm -rf -- "$1"/* "$1"/.[!.]* "$1"/..?* 2>/dev/null || true', "_", "/data"] in dummy_runtime.commands_run
+
+
+@pytest.mark.parametrize(
+    "dest",
+    ["/", "relative", "", "/data/", "/a/../b", "//x"],
+)
+def test_validate_replace_dest_rejects_unsafe_paths(dummy_runtime, dest):
+    with pytest.raises(CommandError):
+        volume._validate_replace_dest(dest)
+
+
+@pytest.mark.parametrize("dest", ["/data", "/var/lib/app/data"])
+def test_validate_replace_dest_accepts_absolute_paths(dest):
+    volume._validate_replace_dest(dest)
 
 
 def test_volume_pull_no_volumes(dummy_runtime, temp_dir: pathlib.Path):

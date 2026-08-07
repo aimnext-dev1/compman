@@ -18,6 +18,7 @@ from botocore.exceptions import (
 from compman.archive_source import has_archive_suffix
 from compman.config import Config, ConfigError, load_config, sanitize_project_name
 from compman.docker import ContainerRuntime, detect_runtime
+from compman.errors import CommandError
 from compman.http_source import fetch as _fetch_http
 from compman.i18n import t
 from compman.ops.common import ensure_runtime_ready
@@ -69,7 +70,6 @@ def deploy(
 
     root = Path.cwd()
     deploy_target = config.deploy_dir if config else root / project_subfolder
-    deploy_target.mkdir(parents=True, exist_ok=True)
 
     tmp = Path(tempfile.mkdtemp(prefix=".deploy_tmp_", dir=root))
 
@@ -95,22 +95,30 @@ def deploy(
             project_root = _fetch_http(s3_path, tmp)
         else:
             raise ValueError(f"Unsupported deploy source: {s3_path}")
-        stage = "replacing the deployed files"
-        _swap(project_root, deploy_target)
-        stage = "generating project configuration"
+
+        limit = config.limits.get("max_archive_mb") if config else None
+        if limit is not None:
+            size = sum(p.stat().st_size for p in project_root.rglob("*") if p.is_file())
+            if size > limit * 1024 * 1024:
+                raise CommandError(t("msg.deploy_limit_exceeded", limit=limit, size=size))
+            typer.echo(t("msg.deploy_provenance", source=s3_path, size=size))
+
         image = tag or sanitize_project_name(root.name)
-        _generate_scaffold(root, project_subfolder, s3_path, image)
         if build:
             stage = "building the container image"
             typer.echo(t("msg.deploy_building", image=image, path=project_subfolder))
             runtime = runtime or detect_runtime()
             ensure_runtime_ready(runtime)
-            runtime.passthru_cli(["build", "-t", image, "."], cwd=deploy_target)
+            runtime.passthru_cli(["build", "-t", image, "."], cwd=project_root)
+        stage = "replacing the deployed files"
+        _swap(project_root, deploy_target)
+        stage = "generating project configuration"
+        _generate_scaffold(root, project_subfolder, s3_path, image)
         typer.echo(t("msg.deploy_done"))
     except SystemExit:
         raise
     except Exception as e:
-        typer.echo(f"Deploy failed while {stage}: {e}", err=True)
+        typer.echo(t("msg.deploy_failed_stage", stage=stage, error=e), err=True)
         raise SystemExit(1)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

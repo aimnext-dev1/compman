@@ -8,7 +8,6 @@ _CURRENT_LANG: ContextVar[str | None] = ContextVar("compman_language", default=N
 
 
 def get_lang() -> str:
-    global _CURRENT_LANG
     current = _CURRENT_LANG.get()
     if current:
         return current
@@ -19,7 +18,6 @@ def get_lang() -> str:
 
 
 def set_lang(lang: str | None) -> None:
-    global _CURRENT_LANG
     if lang and lang.lower() in ("en", "ko"):
         _CURRENT_LANG.set(lang.lower())
     elif lang is None:
@@ -427,10 +425,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
 
     # Option descriptions
-    "opt.lang": {
-        "en": "Language for CLI help and messages (en/ko).",
-        "ko": "CLI 도움말 및 메시지 언어 설정 (en/ko).",
-    },
     "opt.force": {
         "en": "Overwrite existing files",
         "ko": "기존 파일 덮어쓰기",
@@ -498,6 +492,46 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "opt.tail": {
         "en": "Number of lines to show from the end of logs (default: 50).",
         "ko": "로그 출력할 마지막 라인 수 (기본값: 50).",
+    },
+    "opt.clear_yes": {
+        "en": "Confirm removal of all unused images",
+        "ko": "사용하지 않는 모든 이미지 제거 확인",
+    },
+    "opt.profile": {
+        "en": "Compose profile",
+        "ko": "컴포즈 프로필",
+    },
+    "opt.restore_timestamp": {
+        "en": "Timestamp of backup to restore (YYYYMMDD_HHMM)",
+        "ko": "복원할 백업 타임스탬프 (YYYYMMDD_HHMM)",
+    },
+    "opt.seed": {
+        "en": "Generate test seed project",
+        "ko": "테스트 시드 프로젝트 생성",
+    },
+    "opt.scaffold": {
+        "en": "Create default compman.yml scaffold",
+        "ko": "기본 compman.yml 스캐폴드 생성",
+    },
+    "opt.s3": {
+        "en": "Fetch package from S3 URL",
+        "ko": "S3 URL에서 패키지 가져오기",
+    },
+    "opt.lang": {
+        "en": "Language (en/ko)",
+        "ko": "언어 (en/ko)",
+    },
+    "opt.language_code": {
+        "en": "Language code (en or ko)",
+        "ko": "언어 코드 (en 또는 ko)",
+    },
+    "opt.confirm_stack_removal": {
+        "en": "Confirm stack removal",
+        "ko": "스택 제거 확인",
+    },
+    "opt.replace": {
+        "en": "Replace destination contents instead of merging",
+        "ko": "대상 내용을 병합 대신 교체",
     },
 
     # Guidance & Error Messages
@@ -669,10 +703,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Info: No running containers found in this stack. Run 'compman stack up' first.",
         "ko": "안내: 실행 중인 스택 컨테이너가 없습니다. 'compman stack up' 커맨드를 먼저 실행하세요.",
     },
-    "msg.container_not_found": {
-        "en": "Info: Container '{service}' not found. Run 'compman service status' to check running containers.",
-        "ko": "안내: 컨테이너 '{service}'를 찾을 수 없습니다. 'compman service status'로 실행 중인 컨테이너를 확인하세요.",
-    },
     "msg.backup_not_found": {
         "en": "Info: Backup not found: {tarball}",
         "ko": "안내: 백업 파일을 찾을 수 없습니다: {tarball}",
@@ -757,9 +787,101 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Pushing to {container}:{destination} ...",
         "ko": "{container}:{destination}로 전송 중 ...",
     },
-    "msg.fixing_permissions": {
-        "en": "Fixing permissions on {container}:{destination} ...",
-        "ko": "{container}:{destination} 권한 수정 중 ...",
+    "msg.docker_desktop_prompt": {
+        "en": "Docker Desktop is not running. Start it now?",
+        "ko": "Docker Desktop이 실행 중이 아닙니다. 지금 시작할까요?",
+    },
+    "msg.stack_stopping": {
+        "en": "Stopping stack for consistent operation...",
+        "ko": "일관된 작업을 위해 스택을 중지합니다...",
+    },
+    "msg.stack_starting": {
+        "en": "Starting stack again...",
+        "ko": "스택을 다시 시작합니다...",
+    },
+    "msg.stack_restart_failed": {
+        "en": "Warning: failed to restart stack: {error}",
+        "ko": "경고: 스택 재시작에 실패했습니다: {error}",
+    },
+    "msg.available_backups_title": {
+        "en": "Available {kind} backups",
+        "ko": "사용 가능한 {kind} 백업",
+    },
+    "msg.invalid_timestamp": {
+        "en": "Invalid timestamp: {ts} (expected YYYYMMDD_HHMM[SS])",
+        "ko": "잘못된 타임스탬프: {ts} (형식: YYYYMMDD_HHMM[SS])",
+    },
+    "msg.created_compman": {
+        "en": "Created compman.yml:",
+        "ko": "compman.yml 생성됨:",
+    },
+    "msg.created_compose": {
+        "en": "Created docker-compose.yml:",
+        "ko": "docker-compose.yml 생성됨:",
+    },
+    "msg.remove_stack_confirm": {
+        "en": "Remove the entire stack?",
+        "ko": "전체 스택을 제거하시겠습니까?",
+    },
+    "msg.enter_s3_url": {
+        "en": "Enter S3 URL (e.g. s3://bucket/path/app.tar.gz)",
+        "ko": "S3 URL을 입력하세요 (예: s3://bucket/path/app.tar.gz)",
+    },
+    "msg.doctor_header": {
+        "en": "Doctor:",
+        "ko": "진단:",
+    },
+    "msg.services_list": {
+        "en": "Services: {names}",
+        "ko": "서비스: {names}",
+    },
+    "msg.all_services": {
+        "en": "All services",
+        "ko": "모든 서비스",
+    },
+    "msg.updated_deploy": {
+        "en": "Updated deploy in compman.yml ({s3_path}):",
+        "ko": "compman.yml의 배포 대상을 업데이트했습니다 ({s3_path}):",
+    },
+    "msg.deploy_failed_stage": {
+        "en": "Deploy failed while {stage}: {error}",
+        "ko": "배포 실패 ({stage} 단계): {error}",
+    },
+    "msg.select_option": {
+        "en": "Select option [1-{count}]",
+        "ko": "옵션을 선택하세요 [1-{count}]",
+    },
+    "msg.prompt_nav": {
+        "en": "{title} (Use Up/Down or number keys, Enter to select, Esc to cancel):",
+        "ko": "{title} (↑/↓ 또는 숫자 키로 선택, Enter로 확정, Esc로 취소):",
+    },
+    "msg.clear_confirm": {
+        "en": "Remove all unused images (docker image prune -af)? This also affects images outside the current project.",
+        "ko": "사용하지 않는 모든 이미지를 제거하시겠습니까 (docker image prune -af)? 현재 프로젝트 외부의 이미지도 함께 제거됩니다.",
+    },
+    "msg.invalid_replace_dest": {
+        "en": "Invalid --replace destination: {dest}",
+        "ko": "--replace 대상 경로가 올바르지 않습니다: {dest}",
+    },
+    "msg.resolved_container": {
+        "en": "Using container {container} for service {service}.",
+        "ko": "서비스 {service}의 컨테이너 {container}을(를) 사용합니다.",
+    },
+    "msg.scaled_service_ambiguous": {
+        "en": "Service {service} has {count} running instances. Specify the exact container name.",
+        "ko": "서비스 {service}에 실행 중인 인스턴스가 {count}개입니다. 정확한 컨테이너 이름을 지정하세요.",
+    },
+    "msg.deploy_limit_exceeded": {
+        "en": "Deploy source exceeds the {limit} MB size limit ({size} bytes).",
+        "ko": "배포 소스가 {limit} MB 크기 제한을 초과합니다 ({size} bytes).",
+    },
+    "msg.deploy_provenance": {
+        "en": "Source: {source} ({size} bytes)",
+        "ko": "소스: {source} ({size} bytes)",
+    },
+    "msg.unsupported_shell": {
+        "en": "Unsupported shell: {shell}",
+        "ko": "지원하지 않는 셸: {shell}",
     },
 }
 

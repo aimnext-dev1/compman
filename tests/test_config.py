@@ -138,6 +138,56 @@ def test_load_config_deploy_not_string(temp_dir: pathlib.Path):
         load_config(str(config_file))
 
 
+def test_load_config_limits_absent_ok(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    cfg = load_config(str(config_file))
+    assert cfg.limits == {}
+
+
+def test_load_config_limits_valid(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n  name: app\n  limits:\n    max_archive_mb: 10\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    cfg = load_config(str(config_file))
+    assert cfg.limits == {"max_archive_mb": 10}
+
+
+def test_load_config_limits_not_mapping(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n  name: app\n  limits: []\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="limits"):
+        load_config(str(config_file))
+
+
+def test_load_config_max_archive_mb_not_int(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n  name: app\n  limits:\n    max_archive_mb: '10'\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="max_archive_mb"):
+        load_config(str(config_file))
+
+
+def test_load_config_max_archive_mb_non_positive(temp_dir: pathlib.Path):
+    config_file = temp_dir / "compman.yml"
+    config_file.write_text(
+        "compman:\n  name: app\n  limits:\n    max_archive_mb: 0\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError, match="max_archive_mb"):
+        load_config(str(config_file))
+
+
 def test_load_config_compose_invalid_type(temp_dir: pathlib.Path):
     config_file = temp_dir / "compman.yml"
     config_file.write_text("compman:\n  name: app\n  compose: 42\n", encoding="utf-8")

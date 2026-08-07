@@ -121,8 +121,20 @@ def test_cli_init_interactive(runner: CliRunner, temp_dir: pathlib.Path):
 
 def test_cli_clear(runner: CliRunner, dummy_runtime):
     with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
-        res = runner.invoke(app, ["clear"])
+        res = runner.invoke(app, ["clear", "--yes"])
         assert res.exit_code == 0
+        assert dummy_runtime.commands_run[-1] == ["image", "prune", "-af"]
+
+
+def test_cli_clear_requires_confirmation(runner: CliRunner, dummy_runtime):
+    with patch("compman.cli.detect_runtime", return_value=dummy_runtime):
+        res = runner.invoke(app, ["clear"], input="n\n")
+        assert res.exit_code != 0
+        assert dummy_runtime.commands_run == []
+
+        res_yes = runner.invoke(app, ["clear"], input="y\n")
+        assert res_yes.exit_code == 0
+        assert dummy_runtime.commands_run[-1] == ["image", "prune", "-af"]
 
 
 def test_cli_deploy(runner: CliRunner, dummy_runtime, temp_dir: pathlib.Path):
@@ -211,6 +223,7 @@ def test_cli_service_commands(runner: CliRunner, dummy_runtime, temp_dir: pathli
         res_st = runner.invoke(app, ["service", "status"])
         assert res_st.exit_code == 0
 
+        dummy_runtime.compose_stdout = "web-1\n"
         res_log = runner.invoke(app, ["service", "log", "web"])
         assert res_log.exit_code == 0
 
@@ -349,6 +362,51 @@ def test_cli_completion(runner: CliRunner, temp_dir: pathlib.Path):
         assert "already has auto-completion registered" in res_reinstall.output
         assert profile.read_text(encoding="utf-8") == installed
         assert profile_lookup.call_count == 2
+
+
+def test_completion_snippet_matches_registered_command_tree(runner: CliRunner):
+    res = runner.invoke(app, ["completion", "powershell"])
+    assert res.exit_code == 0
+    lines = res.output.splitlines()
+
+    root_line = next(line for line in lines if "subcommands = @" in line)
+    snippet_root = set(re.findall(r"'([^']+)'", root_line))
+    actual_root = {c.name or c.callback.__name__ for c in app.registered_commands}
+    actual_groups = {g.name for g in app.registered_groups}
+    assert snippet_root == actual_root | actual_groups
+
+    for group in app.registered_groups:
+        for i, line in enumerate(lines):
+            if f"$words[1] -eq '{group.name}'" in line:
+                snippet_group = set(re.findall(r"'([^']+)'", lines[i + 1]))
+                actual_group = {
+                    c.name or c.callback.__name__ for c in group.typer_instance.registered_commands
+                }
+                assert snippet_group == actual_group, f"group {group.name}"
+                break
+        else:
+            raise AssertionError(f"no completion branch for group {group.name}")
+
+
+def test_readme_command_list_matches_registered_command_tree():
+    root = pathlib.Path(__file__).parents[1]
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    section = readme.split("## Commands", 1)[1].split("View all options", 1)[0]
+
+    actual_root = {c.name or c.callback.__name__ for c in app.registered_commands}
+    actual_groups = {
+        g.name: {c.name or c.callback.__name__ for c in g.typer_instance.registered_commands}
+        for g in app.registered_groups
+    }
+
+    for line in section.splitlines():
+        match = re.match(r"\s*compman (\w+)(?:\s+(\w+))?", line)
+        if not match:
+            continue
+        command, subcommand = match.group(1), match.group(2)
+        assert command in actual_root or command in actual_groups, f"unknown command {command!r} in README: {line.strip()}"
+        if command in actual_groups and subcommand:
+            assert subcommand in actual_groups[command], f"unknown {command} subcommand {subcommand!r} in README: {line.strip()}"
 
 
 def test_cli_completion_bash(runner: CliRunner):
@@ -610,7 +668,7 @@ def test_cli_expected_errors_exit_cleanly(runner: CliRunner):
     assert "Traceback" not in config_error.output
 
     with patch("compman.cli.detect_runtime", side_effect=RuntimeError("missing runtime")):
-        runtime_error = runner.invoke(app, ["clear"])
+        runtime_error = runner.invoke(app, ["clear", "--yes"])
     assert runtime_error.exit_code == 1
     assert isinstance(runtime_error.exception, SystemExit)
     assert runtime_error.output == "Pruning unused Docker images...\nError: missing runtime\n"

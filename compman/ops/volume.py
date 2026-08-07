@@ -13,7 +13,7 @@ from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_context
 from compman.errors import CommandError
 from compman.i18n import t
-from compman.ops.common import select_backup_timestamp, stack_paused
+from compman.ops.common import select_backup_timestamp, stack_paused, validate_timestamp
 
 
 def backup(
@@ -72,12 +72,13 @@ def restore(
     timestamp: str | None = None,
     no_stop: bool = False,
     profile: str | None = None,
+    replace: bool = False,
 ) -> None:
     context = resolve_compose_context(config, profile)
     if not timestamp:
         timestamp = select_backup_timestamp(config, "volume")
 
-    _validate_timestamp(timestamp)
+    validate_timestamp(timestamp)
     backup_name = f"{config.name}.volume.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
     if not tarball.is_file():
@@ -98,6 +99,15 @@ def restore(
             raise CommandError(t("msg.volume_map_not_found", path=map_path))
 
         mapping = _load_mapping(map_path)
+
+        if replace:
+            for vol_info in mapping:
+                container = vol_info["container"]
+                volume_name = vol_info["volume"]
+                dest = vol_info["destination"]
+                src = restore_dir / volume_name
+                if src.is_dir():
+                    _clear_destination(runtime, container, dest)
 
         with stack_paused(runtime, context, enabled=not no_stop):
             for vol_info in mapping:
@@ -155,7 +165,12 @@ def pull(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
     typer.echo(t("msg.restore_done", kind="Volume pull"))
 
 
-def push(runtime: ContainerRuntime, config: Config, profile: str | None = None) -> None:
+def push(
+    runtime: ContainerRuntime,
+    config: Config,
+    profile: str | None = None,
+    replace: bool = False,
+) -> None:
     context = resolve_compose_context(config, profile)
     volume_dir = config.volume_dir
     map_path = volume_dir / "volume-map.json"
@@ -174,6 +189,8 @@ def push(runtime: ContainerRuntime, config: Config, profile: str | None = None) 
             typer.echo(t("msg.warning_missing_source", path=src, container=container))
             continue
         typer.echo(t("msg.pushing_data", container=container, destination=dest))
+        if replace:
+            _clear_destination(runtime, container, dest)
         runtime.copy_to_container(f"{src}/.", container, dest)
         runtime.fix_permissions(container, dest)
     typer.echo(t("msg.restore_done", kind="Volume push"))
@@ -224,27 +241,6 @@ def _load_mapping(path) -> list[dict[str, str]]:
     return [{key: str(item[key]) for key in required} for item in result]
 
 
-def _fix_permissions(runtime: ContainerRuntime, container: str, dest: str) -> None:
-    typer.echo(t("msg.fixing_permissions", container=container, destination=dest))
-    runtime.fix_permissions(container, dest)
-
-
-def _validate_timestamp(ts: str) -> None:
-    if not any(
-        _valid_timestamp(ts, fmt)
-        for fmt in ("%Y%m%d_%H%M", "%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S_%f")
-    ):
-        raise CommandError(f"Invalid timestamp format: {ts} (expected YYYYMMDD_HHMM[SS])")
-
-
-def _valid_timestamp(value: str, fmt: str) -> bool:
-    try:
-        datetime.strptime(value, fmt)
-        return True
-    except ValueError:
-        return False
-
-
 def _list_backups(config: Config, kind: str) -> None:
     pattern = f"{config.name}.{kind}."
     typer.echo(t("msg.available_backups", kind=kind))
@@ -252,3 +248,26 @@ def _list_backups(config: Config, kind: str) -> None:
         name = f.name
         ts = name.replace(pattern, "").replace(".tar.gz", "")
         typer.echo(f"  {ts}")  # ponytail: color omitted, typer handles terminal
+
+
+def _validate_replace_dest(dest: str) -> None:
+    parts = dest.split("/")[1:]
+    if not dest.startswith("/") or dest == "/" or not parts or "" in parts or ".." in parts:
+        raise CommandError(t("msg.invalid_replace_dest", dest=dest))
+
+
+def _clear_destination(runtime: ContainerRuntime, container: str, dest: str) -> None:
+    _validate_replace_dest(dest)
+    runtime.run_cli(
+        [
+            "exec",
+            container,
+            "sh",
+            "-c",
+            'rm -rf -- "$1"/* "$1"/.[!.]* "$1"/..?* 2>/dev/null || true',
+            "_",
+            dest,
+        ],
+        capture=True,
+        check=False,
+    )

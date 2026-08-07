@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from contextlib import contextmanager
+from datetime import datetime
 
 import typer
 
@@ -11,10 +12,26 @@ from compman.errors import CommandError
 from compman.i18n import t
 
 
+def validate_timestamp(ts: str) -> None:
+    if not any(
+        _valid_timestamp(ts, fmt)
+        for fmt in ("%Y%m%d_%H%M", "%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S_%f")
+    ):
+        raise CommandError(t("msg.invalid_timestamp", ts=ts))
+
+
+def _valid_timestamp(value: str, fmt: str) -> bool:
+    try:
+        datetime.strptime(value, fmt)
+        return True
+    except ValueError:
+        return False
+
+
 def ensure_runtime_ready(runtime: ContainerRuntime) -> None:
     runtime.ensure_ready_for_start(
         lambda: typer.confirm(
-            "Docker Desktop is not running. Start it now?", default=True, abort=False
+            t("msg.docker_desktop_prompt"), default=True, abort=False
         )
     )
 
@@ -79,7 +96,7 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
         typer.echo(title)
         for i, opt in enumerate(options, 1):
             typer.echo(f"  [{i}] {opt}")
-        choice = typer.prompt(f"Select option [1-{len(options)}]", default=str(default_index + 1))
+        choice = typer.prompt(t("msg.select_option", count=len(options)), default=str(default_index + 1))
         return int(choice) - 1 if choice.isdigit() and 1 <= int(choice) <= len(options) else default_index
 
     selected = default_index
@@ -94,7 +111,7 @@ def prompt_select(title: str, options: list[str], default_index: int = 0) -> int
                 sys.stdout.write(f"\033[K   {option}\n")
         sys.stdout.flush()
 
-    typer.echo(f"{title} (Use Up/Down or number keys, Enter to select, Esc to cancel):")
+    typer.echo(t("msg.prompt_nav", title=title))
     render(redraw=False)
 
     while True:
@@ -133,7 +150,7 @@ def select_backup_timestamp(config: Config, kind: str) -> str:
     timestamps = [f.name.replace(pattern, "").replace(".tar.gz", "") for f in files]
 
     idx = prompt_select(
-        f"Available {kind} backups",
+        t("msg.available_backups_title", kind=kind),
         timestamps,
         default_index=len(timestamps) - 1,
     )
@@ -146,7 +163,7 @@ def select_backup_timestamp(config: Config, kind: str) -> str:
 def stack_paused(runtime: ContainerRuntime, context: ComposeContext, enabled: bool = True):
     stopped = False
     if enabled:
-        typer.echo("Stopping stack for consistent operation...")
+        typer.echo(t("msg.stack_stopping"))
         runtime.run_compose(
             ["stop"], project=context.project, compose_files=context.files,
             env=context.env, capture=False,
@@ -161,7 +178,7 @@ def stack_paused(runtime: ContainerRuntime, context: ComposeContext, enabled: bo
     finally:
         if stopped:
             try:
-                typer.echo("Starting stack again...")
+                typer.echo(t("msg.stack_starting"))
                 runtime.run_compose(
                     ["start"], project=context.project, compose_files=context.files,
                     env=context.env, capture=False,
@@ -169,4 +186,4 @@ def stack_paused(runtime: ContainerRuntime, context: ComposeContext, enabled: bo
             except Exception as error:
                 if not failed:
                     raise
-                typer.echo(f"Warning: failed to restart stack: {error}", err=True)
+                typer.echo(t("msg.stack_restart_failed", error=error), err=True)

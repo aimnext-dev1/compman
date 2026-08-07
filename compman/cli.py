@@ -8,14 +8,16 @@ import subprocess
 import sys
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
-from typing import TYPE_CHECKING, Annotated, Optional
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 from typer import _click
 from typer.core import TyperGroup
 
+from compman.completion import register as register_completion
 from compman.errors import CommandError, ConfigError
 from compman.i18n import get_lang, set_lang, t
+from compman.init_cmd import register as register_init
 
 if TYPE_CHECKING:
     from compman.config import Config
@@ -185,7 +187,7 @@ def _load(config_path: str | None = None):
 @app.callback(invoke_without_command=True)
 def root(
     ctx: typer.Context,
-    lang: Annotated[Optional[str], typer.Option("--lang", "-l", help="Language (en/ko)")] = None,
+    lang: Annotated[str | None, typer.Option("--lang", "-l", help=t("opt.lang"))] = None,
     version: Annotated[bool, typer.Option("--version", "-v", callback=_version_callback, is_eager=True)] = False,
 ) -> None:
     if lang:
@@ -196,64 +198,16 @@ def root(
 
 
 # ---- init ----
-@app.command("init", help=t("cmd.init"))
-def init_cmd(
-    scaffold: Annotated[bool, typer.Option("--scaffold", help="Create default compman.yml scaffold")] = False,
-    s3: Annotated[Optional[str], typer.Option("--s3", help="Fetch package from S3 URL")] = None,
-    seed_mode: Annotated[bool, typer.Option("--seed", help="Generate test seed project")] = False,
-    output: Annotated[str, typer.Option("-o", "--output", help=t("opt.output"))] = "project",
-    archive: Annotated[bool, typer.Option("-a", "--archive", help=t("opt.archive"))] = False,
-    port: Annotated[int, typer.Option("-p", "--port", help=t("opt.port"))] = 18080,
-    build: Annotated[bool, typer.Option("--build", help=t("opt.build"))] = False,
-    tag: Annotated[Optional[str], typer.Option("--tag", help=t("opt.tag"))] = None,
-    force: Annotated[bool, typer.Option("--force", help=t("opt.force"))] = False,
-    config: Annotated[str, typer.Option("--config", "-c", help=t("opt.config"))] = "compman.yml",
-) -> None:
-    from compman.ops.common import prompt_select
-
-    # Direct mode routing if explicit flag passed
-    if scaffold:
-        choice = 0
-    elif s3 is not None:
-        choice = 1
-    elif seed_mode or archive or port != 18080:
-        choice = 2
-    else:
-        # Interactive mode selection
-        modes = [
-            "1. Create scaffold config (compman.yml)",
-            "2. Fetch package from S3 URL",
-            "3. Generate test seed project (app.py, Dockerfile, compose)",
-        ]
-        choice = prompt_select("Select initialization mode", modes, default_index=0)
-
-    if choice == 0:
-        # Mode 1: Scaffold compman.yml
-        path = pathlib.Path(config)
-        if path.is_file() and not force:
-            typer.echo(t("msg.config_exists", config=config))
-            return
-        content = dump_default_config(pathlib.Path.cwd().name)
-        path.write_text(content, encoding="utf-8")
-        typer.echo(t("msg.config_created", config=config, content=content.strip()))
-
-    elif choice == 1:
-        # Mode 2: S3 URL
-        s3_url = s3
-        if not s3_url:
-            s3_url = typer.prompt("Enter S3 URL (e.g. s3://bucket/path/app.tar.gz)")
-        _deploy(build=build, tag=tag, s3_path=s3_url)
-
-    elif choice == 2:
-        # Mode 3: Test Seed Project
-        from compman.ops import seed
-
-        seed.generate_seed(output=output, archive=archive, port=port, force=force)
+register_init(app, _deploy, dump_default_config)
 
 
 # ---- clear ----
 @app.command("clear", help=t("cmd.clear"))
-def clear_cmd() -> None:
+def clear_cmd(
+    yes: Annotated[bool, typer.Option("--yes", help=t("opt.clear_yes"))] = False,
+) -> None:
+    if not yes:
+        typer.confirm(t("msg.clear_confirm"), abort=True)
     typer.echo(t("msg.prune_images"))
     runtime = detect_runtime()
     runtime.passthru_cli(["image", "prune", "-af"])
@@ -262,9 +216,9 @@ def clear_cmd() -> None:
 # ---- deploy ----
 @app.command("deploy", help=t("cmd.deploy"))
 def deploy_cmd(
-    path: Annotated[Optional[str], typer.Option("--path", help=t("opt.path"))] = None,
+    path: Annotated[str | None, typer.Option("--path", help=t("opt.path"))] = None,
     build: Annotated[bool, typer.Option("--build", help=t("opt.build"))] = False,
-    tag: Annotated[Optional[str], typer.Option("--tag", help=t("opt.tag"))] = None,
+    tag: Annotated[str | None, typer.Option("--tag", help=t("opt.tag"))] = None,
 ) -> None:
     _deploy(build=build, tag=tag, s3_path=path)
 
@@ -272,8 +226,8 @@ def deploy_cmd(
 # ---- update ----
 @app.command("update", help=t("cmd.update"))
 def update_cmd(
-    profile: Annotated[Optional[str], typer.Argument()] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Argument()] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     cfg = ctx["config"]
@@ -285,7 +239,7 @@ def update_cmd(
 
 
 def _render_doctor(report: DoctorReport) -> None:
-    typer.echo("Doctor:")
+    typer.echo(t("msg.doctor_header"))
     for check in report.checks:
         marker = "!" if check.severity == "warning" else "OK" if check.ok else "X"
         typer.echo(f"{marker} {check.id}: {check.message}")
@@ -311,8 +265,8 @@ def _render_status(report: StatusReport) -> None:
 # ---- doctor ----
 @app.command("doctor", help=t("cmd.doctor"))
 def doctor_cmd(
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
     json_output: Annotated[bool, typer.Option("--json", help=t("opt.json"))] = False,
 ) -> None:
     report = collect_doctor(config, profile)
@@ -327,8 +281,8 @@ def doctor_cmd(
 # ---- status ----
 @app.command("status", help=t("cmd.status"))
 def status_cmd(
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
     json_output: Annotated[bool, typer.Option("--json", help=t("opt.json"))] = False,
 ) -> None:
     report = collect_status(config, profile)
@@ -343,12 +297,12 @@ def status_cmd(
 # ---- project containers ----
 @app.command("ps", help=t("cmd.ps"))
 def ps_cmd(
-    profile: Annotated[Optional[str], typer.Argument()] = None,
+    profile: Annotated[str | None, typer.Argument()] = None,
     all_containers: Annotated[
         bool, typer.Option("--all", "-a", help=t("opt.all"))
     ] = False,
     config: Annotated[
-        Optional[str], typer.Option("--config", "-c", help=t("opt.config"))
+        str | None, typer.Option("--config", "-c", help=t("opt.config"))
     ] = None,
 ) -> None:
     ctx = _load(config)
@@ -357,12 +311,12 @@ def ps_cmd(
 
 @app.command("stats", help=t("cmd.stats"))
 def stats_cmd(
-    profile: Annotated[Optional[str], typer.Argument()] = None,
+    profile: Annotated[str | None, typer.Argument()] = None,
     follow: Annotated[
         bool, typer.Option("--follow", "-f", help=t("opt.follow"))
     ] = False,
     config: Annotated[
-        Optional[str], typer.Option("--config", "-c", help=t("opt.config"))
+        str | None, typer.Option("--config", "-c", help=t("opt.config"))
     ] = None,
 ) -> None:
     ctx = _load(config)
@@ -370,107 +324,7 @@ def stats_cmd(
 
 
 # ---- completion ----
-@app.command("completion", help=t("cmd.completion"))
-def completion_cmd(
-    shell: Annotated[str, typer.Argument()] = "powershell",
-    install: Annotated[bool, typer.Option("--install", help=t("opt.install"))] = False,
-) -> None:
-    if shell == "powershell":
-        snippet = _ps_completion_snippet()
-        if install:
-            try:
-                ps_profile = subprocess.check_output(
-                    ["powershell", "-NoProfile", "-Command", "echo $PROFILE"], text=True
-                ).strip()
-                profile_path = pathlib.Path(ps_profile)
-                profile_path.parent.mkdir(parents=True, exist_ok=True)
-                current_content = profile_path.read_text(encoding="utf-8") if profile_path.exists() else ""
-                if "compman shell completion" in current_content:
-                    lines = current_content.splitlines()
-                    new_lines = [line for line in lines if "_COMPMAN_COMPLETE" not in line and "compman | Out-String" not in line]
-                    current_content = "\n".join(new_lines)
-                if "Register-ArgumentCompleter -Native -CommandName compman" not in current_content:
-                    with profile_path.open("w", encoding="utf-8") as f:
-                        f.write(current_content.strip() + "\n" + snippet)
-                    typer.echo(t("msg.completion_registered", shell="PowerShell", path=profile_path))
-                else:
-                    typer.echo(t("msg.completion_exists", path="PowerShell profile"))
-            except Exception as e:
-                typer.echo(t("msg.completion_error", error=e), err=True)
-        else:
-            typer.echo(snippet.strip())
-    elif shell == "bash":
-        snippet = 'eval "$(_COMPMAN_COMPLETE=bash_source compman)"'
-        if install:
-            rc_path = pathlib.Path.home() / ".bashrc"
-            current_content = rc_path.read_text(encoding="utf-8") if rc_path.exists() else ""
-            if "_COMPMAN_COMPLETE" not in current_content:
-                with rc_path.open("a", encoding="utf-8") as f:
-                    f.write(f"\n{snippet}\n")
-                typer.echo(t("msg.completion_registered", shell="Bash", path=rc_path))
-            else:
-                typer.echo(t("msg.completion_exists", path=".bashrc"))
-        else:
-            typer.echo(snippet)
-    elif shell == "zsh":
-        snippet = 'eval "$(_COMPMAN_COMPLETE=zsh_source compman)"'
-        if install:
-            rc_path = pathlib.Path.home() / ".zshrc"
-            current_content = rc_path.read_text(encoding="utf-8") if rc_path.exists() else ""
-            if "_COMPMAN_COMPLETE" not in current_content:
-                with rc_path.open("a", encoding="utf-8") as f:
-                    f.write(f"\n{snippet}\n")
-                typer.echo(t("msg.completion_registered", shell="Zsh", path=rc_path))
-            else:
-                typer.echo(t("msg.completion_exists", path=".zshrc"))
-        else:
-            typer.echo(snippet)
-    elif shell == "fish":
-        snippet = "_COMPMAN_COMPLETE=fish_source compman | source"
-        if install:
-            fish_config = pathlib.Path.home() / ".config" / "fish" / "config.fish"
-            fish_config.parent.mkdir(parents=True, exist_ok=True)
-            current_content = fish_config.read_text(encoding="utf-8") if fish_config.exists() else ""
-            if "_COMPMAN_COMPLETE" not in current_content:
-                with fish_config.open("a", encoding="utf-8") as f:
-                    f.write(f"\n{snippet}\n")
-                typer.echo(t("msg.completion_registered", shell="Fish", path=fish_config))
-            else:
-                typer.echo(t("msg.completion_exists", path="config.fish"))
-        else:
-            typer.echo(snippet)
-
-
-def _ps_completion_snippet() -> str:
-    return (
-        "\n# compman shell completion\n"
-        "Register-ArgumentCompleter -Native -CommandName compman -ScriptBlock {\n"
-        "    param($wordToComplete, $commandAst, $cursorPosition)\n"
-        "    $subcommands = @('init', 'clear', 'deploy', 'update', 'doctor', 'status', 'ps', 'stats', 'upgrade', 'completion', 'seed', 'version', 'stack', 'service', 'volume', 'image')\n"
-        "    $words = $commandAst.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)\n"
-        "    if ($words.Count -le 2) {\n"
-        "        $subcommands | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
-        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
-        "        }\n"
-        "    } elseif ($words[1] -eq 'stack') {\n"
-        "        @('up', 'down', 'update') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
-        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
-        "        }\n"
-        "    } elseif ($words[1] -eq 'service') {\n"
-        "        @('start', 'stop', 'restart', 'status', 'log', 'connect') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
-        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
-        "        }\n"
-        "    } elseif ($words[1] -eq 'volume') {\n"
-        "        @('backup', 'restore', 'pull', 'push') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
-        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
-        "        }\n"
-        "    } elseif ($words[1] -eq 'image') {\n"
-        "        @('backup', 'restore') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
-        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
-        "        }\n"
-        "    }\n"
-        "}\n"
-    )
+register_completion(app)
 
 
 # ---- upgrade ----
@@ -522,7 +376,7 @@ def upgrade_cmd(
 # ---- lang ----
 @app.command("lang", help=t("cmd.lang"))
 def lang_cmd(
-    language: Annotated[Optional[str], typer.Argument(help="Language code (en or ko)")] = None,
+    language: Annotated[str | None, typer.Argument(help=t("opt.language_code"))] = None,
 ) -> None:
     if language:
         if language.lower() in ("en", "ko"):
@@ -566,8 +420,8 @@ stack_app = typer.Typer(
 
 @stack_app.command("up", help=t("cmd.stack.up"))
 def stack_up(
-    profile: Annotated[Optional[str], typer.Argument()] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Argument()] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _stack_ops().up(ctx["runtime"], ctx["config"], profile)
@@ -575,20 +429,20 @@ def stack_up(
 
 @stack_app.command("down", help=t("cmd.stack.down"))
 def stack_down(
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
-    yes: Annotated[bool, typer.Option("--yes", help="Confirm stack removal")] = False,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    yes: Annotated[bool, typer.Option("--yes", help=t("opt.confirm_stack_removal"))] = False,
 ) -> None:
     if not yes:
-        typer.confirm("Remove the entire stack?", abort=True)
+        typer.confirm(t("msg.remove_stack_confirm"), abort=True)
     ctx = _load(config)
     _stack_ops().down(ctx["runtime"], ctx["config"], profile)
 
 
 @stack_app.command("update", help=t("cmd.stack.update"))
 def stack_update(
-    profile: Annotated[Optional[str], typer.Argument()] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Argument()] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _stack_ops().update(ctx["runtime"], ctx["config"], profile)
@@ -609,8 +463,8 @@ service_app = typer.Typer(
 @service_app.command("start", help=t("cmd.service.start"))
 def service_start(
     services: Annotated[list[str], typer.Argument()] = [],
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _service_ops().start(ctx["runtime"], ctx["config"], tuple(services), profile)
@@ -619,8 +473,8 @@ def service_start(
 @service_app.command("stop", help=t("cmd.service.stop"))
 def service_stop(
     services: Annotated[list[str], typer.Argument()] = [],
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _service_ops().stop(ctx["runtime"], ctx["config"], tuple(services), profile)
@@ -629,8 +483,8 @@ def service_stop(
 @service_app.command("restart", help=t("cmd.service.restart"))
 def service_restart(
     services: Annotated[list[str], typer.Argument()] = [],
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _service_ops().restart(ctx["runtime"], ctx["config"], tuple(services), profile)
@@ -638,8 +492,8 @@ def service_restart(
 
 @service_app.command("status", help=t("cmd.service.status"))
 def service_status(
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _service_ops().status(ctx["runtime"], ctx["config"], profile)
@@ -647,11 +501,11 @@ def service_status(
 
 @service_app.command("log", help=t("cmd.service.log"))
 def service_log(
-    name: Annotated[Optional[str], typer.Argument()] = None,
+    name: Annotated[str | None, typer.Argument()] = None,
     follow: Annotated[bool, typer.Option("-f", "--follow", help=t("opt.follow"))] = False,
     tail: Annotated[int, typer.Option("-n", "--tail", help=t("opt.tail"))] = 50,
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _service_ops().log(ctx["runtime"], ctx["config"], name, follow=follow, tail=tail, profile=profile)
@@ -659,9 +513,9 @@ def service_log(
 
 @service_app.command("connect", help=t("cmd.service.connect"))
 def service_connect(
-    name: Annotated[Optional[str], typer.Argument()] = None,
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    name: Annotated[str | None, typer.Argument()] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _service_ops().connect(ctx["runtime"], ctx["config"], name, profile)
@@ -682,8 +536,8 @@ volume_app = typer.Typer(
 @volume_app.command("backup", help=t("cmd.volume.backup"))
 def volume_backup(
     no_stop: Annotated[bool, typer.Option("--no-stop", help=t("opt.no_stop"))] = False,
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
     level: Annotated[int, typer.Option("-z", "--level", min=1, max=9, help=t("opt.compression_level"))] = 6,
 ) -> None:
     ctx = _load(config)
@@ -698,19 +552,22 @@ def volume_backup(
 
 @volume_app.command("restore", help=t("cmd.volume.restore"))
 def volume_restore(
-    timestamp: Annotated[Optional[str], typer.Argument(help="Timestamp of backup to restore (YYYYMMDD_HHMM)")] = None,
+    timestamp: Annotated[str | None, typer.Argument(help=t("opt.restore_timestamp"))] = None,
     no_stop: Annotated[bool, typer.Option("--no-stop", help=t("opt.no_stop"))] = False,
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    replace: Annotated[bool, typer.Option("--replace", help=t("opt.replace"))] = False,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    _volume_ops().restore(ctx["runtime"], ctx["config"], timestamp, no_stop=no_stop, profile=profile)
+    _volume_ops().restore(
+        ctx["runtime"], ctx["config"], timestamp, no_stop=no_stop, profile=profile, replace=replace
+    )
 
 
 @volume_app.command("pull", help=t("cmd.volume.pull"))
 def volume_pull(
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _volume_ops().pull(ctx["runtime"], ctx["config"], profile)
@@ -718,11 +575,12 @@ def volume_pull(
 
 @volume_app.command("push", help=t("cmd.volume.push"))
 def volume_push(
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    replace: Annotated[bool, typer.Option("--replace", help=t("opt.replace"))] = False,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
-    _volume_ops().push(ctx["runtime"], ctx["config"], profile)
+    _volume_ops().push(ctx["runtime"], ctx["config"], profile, replace=replace)
 
 
 app.add_typer(volume_app, name="volume")
@@ -740,8 +598,8 @@ image_app = typer.Typer(
 @image_app.command("backup", help=t("cmd.image.backup"))
 def image_backup(
     source_image: Annotated[bool, typer.Option("--source-image", help=t("opt.source_image"))] = False,
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
     level: Annotated[int, typer.Option("-z", "--level", min=1, max=9, help=t("opt.compression_level"))] = 6,
 ) -> None:
     ctx = _load(config)
@@ -756,9 +614,9 @@ def image_backup(
 
 @image_app.command("restore", help=t("cmd.image.restore"))
 def image_restore(
-    timestamp: Annotated[Optional[str], typer.Argument(help="Timestamp of backup to restore (YYYYMMDD_HHMM)")] = None,
-    profile: Annotated[Optional[str], typer.Option("--profile", help="Compose profile")] = None,
-    config: Annotated[Optional[str], typer.Option("--config", "-c", help=t("opt.config"))] = None,
+    timestamp: Annotated[str | None, typer.Argument(help=t("opt.restore_timestamp"))] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help=t("opt.profile"))] = None,
+    config: Annotated[str | None, typer.Option("--config", "-c", help=t("opt.config"))] = None,
 ) -> None:
     ctx = _load(config)
     _image_ops().restore(ctx["runtime"], ctx["config"], timestamp, profile)

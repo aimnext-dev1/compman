@@ -15,6 +15,7 @@ from compman.docker import (
     ContainerRuntime,
     _check_cmd,
     _die,
+    _env_timeout,
     _merged_env,
     _parse_service_status,
     _passthru,
@@ -169,6 +170,26 @@ def test_passthru_failure_is_raised(mock_run):
 def test_passthru_timeout_is_raised(mock_run):
     with pytest.raises(RuntimeError, match="timed out"):
         _passthru(["docker", "compose", "up"])
+
+
+def test_fix_permissions_handles_failure_and_parse_branches():
+    runtime = ContainerRuntime(name="docker", cli=["docker"], compose=["docker", "compose"])
+    failed = MagicMock(returncode=1, stdout="")
+    single = MagicMock(returncode=0, stdout="onlyone")
+    pair = MagicMock(returncode=0, stdout="1000 1000")
+
+    with patch.object(runtime, "run_cli", side_effect=[failed]) as run:
+        runtime.fix_permissions("c", "/data")
+        assert run.call_count == 1
+
+    with patch.object(runtime, "run_cli", side_effect=[single]) as run:
+        runtime.fix_permissions("c", "/data")
+        assert run.call_count == 1
+
+    with patch.object(runtime, "run_cli", side_effect=[pair, None]) as run:
+        runtime.fix_permissions("c", "/data")
+        assert run.call_count == 2
+        assert run.call_args.args[0] == ["exec", "-u", "root", "c", "chown", "-R", "1000:1000", "/data"]
 
 
 def test_container_runtime_methods():
@@ -598,6 +619,87 @@ def test_run_cli_applies_requested_timeout():
         runtime.run_cli(["info"], timeout=2.5)
 
     assert run.call_args.kwargs["timeout"] == 2.5
+
+
+def test_run_cli_uses_default_field_timeout_when_unset():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"])
+
+    with patch("compman.docker._run", return_value=MagicMock(returncode=0)) as run:
+        runtime.run_cli(["info"])
+
+    assert run.call_args.kwargs["timeout"] == 300.0
+
+
+def test_run_cli_uses_runtime_default_timeout_when_unset():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"], timeout=45.0)
+
+    with patch("compman.docker._run", return_value=MagicMock(returncode=0)) as run:
+        runtime.run_cli(["info"])
+
+    assert run.call_args.kwargs["timeout"] == 45.0
+
+
+def test_run_cli_explicit_timeout_overrides_runtime_default():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"], timeout=45.0)
+
+    with patch("compman.docker._run", return_value=MagicMock(returncode=0)) as run:
+        runtime.run_cli(["info"], timeout=7.5)
+
+    assert run.call_args.kwargs["timeout"] == 7.5
+
+
+def test_run_compose_uses_runtime_default_timeout_when_unset():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"], timeout=45.0)
+
+    with patch("compman.docker._run", return_value=MagicMock(returncode=0)) as run:
+        runtime.run_compose(["ps"])
+
+    assert run.call_args.kwargs["timeout"] == 45.0
+
+
+def test_run_compose_explicit_timeout_overrides_runtime_default():
+    runtime = ContainerRuntime("docker", ["docker"], ["docker", "compose"], timeout=45.0)
+
+    with patch("compman.docker._run", return_value=MagicMock(returncode=0)) as run:
+        runtime.run_compose(["ps"], timeout=7.5)
+
+    assert run.call_args.kwargs["timeout"] == 7.5
+
+
+def test_env_timeout_defaults_to_300_when_unset():
+    with patch.dict(os.environ, {}, clear=True):
+        assert _env_timeout() == 300.0
+
+
+def test_env_timeout_reads_valid_value():
+    with patch.dict(os.environ, {"COMPMAN_TIMEOUT": "42"}, clear=True):
+        assert _env_timeout() == 42.0
+
+
+def test_env_timeout_defaults_to_300_for_invalid_value():
+    with patch.dict(os.environ, {"COMPMAN_TIMEOUT": "not-a-number"}, clear=True):
+        assert _env_timeout() == 300.0
+
+
+def test_env_timeout_defaults_to_300_for_non_positive_value():
+    with patch.dict(os.environ, {"COMPMAN_TIMEOUT": "0"}, clear=True):
+        assert _env_timeout() == 300.0
+
+
+@patch("compman.docker._check_cmd")
+def test_detect_runtime_applies_env_timeout(mock_check):
+    mock_check.return_value = (True, "Docker version 20.10.0")
+    with patch.dict(os.environ, {"COMPMAN_TIMEOUT": "42"}, clear=True):
+        rt = detect_runtime()
+    assert rt.timeout == 42.0
+
+
+@patch("compman.docker._check_cmd")
+def test_detect_runtime_falls_back_to_default_timeout_for_invalid_env(mock_check):
+    mock_check.return_value = (True, "Docker version 20.10.0")
+    with patch.dict(os.environ, {"COMPMAN_TIMEOUT": "oops"}, clear=True):
+        rt = detect_runtime()
+    assert rt.timeout == 300.0
 
 
 def test_ensure_ready_for_start_caps_probes_at_remaining_deadline(monkeypatch):

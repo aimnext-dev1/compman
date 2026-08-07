@@ -158,7 +158,12 @@ def test_deploy_existing_config_s3(dummy_runtime, temp_dir: pathlib.Path):
 
     calls: list[str] = []
     dummy_runtime.ensure_ready_for_start = MagicMock(side_effect=lambda callback: calls.append("ready"))
-    dummy_runtime.passthru_cli = MagicMock(side_effect=lambda *_args, **_kwargs: calls.append("build"))
+
+    def build_call(*_args, **_kwargs):
+        calls.append("build")
+        assert not (temp_dir / "project").exists()
+
+    dummy_runtime.passthru_cli = MagicMock(side_effect=build_call)
     with patch("boto3.client", return_value=mock_s3), patch(
         "compman.deploy.detect_runtime", return_value=dummy_runtime
     ) as detect:
@@ -167,9 +172,9 @@ def test_deploy_existing_config_s3(dummy_runtime, temp_dir: pathlib.Path):
     assert calls == ["ready", "build"]
     detect.assert_called_once()
     dummy_runtime.ensure_ready_for_start.assert_called_once()
-    dummy_runtime.passthru_cli.assert_called_once_with(
-        ["build", "-t", "my_tag", "."], cwd=temp_dir / "project"
-    )
+    build_cwd = dummy_runtime.passthru_cli.call_args.kwargs["cwd"]
+    assert ".deploy_tmp_" in str(build_cwd) and temp_dir in build_cwd.parents
+    assert (temp_dir / "project").exists()
 
 
 def test_deploy_zip_archive(temp_dir: pathlib.Path):
@@ -266,6 +271,79 @@ def test_deploy_prefix_download(dummy_runtime, temp_dir: pathlib.Path):
     with patch("boto3.client", return_value=mock_s3), patch("compman.deploy.detect_runtime", return_value=dummy_runtime):
         deploy.deploy(s3_path="s3://my-bucket/my-prefix")
         assert (temp_dir / "project" / "file1.txt").exists()
+
+
+def test_deploy_rejects_source_over_archive_limit(temp_dir: pathlib.Path, capsys):
+    (temp_dir / "compman.yml").write_text(
+        "compman:\n  name: app\n  limits:\n    max_archive_mb: 1\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    mock_s3 = MagicMock()
+    mock_s3.get_paginator.return_value.paginate.return_value = [
+        {"Contents": [{"Key": "my-prefix/big.bin"}]}
+    ]
+
+    def download(_bucket, _key, destination):
+        pathlib.Path(destination).parent.mkdir(parents=True, exist_ok=True)
+        pathlib.Path(destination).write_bytes(b"x" * (1024 * 1024 + 1))
+
+    mock_s3.download_file = MagicMock(side_effect=download)
+
+    with patch("boto3.client", return_value=mock_s3), pytest.raises(SystemExit):
+        deploy.deploy(s3_path="s3://my-bucket/my-prefix")
+
+    error = capsys.readouterr().err
+    assert "1 MB size limit" in error
+    assert not (temp_dir / "project").exists()
+
+
+def test_deploy_echoes_provenance_under_limit(dummy_runtime, temp_dir: pathlib.Path, capsys):
+    (temp_dir / "compman.yml").write_text(
+        "compman:\n  name: app\n  limits:\n    max_archive_mb: 10\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    mock_s3 = MagicMock()
+    mock_s3.get_paginator.return_value.paginate.return_value = [
+        {"Contents": [{"Key": "my-prefix/file1.txt"}]}
+    ]
+
+    def download(_bucket, _key, destination):
+        pathlib.Path(destination).parent.mkdir(parents=True, exist_ok=True)
+        pathlib.Path(destination).write_text("hello", encoding="utf-8")
+
+    mock_s3.download_file = MagicMock(side_effect=download)
+
+    with patch("boto3.client", return_value=mock_s3):
+        deploy.deploy(s3_path="s3://my-bucket/my-prefix")
+
+    out = capsys.readouterr().out
+    assert "Source: s3://my-bucket/my-prefix" in out
+    assert "bytes" in out
+    assert (temp_dir / "project" / "file1.txt").exists()
+
+
+def test_deploy_without_limits_no_provenance(dummy_runtime, temp_dir: pathlib.Path, capsys):
+    (temp_dir / "compman.yml").write_text(
+        "compman:\n  name: app\n  compose:\n    default:\n      file: docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    mock_s3 = MagicMock()
+    mock_s3.get_paginator.return_value.paginate.return_value = [
+        {"Contents": [{"Key": "my-prefix/file1.txt"}]}
+    ]
+
+    def download(_bucket, _key, destination):
+        pathlib.Path(destination).parent.mkdir(parents=True, exist_ok=True)
+        pathlib.Path(destination).write_text("hello", encoding="utf-8")
+
+    mock_s3.download_file = MagicMock(side_effect=download)
+
+    with patch("boto3.client", return_value=mock_s3):
+        deploy.deploy(s3_path="s3://my-bucket/my-prefix")
+
+    out = capsys.readouterr().out
+    assert "Source:" not in out
+    assert (temp_dir / "project" / "file1.txt").exists()
 
 
 def test_deploy_bucket_root_prefix(dummy_runtime, temp_dir: pathlib.Path):
@@ -373,3 +451,4 @@ def test_deploy_reports_local_build_stage(dummy_runtime, temp_dir: pathlib.Path,
     error = capsys.readouterr().err
     assert "building the container image" in error
     assert "Failed to download" not in error
+    assert not (temp_dir / "project").exists()

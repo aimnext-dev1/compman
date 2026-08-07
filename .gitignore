@@ -9,6 +9,10 @@ Thumbs.db
 # AI agents
 .agents/
 .superpowers/
+.omo/
+
+# Throwaway experiments
+scratch/
 
 # Python
 __pycache__/

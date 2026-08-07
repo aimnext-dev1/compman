@@ -8,6 +8,7 @@ import typer
 import yaml
 
 from compman.config import sanitize_project_name
+from compman.i18n import t
 
 
 def generate(root: Path, project_subfolder: str, s3_path: str, image: str) -> None:
@@ -24,7 +25,7 @@ def generate(root: Path, project_subfolder: str, s3_path: str, image: str) -> No
             f"      file: docker-compose.yml\n"
         )
         compman_yml.write_text(content, encoding="utf-8")
-        typer.echo("Created compman.yml:")
+        typer.echo(t("msg.created_compman"))
         typer.echo(f"----------------------------------------\n{content.strip()}\n----------------------------------------")
     else:
         update_deploy(compman_yml, s3_path)
@@ -46,7 +47,7 @@ def generate(root: Path, project_subfolder: str, s3_path: str, image: str) -> No
             f"    restart: unless-stopped\n"
         )
         root_compose.write_text(compose_content, encoding="utf-8")
-        typer.echo("Created docker-compose.yml:")
+        typer.echo(t("msg.created_compose"))
         typer.echo(f"----------------------------------------\n{compose_content.strip()}\n----------------------------------------")
 
 
@@ -110,7 +111,7 @@ def update_deploy(compman_yml: Path, s3_path: str) -> None:
         check_raw = yaml.safe_load(new_content)
         if isinstance(check_raw, dict) and check_raw.get("compman", {}).get("deploy") == s3_path:
             compman_yml.write_text(new_content, encoding="utf-8")
-            typer.echo(f"Updated deploy in compman.yml ({s3_path}):")
+            typer.echo(t("msg.updated_deploy", s3_path=s3_path))
             typer.echo(f"----------------------------------------\n{new_content.strip()}\n----------------------------------------")
             return
     except Exception:
@@ -120,5 +121,5 @@ def update_deploy(compman_yml: Path, s3_path: str) -> None:
         raw["compman"]["deploy"] = s3_path
         dumped = yaml.safe_dump(raw, sort_keys=False, allow_unicode=True)
         compman_yml.write_text(dumped, encoding="utf-8")
-        typer.echo(f"Updated deploy in compman.yml ({s3_path}):")
+        typer.echo(t("msg.updated_deploy", s3_path=s3_path))
         typer.echo(f"----------------------------------------\n{dumped.strip()}\n----------------------------------------")

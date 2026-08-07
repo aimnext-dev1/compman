@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from typer.testing import CliRunner
 
+from compman import i18n
 from compman.docker import ContainerRuntime
 
 
@@ -117,3 +118,9 @@ def temp_dir(tmp_path: pathlib.Path) -> Generator[pathlib.Path, None, None]:
         yield tmp_path
     finally:
         os.chdir(old_cwd)
+
+
+@pytest.fixture(autouse=True)
+def _reset_language() -> Generator[None, None, None]:
+    yield
+    i18n._CURRENT_LANG.set(None)

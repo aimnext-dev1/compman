@@ -11,7 +11,7 @@ from compman.config import Config
 from compman.docker import ContainerRuntime, resolve_compose_context
 from compman.errors import CommandError
 from compman.i18n import t
-from compman.ops.common import select_backup_timestamp
+from compman.ops.common import select_backup_timestamp, validate_timestamp
 
 
 def backup(
@@ -86,7 +86,7 @@ def restore(
     if not timestamp:
         timestamp = select_backup_timestamp(config, "image")
 
-    _validate_timestamp(timestamp)
+    validate_timestamp(timestamp)
 
     backup_name = f"{config.name}.image.{timestamp}"
     tarball = config.backup_dir / f"{backup_name}.tar.gz"
@@ -106,22 +106,6 @@ def restore(
     finally:
         shutil.rmtree(restore_dir, ignore_errors=True)
     typer.echo(t("msg.restore_done", kind="Image") + " " + t("msg.image_restore_hint"))
-
-
-def _validate_timestamp(ts: str) -> None:
-    if not any(
-        _valid_timestamp(ts, fmt)
-        for fmt in ("%Y%m%d_%H%M", "%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S_%f")
-    ):
-        raise CommandError(f"Invalid timestamp: {ts} (expected YYYYMMDD_HHMM[SS])")
-
-
-def _valid_timestamp(value: str, fmt: str) -> bool:
-    try:
-        datetime.strptime(value, fmt)
-        return True
-    except ValueError:
-        return False
 
 
 def _list_backups(config: Config) -> None:

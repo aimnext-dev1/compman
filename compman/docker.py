@@ -19,15 +19,17 @@ class ContainerRuntime:
     name: str
     cli: list[str]
     compose: list[str]
+    timeout: float = 300.0
 
     def run_cli(
         self,
         args: Sequence[str],
         capture: bool = True,
         check: bool = True,
-        timeout: float = 300.0,
+        timeout: float | None = None,
     ) -> subprocess.CompletedProcess:
-        return _run(self.cli + list(args), capture=capture, check=check, timeout=timeout)
+        run_timeout = self.timeout if timeout is None else timeout
+        return _run(self.cli + list(args), capture=capture, check=check, timeout=run_timeout)
 
     def ensure_ready_for_start(
         self, confirm_start: Callable[[], bool], timeout: float = 60.0
@@ -93,9 +95,11 @@ class ContainerRuntime:
         env: dict[str, str] | None = None,
         capture: bool = True,
         check: bool = True,
+        timeout: float | None = None,
     ) -> subprocess.CompletedProcess:
         cmd = self._compose_cmd(project, compose_files) + list(args)
-        return _run(cmd, extra_env=env, capture=capture, check=check)
+        run_timeout = self.timeout if timeout is None else timeout
+        return _run(cmd, extra_env=env, capture=capture, check=check, timeout=run_timeout)
 
     def passthru_compose(
         self,
@@ -271,6 +275,7 @@ class ContainerRuntime:
 
 def detect_runtime() -> ContainerRuntime:
     override = os.environ.get("CONTAINER_RUNTIME", "").lower()
+    timeout = _env_timeout()
 
     if not override or override == "docker":
         ok, _ = _check_cmd(["docker", "compose", "version"])
@@ -279,6 +284,7 @@ def detect_runtime() -> ContainerRuntime:
                 name="docker",
                 cli=["docker"],
                 compose=["docker", "compose"],
+                timeout=timeout,
             )
 
     if not override or override == "podman":
@@ -288,6 +294,7 @@ def detect_runtime() -> ContainerRuntime:
                 name="podman",
                 cli=["podman"],
                 compose=["podman", "compose"],
+                timeout=timeout,
             )
 
     if not override or override == "podman":
@@ -297,6 +304,7 @@ def detect_runtime() -> ContainerRuntime:
                 name="podman",
                 cli=["podman"],
                 compose=["podman-compose"],
+                timeout=timeout,
             )
 
     if not override or override == "docker":
@@ -306,12 +314,26 @@ def detect_runtime() -> ContainerRuntime:
                 name="docker",
                 cli=["docker"],
                 compose=["docker-compose"],
+                timeout=timeout,
             )
 
     msg = "No container runtime found. Install Docker or Podman."
     if override:
         msg = f"Runtime '{override}' not found."
     raise RuntimeError(msg)
+
+
+def _env_timeout() -> float:
+    raw = os.environ.get("COMPMAN_TIMEOUT")
+    if raw is None:
+        return 300.0
+    try:
+        value = float(raw)
+    except ValueError:
+        return 300.0
+    if value <= 0:
+        return 300.0
+    return value
 
 
 def _check_cmd(cmd: list[str]) -> tuple[bool, str]:

@@ -45,27 +45,20 @@ def log(
     profile: str | None = None,
 ) -> None:
     context = resolve_compose_context(config, profile)
-    service = _resolve_container(runtime, config, service, context)
-    if not service:
+    container = _resolve_container(runtime, config, service, context)
+    if not container:
         return
-    cid = runtime.get_container_id(service, config.name)
-    if not cid:
-        raise CommandError(t("msg.container_not_found", service=service))
-
-    runtime.logs(cid, follow=follow, tail=tail)
+    runtime.logs(container, follow=follow, tail=tail)
 
 
 def connect(
     runtime: ContainerRuntime, config: Config, service: str | None, profile: str | None = None
 ) -> None:
     context = resolve_compose_context(config, profile)
-    service = _resolve_container(runtime, config, service, context, connect=True)
-    if not service:
+    container = _resolve_container(runtime, config, service, context, connect=True)
+    if not container:
         return
-    cid = runtime.get_container_id(service, config.name)
-    if not cid:
-        raise CommandError(t("msg.container_not_found", service=service))
-    runtime.exec_shell(cid)
+    runtime.exec_shell(container)
 
 
 def _passthru_with_services(
@@ -79,9 +72,9 @@ def _passthru_with_services(
     if services:
         args += list(services)
         names = ", ".join(services)
-        typer.echo(f"Services: {names}")
+        typer.echo(t("msg.services_list", names=names))
     else:
-        typer.echo("All services")
+        typer.echo(t("msg.all_services"))
     runtime.passthru_compose(
         args, project=context.project, compose_files=context.files, env=context.env
     )
@@ -95,7 +88,21 @@ def _resolve_container(
     connect: bool = False,
 ) -> str | None:
     if service:
-        return service
+        result = runtime.run_compose(
+            ["ps", "-q", service],
+            project=context.project,
+            compose_files=context.files,
+            env=context.env,
+            check=False,
+        )
+        containers = result.stdout.strip().splitlines()
+        if not containers:
+            raise CommandError(t("msg.no_running_containers"))
+        if len(containers) == 1:
+            resolved = containers[0]
+            typer.echo(t("msg.resolved_container", service=service, container=resolved))
+            return resolved
+        raise CommandError(t("msg.scaled_service_ambiguous", service=service, count=len(containers)))
     containers = runtime.list_containers(config.name, context.files, context.env)
     if not containers:
         raise CommandError(t("msg.no_running_containers"))

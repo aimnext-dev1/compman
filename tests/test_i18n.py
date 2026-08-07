@@ -1,10 +1,47 @@
 from __future__ import annotations
 
+import ast
 import os
+import pathlib
 from unittest.mock import patch
 
 from compman import i18n
 from compman.i18n import get_lang, set_lang, t
+
+
+def _usage_keys() -> set[str]:
+    root = pathlib.Path(__file__).parents[1] / "compman"
+    keys: set[str] = set()
+    for path in root.rglob("*.py"):
+        if path.name == "i18n.py":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "t"
+                and node.args
+            ):
+                candidates = [node.args[0]]
+                if isinstance(node.args[0], ast.IfExp):
+                    candidates = [node.args[0].body, node.args[0].orelse]
+                for cand in candidates:
+                    if isinstance(cand, ast.Constant) and isinstance(cand.value, str):
+                        keys.add(cand.value)
+    return keys
+
+
+def test_all_used_translation_keys_exist():
+    assert _usage_keys() <= set(i18n.TRANSLATIONS)
+
+
+def test_all_translation_keys_are_bilingual():
+    assert all(set(entry) == {"en", "ko"} for entry in i18n.TRANSLATIONS.values())
+
+
+def test_no_unused_translation_keys():
+    assert set(i18n.TRANSLATIONS) <= _usage_keys()
 
 
 def test_i18n_lang_setting():

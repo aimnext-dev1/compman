@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -50,6 +51,7 @@ class Config:
     profiles: dict[str, Profile] = field(default_factory=dict)
     secrets: dict[str, SecretRef] = field(default_factory=dict)
     deploy: str | None = None
+    limits: dict[str, Any] = field(default_factory=dict)
 
     @property
     def project_dir(self) -> Path:
@@ -168,6 +170,18 @@ def load_config(config_path: str | None = None) -> Config:
         raise ConfigError("'secrets' must be a mapping.")
     secrets = _parse_secrets(raw_secrets, "secrets")
 
+    raw_limits = root.get("limits", {})
+    if not isinstance(raw_limits, dict):
+        raise ConfigError("'limits' must be a mapping.")
+    limits: dict[str, Any] = {}
+    max_archive_mb = raw_limits.get("max_archive_mb")
+    if max_archive_mb is not None:
+        if not isinstance(max_archive_mb, int):
+            raise ConfigError("'limits.max_archive_mb' must be an integer.")
+        if max_archive_mb <= 0:
+            raise ConfigError("'limits.max_archive_mb' must be greater than 0.")
+        limits["max_archive_mb"] = max_archive_mb
+
     config = Config(
         name=name,
         root_dir=path.parent,
@@ -178,6 +192,7 @@ def load_config(config_path: str | None = None) -> Config:
         profiles=profiles,
         secrets=secrets,
         deploy=raw_deploy,
+        limits=limits,
     )
     # Resolve all paths while loading so unsafe configuration fails before a
     # command can create, replace, or recursively delete anything.

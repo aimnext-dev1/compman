@@ -13,6 +13,7 @@ import pytest
 import typer
 
 import compman.cli as cli
+import compman.completion as completion
 import compman.deploy as deploy
 from compman.config import Config, ConfigError, Profile, load_config
 from compman.docker import ContainerRuntime, _run
@@ -32,9 +33,9 @@ def test_cli_internal_callbacks_and_load(runner, temp_dir):
         with pytest.raises(typer.Exit):
             cli._load()
 
-    with patch("compman.cli._deploy"):
-        with patch("compman.ops.common.prompt_select", return_value=3):
-            cli.init_cmd()
+    with patch("compman.ops.common.prompt_select", return_value=3):
+        result = runner.invoke(cli.app, ["init"])
+    assert result.exit_code == 0
 
 
 def test_cli_lazy_wrappers_delegate_to_command_modules():
@@ -142,7 +143,7 @@ def test_main_guard():
     with patch("compman.cli.app", side_effect=SystemExit(0)):
         with patch("sys.argv", ["compman"]):
             with pytest.raises(SystemExit):
-                runpy.run_module("compman.__main__", run_name="__main__")
+                runpy.run_path(str(pathlib.Path(__file__).parents[1] / "compman" / "__main__.py"), run_name="__main__")
 
 
 def test_config_remaining_branches(temp_dir):
@@ -174,10 +175,11 @@ def test_cli_upgrade_fallback_failure_and_find_uv():
         cli.upgrade_cmd()
     with patch("shutil.which", return_value=None), patch("pathlib.Path.is_file", return_value=False):
         assert cli._find_uv() == "uv"
-    cli.completion_cmd("unknown")
+    with pytest.raises(CommandError, match="Unsupported shell"):
+        completion.completion_cmd("unknown")
     with patch("sys.argv", ["compman", "version"]):
         with pytest.raises(SystemExit):
-            runpy.run_module("compman.cli", run_name="__main__")
+            runpy.run_path(str(pathlib.Path(__file__).parents[1] / "compman" / "cli.py"), run_name="__main__")
 
 
 def test_runtime_command_branches():
@@ -432,11 +434,6 @@ def test_volume_remaining_branches(dummy_runtime, temp_dir):
     data = MagicMock(returncode=0, stdout=json.dumps([{"Mounts": [{"Name": "other", "Destination": "/x"}]}]))
     with patch.object(dummy_runtime, "run_cli", return_value=data):
         assert volume._inspect_mount(dummy_runtime, "c", "v") is None
-
-    with patch.object(dummy_runtime, "run_cli", return_value=MagicMock(returncode=1, stdout="")):
-        volume._fix_permissions(dummy_runtime, "c", "/data")
-    with patch.object(dummy_runtime, "run_cli", return_value=MagicMock(returncode=0, stdout="onlyone")):
-        volume._fix_permissions(dummy_runtime, "c", "/data")
 
     volume._list_backups(cfg, "volume")
 

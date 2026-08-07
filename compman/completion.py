@@ -1,0 +1,118 @@
+from __future__ import annotations
+
+import pathlib
+import subprocess
+from typing import Annotated
+
+import typer
+
+from compman.errors import CommandError
+from compman.i18n import t
+
+
+def register(app: typer.Typer) -> None:
+    app.command("completion", help=t("cmd.completion"))(completion_cmd)
+
+
+def completion_cmd(
+    shell: Annotated[str, typer.Argument()] = "powershell",
+    install: Annotated[bool, typer.Option("--install", help=t("opt.install"))] = False,
+) -> None:
+    if shell == "powershell":
+        snippet = _ps_completion_snippet()
+        if install:
+            try:
+                ps_profile = subprocess.check_output(
+                    ["powershell", "-NoProfile", "-Command", "echo $PROFILE"], text=True
+                ).strip()
+                profile_path = pathlib.Path(ps_profile)
+                profile_path.parent.mkdir(parents=True, exist_ok=True)
+                current_content = profile_path.read_text(encoding="utf-8") if profile_path.exists() else ""
+                if "compman shell completion" in current_content:
+                    lines = current_content.splitlines()
+                    new_lines = [line for line in lines if "_COMPMAN_COMPLETE" not in line and "compman | Out-String" not in line]
+                    current_content = "\n".join(new_lines)
+                if "Register-ArgumentCompleter -Native -CommandName compman" not in current_content:
+                    with profile_path.open("w", encoding="utf-8") as f:
+                        f.write(current_content.strip() + "\n" + snippet)
+                    typer.echo(t("msg.completion_registered", shell="PowerShell", path=profile_path))
+                else:
+                    typer.echo(t("msg.completion_exists", path="PowerShell profile"))
+            except Exception as e:
+                typer.echo(t("msg.completion_error", error=e), err=True)
+        else:
+            typer.echo(snippet.strip())
+    elif shell == "bash":
+        snippet = 'eval "$(_COMPMAN_COMPLETE=bash_source compman)"'
+        if install:
+            rc_path = pathlib.Path.home() / ".bashrc"
+            current_content = rc_path.read_text(encoding="utf-8") if rc_path.exists() else ""
+            if "_COMPMAN_COMPLETE" not in current_content:
+                with rc_path.open("a", encoding="utf-8") as f:
+                    f.write(f"\n{snippet}\n")
+                typer.echo(t("msg.completion_registered", shell="Bash", path=rc_path))
+            else:
+                typer.echo(t("msg.completion_exists", path=".bashrc"))
+        else:
+            typer.echo(snippet)
+    elif shell == "zsh":
+        snippet = 'eval "$(_COMPMAN_COMPLETE=zsh_source compman)"'
+        if install:
+            rc_path = pathlib.Path.home() / ".zshrc"
+            current_content = rc_path.read_text(encoding="utf-8") if rc_path.exists() else ""
+            if "_COMPMAN_COMPLETE" not in current_content:
+                with rc_path.open("a", encoding="utf-8") as f:
+                    f.write(f"\n{snippet}\n")
+                typer.echo(t("msg.completion_registered", shell="Zsh", path=rc_path))
+            else:
+                typer.echo(t("msg.completion_exists", path=".zshrc"))
+        else:
+            typer.echo(snippet)
+    elif shell == "fish":
+        snippet = "_COMPMAN_COMPLETE=fish_source compman | source"
+        if install:
+            fish_config = pathlib.Path.home() / ".config" / "fish" / "config.fish"
+            fish_config.parent.mkdir(parents=True, exist_ok=True)
+            current_content = fish_config.read_text(encoding="utf-8") if fish_config.exists() else ""
+            if "_COMPMAN_COMPLETE" not in current_content:
+                with fish_config.open("a", encoding="utf-8") as f:
+                    f.write(f"\n{snippet}\n")
+                typer.echo(t("msg.completion_registered", shell="Fish", path=fish_config))
+            else:
+                typer.echo(t("msg.completion_exists", path="config.fish"))
+        else:
+            typer.echo(snippet)
+    else:
+        raise CommandError(t("msg.unsupported_shell", shell=shell))
+
+
+def _ps_completion_snippet() -> str:
+    return (
+        "\n# compman shell completion\n"
+        "Register-ArgumentCompleter -Native -CommandName compman -ScriptBlock {\n"
+        "    param($wordToComplete, $commandAst, $cursorPosition)\n"
+        "    $subcommands = @('init', 'clear', 'deploy', 'update', 'doctor', 'status', 'ps', 'stats', 'upgrade', 'completion', 'lang', 'version', 'stack', 'service', 'volume', 'image')\n"
+        "    $words = $commandAst.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)\n"
+        "    if ($words.Count -le 2) {\n"
+        "        $subcommands | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+        "        }\n"
+        "    } elseif ($words[1] -eq 'stack') {\n"
+        "        @('up', 'down', 'update') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+        "        }\n"
+        "    } elseif ($words[1] -eq 'service') {\n"
+        "        @('start', 'stop', 'restart', 'status', 'log', 'connect') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+        "        }\n"
+        "    } elseif ($words[1] -eq 'volume') {\n"
+        "        @('backup', 'restore', 'pull', 'push') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+        "        }\n"
+        "    } elseif ($words[1] -eq 'image') {\n"
+        "        @('backup', 'restore') | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {\n"
+        "            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)\n"
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
