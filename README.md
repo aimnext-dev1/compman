@@ -28,11 +28,13 @@ If every convenient option has been answered with "not allowed," `compman` is fo
 - For S3 deployments: accessible S3-compatible storage and AWS credentials
 - For HTTP deployments: a public archive URL (authenticated URLs are not yet supported)
 
-CI verifies Python 3.10–3.13 on Ubuntu, macOS, and Windows. See the `Python version strategy` section of [REVIEW.md](REVIEW.md) for the Python 3.14 support plan and upgrade decision.
+CI verifies Python 3.10–3.13 on Ubuntu, macOS, and Windows. See the `Python version strategy` section of [BACKLOG.md](BACKLOG.md) for the Python 3.14 support plan and upgrade decision.
 
 Successful CI for a push to `main` automatically creates an annotated tag from
 the version in `pyproject.toml`. Every version bump must include the matching
-dated section in `CHANGELOG.md`; existing tags are never moved.
+dated section in `CHANGELOG.md`; existing tags are never moved. Published wheels
+land on PyPI, so `uv tool install compman` (or `pipx install compman`) installs
+from PyPI.
 
 ## Installation
 
@@ -148,7 +150,7 @@ Public HTTP and HTTPS URLs support archives only. Query strings are allowed, but
 compman deploy --path https://example.com/releases/app.zip --build --tag my-app
 ```
 
-Only the deployment target with the same name is replaced; other user files are retained. If the source-replacement step fails, the previous tree is restored. A full transaction covering later scaffold generation and image building is not yet guaranteed.
+Only the deployment target with the same name is replaced; other user files are retained. With `--build`, the image is built from the temporary source before the swap, so a build failure leaves the existing tree and configuration untouched. If the source-replacement step fails, the previous tree is restored; only a scaffold-generation failure after the swap can leave the new source tree in place.
 
 ## Configuration file
 
@@ -220,6 +222,21 @@ compman:
 - `deploy`: Default S3 URI or public HTTP archive URL for `compman deploy` and `compman update`
 
 Managed paths cannot escape the directory containing `compman.yml`. `--path` overrides the configured `deploy` value for one invocation only.
+
+To cap the deployed source size, set an optional limit; when configured, the source and its byte size are echoed as provenance:
+
+```yaml
+compman:
+  name: my-stack
+  deploy: s3://my-bucket/releases/app.tar.gz
+  limits:
+    max_archive_mb: 50
+  compose:
+    default:
+      file: docker-compose.yml
+```
+
+Long-running Docker/subprocess operations use a 300-second timeout by default; override it per process with `COMPMAN_TIMEOUT=<seconds>` (e.g. `COMPMAN_TIMEOUT=600`).
 
 ### Environment variables from AWS Secrets Manager
 
@@ -327,14 +344,14 @@ compman service log [CONTAINER] [-f] [-n 50] [--profile PROFILE]
 compman service connect [CONTAINER] [--profile PROFILE]
 
 compman volume backup [-z LEVEL] [--no-stop] [--profile PROFILE]
-compman volume restore [TIMESTAMP] [--no-stop] [--profile PROFILE]
+compman volume restore [TIMESTAMP] [--no-stop] [--replace] [--profile PROFILE]
 compman volume pull [--profile PROFILE]
-compman volume push [--profile PROFILE]
+compman volume push [--replace] [--profile PROFILE]
 
 compman image backup [-z LEVEL] [--source-image] [--profile PROFILE]
 compman image restore [TIMESTAMP] [--profile PROFILE]
 
-compman clear
+compman clear [--yes]
 ```
 
 View all options for a command with `compman <command> --help`.
@@ -342,14 +359,15 @@ View all options for a command with `compman <command> --help`.
 ### Behavioral notes
 
 - `update`: When `deploy` is configured, it downloads the S3 or HTTP source, builds images, and starts the stack. Otherwise, it updates the local Compose project with `up -d --build`.
-- `service log`: Displays the last 50 lines by default and streams output with `-f`.
+- `service log`: Displays the last 50 lines by default and streams output with `-f`. Accepts a Compose service name, resolved to its container via `compose ps -q`; scaled services with multiple instances ask for the exact container name.
 - `ps`: Lists running containers in the selected compman project. Use `-a` to include stopped containers.
 - `stats`: Prints one resource-usage snapshot for the selected project's running containers. Use `-f` to stream continuously.
 - `service connect`: Falls back to `sh` if connecting with `bash` fails.
 - `volume backup/restore`: By default, brings the stack down during the operation and restores it afterward. Use `--no-stop` only when you understand the consistency risk.
+- `volume restore/push --replace`: Deletes files at the destination that are not in the source (byte-for-byte replace) instead of merging. The destination must be a validated absolute container path; this is destructive, so use it deliberately.
 - `image backup`: By default, commits and saves the state of the running container. Use `--source-image` to save the original image.
 - `volume backup` and `image backup`: gzip level defaults to 6. Use `-z 1` for faster backups or `-z 9` for smaller archives.
-- `clear`: Runs `image prune -af` for the selected runtime, so it can delete unused images outside the current project.
+- `clear`: Runs `image prune -af` for the selected runtime, so it can delete unused images outside the current project. Requires `--yes` confirmation (or an interactive `y` answer).
 
 ## Diagnostics and status
 
@@ -454,4 +472,4 @@ CI verifies:
 - Wheel build, isolated installation, and CLI execution
 - Ministack S3 download, Docker image build, and Compose start/stop E2E
 
-For current constraints and the improvement backlog, see [REVIEW.md](REVIEW.md). For test-project usage, see each README under [`test/`](test/).
+For current constraints and the improvement backlog, see [BACKLOG.md](BACKLOG.md). For development, testing, and debugging lessons learned, see [SOLUTION.md](SOLUTION.md). For test-project usage, see each README under [`test/`](test/).
